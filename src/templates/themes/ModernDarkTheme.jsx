@@ -32,14 +32,15 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
   const quote = data?.quote || "And of His signs is that He created for you from yourselves mates that you may find tranquility in them.";
   const quoteSource = data?.quote_source || "QS. Ar-Rum: 21";
   
-  const details = data || {
-    venue_name: "The Ritz-Carlton",
-    venue_address: "Pacific Place, Jakarta",
-    maps_link: "#",
-    akad_time: "16:00 WIB",
-    resepsi_time: "19:00 WIB",
-    groom_parents: "Mr. Smith & Mrs. Smith",
-    bride_parents: "Mr. Doe & Mrs. Doe"
+  // DATA ORANG TUA (Mengambil dari props data atau default)
+  const details = {
+    venue_name: data?.venue_name || "The Ritz-Carlton",
+    venue_address: data?.venue_address || "Pacific Place, Jakarta",
+    maps_link: data?.maps_link || "#",
+    akad_time: data?.akad_time || "16:00 WIB",
+    resepsi_time: data?.resepsi_time || "19:00 WIB",
+    groom_parents: data?.groom_parents || "Bpk. Nama Ayah & Ibu Nama Ibu",
+    bride_parents: data?.bride_parents || "Bpk. Nama Ayah & Ibu Nama Ibu"
   };
 
   const formattedDate = new Date(date || new Date()).toLocaleDateString('en-GB', {
@@ -117,7 +118,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
             <h3 className="text-xl font-luxury mt-2 capitalize text-white">{guestName || "Distinguished Guest"}</h3>
             
             <button onClick={openInvitation} className="mt-10 px-8 py-3 border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-all duration-500 text-xs tracking-[0.3em] uppercase font-bold">
-               Open Invitation
+                Open Invitation
             </button>
          </div>
       </div>
@@ -149,16 +150,17 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
                  <div className="flex flex-col"><span className="text-3xl font-luxury">{timeLeft.days}</span><span className="text-[10px] tracking-widest uppercase text-gray-500">Days</span></div>
                  <div className="flex flex-col"><span className="text-3xl font-luxury">{timeLeft.hours}</span><span className="text-[10px] tracking-widest uppercase text-gray-500">Hrs</span></div>
                  <div className="flex flex-col"><span className="text-3xl font-luxury">{timeLeft.minutes}</span><span className="text-[10px] tracking-widest uppercase text-gray-500">Mins</span></div>
+                 <div className="flex flex-col"><span className="text-3xl font-luxury">{timeLeft.seconds}</span><span className="text-[10px] tracking-widest uppercase text-gray-500">Sec</span></div>
               </div>
            </div>
         </header>
 
 
-        {/* 2. INTRO & COUPLE (ASYMMETRICAL LAYOUT) */}
+        {/* 2. INTRO & COUPLE (REVISED LAYOUT) */}
         <section className="py-24 px-6 max-w-6xl mx-auto bg-grain">
            <div className="flex flex-col md:flex-row items-start gap-12">
               
-              {/* Quote Text */}
+              {/* Quote Text (Tetap di Kiri) */}
               <div className="md:w-1/3 pt-10 sticky top-10">
                  <Gem className="w-8 h-8 text-[#D4AF37] mb-6" />
                  <p className="font-luxury text-2xl md:text-3xl leading-snug text-gray-300 mb-6">
@@ -167,25 +169,41 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
                  <p className="text-[#D4AF37] text-xs tracking-widest font-modern uppercase">— {quoteSource}</p>
               </div>
 
-              {/* Couple Photos (Geometric) */}
-              <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+              {/* Couple Photos (Perbaikan Layout) */}
+              {/* Ubah gap-8 menjadi gap-16 agar lebih lega */}
+              <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-16 relative">
+                 
                  {/* Groom Card */}
                  <div className="relative group">
                     <div className="absolute -inset-2 border border-[#D4AF37] opacity-30 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <img src={photos.groom} className="w-full h-[400px] object-cover grayscale group-hover:grayscale-0 transition duration-700" />
-                    <div className="bg-[#1A1A1A] p-6 absolute -bottom-6 -right-4 shadow-xl border-l-2 border-[#D4AF37]">
-                       <h3 className="font-luxury text-3xl">{groom}</h3>
-                       <p className="text-xs text-gray-500 font-modern mt-1 tracking-wider uppercase">The Groom</p>
+                    <img src={photos.groom} className="w-full h-[450px] object-cover grayscale group-hover:grayscale-0 transition duration-700" alt="Groom" />
+                    
+                    {/* PERBAIKAN: Posisi Text Box dipindah ke KIRI (left-0) agar tidak tabrakan */}
+                    <div className="bg-[#1A1A1A] p-6 absolute -bottom-10 left-0 md:-left-8 shadow-2xl border-r-2 border-[#D4AF37] max-w-[260px] text-left z-20">
+                       <h3 className="font-luxury text-3xl mb-1">{groom}</h3>
+                       <p className="text-[10px] text-[#D4AF37] font-modern tracking-widest uppercase mb-3">The Groom</p>
+                       <div className="w-full h-px bg-white/10 mb-3"></div>
+                       <p className="text-[10px] text-gray-500 font-modern uppercase tracking-wider mb-1">Putra dari Pasangan</p>
+                       <p className="text-xs text-gray-300 font-modern leading-relaxed font-bold">
+                           {details.groom_parents}
+                       </p>
                     </div>
                  </div>
 
-                 {/* Bride Card (Offset) */}
-                 <div className="relative group md:mt-20">
+                 {/* Bride Card */}
+                 <div className="relative group md:mt-24 mt-16">
                     <div className="absolute -inset-2 border border-[#D4AF37] opacity-30 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <img src={photos.bride} className="w-full h-[400px] object-cover grayscale group-hover:grayscale-0 transition duration-700" />
-                    <div className="bg-[#1A1A1A] p-6 absolute -bottom-6 -left-4 shadow-xl border-r-2 border-[#D4AF37] text-right">
-                       <h3 className="font-luxury text-3xl">{bride}</h3>
-                       <p className="text-xs text-gray-500 font-modern mt-1 tracking-wider uppercase">The Bride</p>
+                    <img src={photos.bride} className="w-full h-[450px] object-cover grayscale group-hover:grayscale-0 transition duration-700" alt="Bride" />
+                    
+                    {/* PERBAIKAN: Posisi Text Box dipindah ke KANAN (right-0) agar tidak tabrakan */}
+                    <div className="bg-[#1A1A1A] p-6 absolute -bottom-10 right-0 md:-right-8 shadow-2xl border-l-2 border-[#D4AF37] max-w-[260px] text-right z-20">
+                       <h3 className="font-luxury text-3xl mb-1">{bride}</h3>
+                       <p className="text-[10px] text-[#D4AF37] font-modern tracking-widest uppercase mb-3">The Bride</p>
+                       <div className="w-full h-px bg-white/10 mb-3"></div>
+                       <p className="text-[10px] text-gray-500 font-modern uppercase tracking-wider mb-1">Putri dari Pasangan</p>
+                       <p className="text-xs text-gray-300 font-modern leading-relaxed font-bold">
+                           {details.bride_parents}
+                       </p>
                     </div>
                  </div>
               </div>
@@ -194,7 +212,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
 
 
         {/* 3. EVENT DETAILS (VERTICAL TIMELINE) */}
-        <section className="py-24 bg-[#0A0A0A] relative border-y border-gray-900">
+        <section className="py-24 bg-[#0A0A0A] relative border-y border-gray-900 mt-12 md:mt-0">
            <div className="max-w-4xl mx-auto px-6 relative">
               <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-[#D4AF37] opacity-30"></div>
               
@@ -241,7 +259,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
         </section>
 
 
-        {/* 4. GALLERY (FILM STRIP / HORIZONTAL SCROLL) */}
+        {/* 4. GALLERY (FILM STRIP) */}
         {gallery.length > 0 && (
           <section className="py-24 overflow-hidden">
              <div className="px-6 mb-10 flex justify-between items-end max-w-6xl mx-auto">
@@ -252,14 +270,13 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
                 <div className="text-[#D4AF37] animate-bounce"><ArrowDown className="w-6 h-6 rotate-[-90deg]" /></div>
              </div>
 
-             {/* Horizontal Scroll Container */}
              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 px-6 pb-8 hide-scroll">
                 {gallery.map((url, idx) => (
                    <div key={idx} className="snap-center shrink-0 w-[80vw] md:w-[400px] h-[500px] relative group">
                       <div className="absolute inset-0 border border-white/10 group-hover:border-[#D4AF37] transition duration-500 z-10 pointer-events-none"></div>
-                      <img src={url} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-700 ease-in-out" />
+                      <img src={url} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-700 ease-in-out" alt="Gallery"/>
                       <div className="absolute bottom-4 left-4 text-xs font-modern text-white bg-black/50 px-2 py-1">
-                         NO. {String(idx + 1).padStart(2, '0')}
+                          NO. {String(idx + 1).padStart(2, '0')}
                       </div>
                    </div>
                 ))}
@@ -268,7 +285,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
         )}
 
 
-        {/* 5. GIFT & RSVP (MINIMALIST CARDS) */}
+        {/* 5. GIFT & RSVP */}
         <section className="py-24 px-6 bg-[#0A0A0A]">
            <div className="max-w-3xl mx-auto text-center">
               <h2 className="font-luxury text-4xl mb-12 text-[#D4AF37]">Wedding Gift</h2>
@@ -299,7 +316,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
         </footer>
 
 
-        {/* 7. MUSIC CONTROL (MINIMALIST) */}
+        {/* 7. MUSIC CONTROL */}
         <button 
           onClick={() => toggleAudio()}
           className={`fixed bottom-8 right-8 z-40 bg-[#D4AF37] text-black p-3 rounded-none shadow-lg hover:bg-white transition-colors duration-300`}
@@ -307,7 +324,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
           {audioPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 fill-current"/>}
         </button>
         
-        <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_243544c06f.mp3?filename=wedding-cinematic-11166.mp3" loop />
+        <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/15/audio_243544c06f.mp3?filename=wedding-cinematic-11166.mp3"} loop />
 
       </div>
     </div>

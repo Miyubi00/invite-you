@@ -204,7 +204,7 @@ export default function PlayfulPastelTheme({ groom, bride, date, guestName, data
                     Our Love Story
                     <span className="absolute -bottom-2 left-0 w-full h-3 bg-[#FDE047] -z-10 opacity-50 rounded-full"></span>
                 </h2>
-                <p className="font-hand text-lg mt-4 text-gray-600">"{data?.quote || "From hello to I do, it's been a fun ride!"}"</p>
+                <p className="font-hand text-lg mt-4 text-gray-600">"From hello to I do, it's been a fun ride!</p>
             </div>
 
             {/* Couple Profile Cards */}
@@ -216,6 +216,7 @@ export default function PlayfulPastelTheme({ groom, bride, date, guestName, data
                         <img src={photos.groom} className="w-full h-full object-cover" alt="Groom"/>
                     </div>
                     <h3 className="text-center font-blob text-2xl text-[#4338CA]">{groom}</h3>
+                    <p className="text-center font-hand text-gray-500 mt-2">Putra dari</p>
                     <p className="text-center font-hand text-gray-500 mt-2">{data?.groom_parents}</p>
                     <div className="mt-4 flex justify-center">
                         <div className="bg-white p-2 rounded-full text-[#4338CA]"><Smile/></div>
@@ -229,6 +230,7 @@ export default function PlayfulPastelTheme({ groom, bride, date, guestName, data
                         <img src={photos.bride} className="w-full h-full object-cover" alt="Bride"/>
                     </div>
                     <h3 className="text-center font-blob text-2xl text-[#DB2777]">{bride}</h3>
+                    <p className="text-center font-hand text-gray-500 mt-2">Putri dari</p>
                     <p className="text-center font-hand text-gray-500 mt-2">{data?.bride_parents}</p>
                     <div className="mt-4 flex justify-center">
                         <div className="bg-white p-2 rounded-full text-[#DB2777]"><Heart size={20} fill="#DB2777"/></div>

@@ -27,6 +27,30 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
     else { audioRef.current.play(); setIsPlaying(true); }
   };
 
+  // --- COUNTDOWN STATE & LOGIC ---
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const targetDate = new Date(date || new Date());
+    const interval = setInterval(() => {
+        const now = new Date();
+        const diff = targetDate - now;
+        
+        if (diff > 0) {
+            setTimeLeft({
+                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+                minutes: Math.floor((diff / 1000 / 60) % 60),
+                seconds: Math.floor((diff / 1000) % 60)
+            });
+        } else {
+            clearInterval(interval);
+        }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [date]);
+
   return (
     <div className="bg-[#0a0f1c] text-[#e2e8f0] min-h-screen font-sans overflow-x-hidden selection:bg-amber-900 selection:text-white">
       <style>{`
@@ -71,18 +95,47 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
         
         {/* HERO SECTION */}
         <header className="relative h-screen flex items-center justify-center overflow-hidden">
+             {/* Background Image & Gradient */}
              <div className="absolute inset-0">
                 <img src={photos.cover} className="w-full h-full object-cover opacity-40" alt="Cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c]/50 to-transparent"></div>
              </div>
              
+             {/* Content */}
              <div className="relative z-10 text-center px-4 animate-[fadeIn_2s_ease-in]">
                 <div className="border-x border-amber-500/30 px-6 py-10 md:px-12 md:py-16 backdrop-blur-[2px]">
-                    <h1 className="font-royal text-5xl md:text-8xl text-gold drop-shadow-lg mb-4">{groom} <span className="text-3xl align-middle text-amber-100">&</span> {bride}</h1>
-                    <p className="font-modern text-amber-200 tracking-[0.5em] text-xs md:text-sm uppercase">{new Date(date).toDateString()}</p>
+                    <h1 className="font-royal text-5xl md:text-8xl text-gold drop-shadow-lg mb-4">
+                        {groom} <span className="text-3xl align-middle text-amber-100">&</span> {bride}
+                    </h1>
+                    <p className="font-modern text-amber-200 tracking-[0.5em] text-xs md:text-sm uppercase mb-8">
+                        {new Date(date).toDateString()}
+                    </p>
+
+                    {/* --- COUNTDOWN ADDED HERE --- */}
+                    <div className="flex flex-wrap justify-center gap-4 md:gap-8 border-t border-amber-500/30 pt-8">
+                        <div className="flex flex-col items-center">
+                            <span className="font-royal text-3xl md:text-4xl text-amber-400">{String(timeLeft.days).padStart(2, '0')}</span>
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest text-amber-200/60 font-modern">Days</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="font-royal text-3xl md:text-4xl text-amber-400">{String(timeLeft.hours).padStart(2, '0')}</span>
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest text-amber-200/60 font-modern">Hours</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="font-royal text-3xl md:text-4xl text-amber-400">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest text-amber-200/60 font-modern">Mins</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="font-royal text-3xl md:text-4xl text-amber-400">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                            <span className="text-[10px] md:text-xs uppercase tracking-widest text-amber-200/60 font-modern">Secs</span>
+                        </div>
+                    </div>
+                    {/* --------------------------- */}
+
                 </div>
              </div>
              
+             {/* Bottom Fade */}
              <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#0a0f1c] to-transparent"></div>
         </header>
 
@@ -105,6 +158,7 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
                     <img src={photos.groom} className="w-full h-96 object-cover rounded-t-full rounded-b-3xl opacity-80 hover:opacity-100 transition duration-500" alt="Groom"/>
                     <div className="text-center p-6">
                         <h2 className="font-royal text-3xl text-gold mb-1">{groom}</h2>
+                        <p className="font-modern text-xs text-slate-500">Putra dari</p>
                         <p className="font-modern text-xs text-slate-500">{data?.groom_parents}</p>
                     </div>
                 </div>
@@ -113,6 +167,7 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
                     <img src={photos.bride} className="w-full h-96 object-cover rounded-t-full rounded-b-3xl opacity-80 hover:opacity-100 transition duration-500" alt="Bride"/>
                     <div className="text-center p-6">
                         <h2 className="font-royal text-3xl text-gold mb-1">{bride}</h2>
+                        <p className="font-modern text-xs text-slate-500">Putri dari</p>
                         <p className="font-modern text-xs text-slate-500">{data?.bride_parents}</p>
                     </div>
                 </div>
@@ -131,7 +186,7 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
                     <div className="space-y-3 font-modern text-sm text-slate-400">
                         <p className="text-amber-200">{data?.akad_time}</p>
                         <p>{data?.venue_name}</p>
-                        <a href={data?.maps_link} className="inline-flex items-center gap-2 text-amber-600 text-xs mt-2 hover:text-amber-400"><MapPin size={12}/> View Map</a>
+                        <p className="text-xs opacity-60">{data?.venue_address}</p>
                     </div>
                 </div>
 
@@ -143,6 +198,7 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
                         <p className="text-amber-200 text-lg">{data?.resepsi_time}</p>
                         <p>{data?.venue_name}</p>
                         <p className="text-xs opacity-60">{data?.venue_address}</p>
+                        <a href={data?.maps_link} className="inline-flex items-center gap-2 text-amber-600 text-xs mt-2 hover:text-amber-400"><MapPin size={12}/> View Map</a>
                     </div>
                 </div>
             </div>

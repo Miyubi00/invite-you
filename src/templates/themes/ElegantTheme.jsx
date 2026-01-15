@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Heart, Calendar, MapPin, Play, Pause, Gift, 
-  Copy, Music, Flower, ArrowDown, Share2 
+  MapPin, Clock, Copy, Heart, ArrowDown, 
+  Mail, Gift, Play, Pause, Calendar, Share2
 } from 'lucide-react';
 
-export default function SakuraTheme({ groom, bride, date, guestName, data }) {
+export default function ElegantResponsiveTheme({ groom, bride, date, guestName, data }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef(null);
 
   // --- COUNTDOWN STATE ---
@@ -14,28 +14,42 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
 
   // --- DATA ---
   const defaultImages = {
-    cover: "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=800&auto=format&fit=crop", // Sakura/Pink vibe
-    man: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop",
-    woman: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop",
+    cover: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop",
+    man: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop",
+    woman: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop",
+    couple: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800&auto=format&fit=crop"
   };
 
   const photos = {
     cover: data?.cover_photo || defaultImages.cover,
     groom: data?.groom_photo || defaultImages.man,
     bride: data?.bride_photo || defaultImages.woman,
+    header: data?.cover_photo || defaultImages.couple 
   };
 
   const gallery = data?.gallery || [];
   const banks = data?.banks || [];
+  const quote = data?.quote || "Dan segala sesuatu Kami ciptakan berpasang-pasangan supaya kamu mengingat kebesaran Allah.";
+  const quoteSource = data?.quote_source || "QS. Adz-Dzariyat: 49";
+  
+  const details = data || {
+    venue_name: "Grand Ballroom Hotel",
+    venue_address: "Jl. Sudirman No. 1, Jakarta Pusat, DKI Jakarta",
+    maps_link: "#",
+    akad_time: "08:00 WIB",
+    resepsi_time: "11:00 WIB",
+    groom_parents: "Bpk. Hendra & Ibu Susi",
+    bride_parents: "Bpk. Joko & Ibu Tina"
+  };
 
   const formattedDate = new Date(date || new Date()).toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  // --- COUNTDOWN LOGIC ---
+  // --- LOGIC ---
   useEffect(() => {
     const targetDateStr = new Date(date || new Date()).toISOString().split('T')[0];
-    const targetTimeStr = (data?.akad_time || "08:00").split(' ')[0].substring(0, 5);
+    const targetTimeStr = (details.akad_time || "08:00").split(' ')[0].substring(0, 5); 
     const targetDateTime = new Date(`${targetDateStr}T${targetTimeStr}:00`);
 
     const interval = setInterval(() => {
@@ -51,277 +65,201 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
         } else { clearInterval(interval); }
     }, 1000);
     return () => clearInterval(interval);
-  }, [date, data?.akad_time]);
+  }, [date, details.akad_time]);
 
-  // --- AUDIO ---
-  const toggleAudio = () => {
-    if(!audioRef.current) return;
-    if(isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play().catch(e => console.log("Autoplay blocked", e));
-      setIsPlaying(true);
+  const openInvitation = () => { setIsOpen(true); toggleAudio(true); };
+  
+  const toggleAudio = (play) => {
+    if (audioRef.current) {
+        if (play ?? !audioPlaying) {
+            audioRef.current.play().catch(() => {});
+            setAudioPlaying(true);
+        } else {
+            audioRef.current.pause();
+            setAudioPlaying(false);
+        }
     }
   };
 
-  const openInvitation = () => {
-      setIsOpen(true);
-      setTimeout(() => {
-          if(audioRef.current) {
-              audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
-          }
-      }, 800);
-  };
+  const copyToClipboard = (text) => { navigator.clipboard.writeText(text); alert('Nomor rekening tersalin!'); };
 
   return (
-    // MAIN CONTAINER: Soft Pink
-    <div className="bg-[#fff0f3] text-[#4a4a4a] min-h-screen relative overflow-x-hidden selection:bg-[#db2777] selection:text-white">
-
+    <div className="font-sans text-slate-800 bg-white min-h-screen relative overflow-x-hidden selection:bg-emerald-100">
+      
+      {/* GLOBAL STYLES */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .font-sans { font-family: 'Lato', sans-serif; }
+        html { scroll-behavior: smooth; }
         
-        .font-serif-mod { font-family: 'Bodoni Moda', serif; }
-        .font-sans-mod { font-family: 'Montserrat', sans-serif; }
-        
-        /* Animasi Sakura Jatuh */
-        @keyframes petal-fall {
-            0% { opacity: 0; transform: translateY(-10vh) translateX(0px) rotate(0deg); }
-            10% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(100vh) translateX(100px) rotate(360deg); }
-        }
-        .petal {
-            position: fixed; top: -10%; z-index: 0;
-            background: #ffccd5; opacity: 0;
-            border-radius: 100% 0 100% 0;
-            animation: petal-fall linear infinite;
-        }
-        
-        /* Smooth Fade In */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade { animation: fadeIn 1s ease-out forwards; }
+        .animate-fade-up { animation: fadeIn 1s ease-out forwards; }
+        
+        /* Hide scrollbar for cover text on mobile */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      {/* --- SAKURA PETALS BACKGROUND --- */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {[...Array(12)].map((_, i) => (
-             <div key={i} className="petal" style={{
-                 left: `${Math.random() * 100}%`,
-                 width: `${Math.random() * 10 + 10}px`,
-                 height: `${Math.random() * 10 + 10}px`,
-                 animationDuration: `${Math.random() * 5 + 8}s`,
-                 animationDelay: `${Math.random() * 5}s`
-             }}></div>
-          ))}
+      {/* --- COVER MODAL (RESPONSIVE SPLIT) --- */}
+      <div className={`fixed inset-0 z-50 flex flex-col md:flex-row bg-white transition-transform duration-[1.2s] ease-in-out ${isOpen ? '-translate-y-full' : 'translate-y-0'}`}>
+        
+        {/* Gambar Cover: 45% tinggi di HP, 50% lebar di Desktop */}
+        <div className="h-[45vh] md:h-full w-full md:w-1/2 relative overflow-hidden bg-slate-200">
+             <div className="absolute inset-0 bg-emerald-900/10 z-10"></div>
+             <img src={photos.cover} className="w-full h-full object-cover" alt="Cover" />
+        </div>
+
+        {/* Text Cover: 55% tinggi di HP, 50% lebar di Desktop */}
+        <div className="h-[55vh] md:h-full w-full md:w-1/2 bg-white flex flex-col items-center justify-center p-6 md:p-12 text-center relative z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.1)]">
+            <div className="w-full h-full flex flex-col items-center justify-center overflow-y-auto no-scrollbar">
+                <p className="text-emerald-800 tracking-[0.2em] text-xs md:text-sm font-bold uppercase mb-4 animate-fade-up" style={{animationDelay: '0.1s'}}>The Wedding Of</p>
+                
+                <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-slate-900 leading-tight mb-6 animate-fade-up" style={{animationDelay: '0.2s'}}>
+                    {groom} <br/> 
+                    <span className="text-emerald-600 text-3xl md:text-4xl italic block my-2">&</span> 
+                    {bride}
+                </h1>
+                
+                <div className="w-12 md:w-16 h-1 bg-emerald-600 mx-auto mb-6 rounded-full animate-fade-up" style={{animationDelay: '0.3s'}}></div>
+
+                <div className="space-y-2 mb-8 animate-fade-up" style={{animationDelay: '0.4s'}}>
+                    <p className="text-slate-500 text-xs md:text-sm">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+                    <div className="bg-slate-50 px-6 py-3 rounded-lg border border-slate-100 inline-block min-w-[200px]">
+                        <h3 className="text-lg md:text-xl font-bold text-slate-800 break-words">{guestName || "Tamu Undangan"}</h3>
+                    </div>
+                </div>
+
+                <button 
+                    onClick={openInvitation}
+                    className="px-8 py-3 md:px-10 md:py-4 bg-emerald-800 text-white text-sm md:text-base hover:bg-emerald-900 transition-all duration-300 rounded shadow-lg hover:shadow-emerald-900/30 flex items-center gap-2 group animate-fade-up" style={{animationDelay: '0.5s'}}
+                >
+                    <Mail className="w-4 h-4 md:w-5 md:h-5 group-hover:animate-bounce" /> 
+                    <span>BUKA UNDANGAN</span>
+                </button>
+            </div>
+        </div>
       </div>
 
-      {/* --- OPENING MODAL (Pink Curtain) --- */}
-      <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#fff0f3] to-[#ffe3e8] transition-transform duration-[1.5s] ease-in-out ${isOpen ? '-translate-y-full' : 'translate-y-0'}`}>
-          <div className="bg-white/60 backdrop-blur-md p-10 md:p-14 rounded-[3rem] shadow-xl text-center border border-white max-w-sm w-full relative overflow-hidden">
-              {/* Decorative Circle */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ffb3c1]/30 rounded-full blur-2xl"></div>
-              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#ffb3c1]/30 rounded-full blur-2xl"></div>
-              
-              <div className="mb-6 animate-pulse">
-                   <Flower className="w-10 h-10 mx-auto text-[#db2777]" strokeWidth={1.5}/>
-              </div>
 
-              <p className="font-sans-mod text-xs tracking-[0.3em] uppercase mb-4 text-[#888]">The Wedding Of</p>
-              <h1 className="font-serif-mod text-5xl text-[#db2777] mb-8 italic">{groom} <br/><span className="text-3xl text-gray-400">&</span> {bride}</h1>
-              
-              <div className="bg-white/80 p-4 rounded-xl mb-8 shadow-sm">
-                  <p className="font-sans-mod text-[10px] tracking-widest text-gray-500 mb-2 uppercase">Kepada Bapak/Ibu/Saudara/i:</p>
-                  <h3 className="font-serif-mod text-xl font-bold text-[#333]">{guestName || "Tamu Undangan"}</h3>
-              </div>
-
-              <button onClick={openInvitation} className="bg-[#db2777] text-white px-8 py-3 rounded-full font-sans-mod text-sm font-bold shadow-lg shadow-pink-300 hover:bg-[#be185d] transition-all hover:scale-105 flex items-center gap-2 mx-auto">
-                 <Gift size={16}/> Buka Undangan
-              </button>
-          </div>
-      </div>
-
-      {/* --- CONTENT WRAPPER --- */}
-      <div className={`transition-opacity duration-1000 delay-500 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+      {/* --- KONTEN UTAMA --- */}
+      <div className={`${isOpen ? 'opacity-100' : 'opacity-0'} transition-opacity duration-1000 delay-500`}>
 
         {/* 1. HERO HEADER */}
-        <header className="min-h-screen relative flex flex-col justify-end pb-20 px-6 overflow-hidden">
-             {/* Background Image Parallax */}
-             <div className="absolute inset-0 z-[-1] opacity-90">
-                 <img src={photos.cover} className="w-full h-full object-cover" alt="Cover"/>
-                 <div className="absolute inset-0 bg-gradient-to-t from-[#fff0f3] via-[#fff0f3]/60 to-transparent"></div>
-             </div>
+        <header className="min-h-screen relative flex items-center justify-center overflow-hidden">
+            {/* Background Image (Absolute to fix iOS bg-fixed issues) */}
+            <div className="absolute inset-0 z-0">
+                <img src={photos.header} alt="Header" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-slate-900/50"></div>
+            </div>
+            
+            <div className="relative z-10 text-center text-white px-4 md:px-6 py-20 w-full max-w-4xl mx-auto flex flex-col h-full justify-center">
+                <p className="text-sm md:text-xl font-serif italic mb-4 text-emerald-200 animate-fade-up">We are getting married</p>
+                <h1 className="font-serif text-5xl sm:text-6xl md:text-8xl mb-6 font-bold drop-shadow-lg leading-tight animate-fade-up">{groom} & {bride}</h1>
+                <p className="text-xs md:text-sm tracking-[0.3em] uppercase mb-10 border-y border-white/30 py-3 inline-block mx-auto px-6">{formattedDate}</p>
+                
+                {/* Responsive Countdown */}
+                <div className="grid grid-cols-4 gap-2 md:gap-8 max-w-md md:max-w-lg mx-auto">
+                    <TimeBox value={timeLeft.days} label="Hari" />
+                    <TimeBox value={timeLeft.hours} label="Jam" />
+                    <TimeBox value={timeLeft.minutes} label="Menit" />
+                    <TimeBox value={timeLeft.seconds} label="Detik" />
+                </div>
+            </div>
 
-             <div className="relative z-10 max-w-4xl mx-auto w-full text-center md:text-left">
-                 <div className="inline-block bg-white/50 backdrop-blur-sm px-4 py-1 rounded-full mb-4 border border-white">
-                     <p className="font-sans-mod text-xs font-bold tracking-widest text-[#db2777]">SAVE THE DATE</p>
-                 </div>
-                 <h1 className="font-serif-mod text-7xl md:text-9xl text-[#831843] leading-none mb-4">
-                     {groom} <span className="text-4xl text-gray-400 font-light italic">&</span> <br/> {bride}
-                 </h1>
-                 <p className="font-sans-mod text-gray-600 text-lg md:text-xl border-l-4 border-[#db2777] pl-4 md:ml-2 mt-4">
-                     {formattedDate}
-                 </p>
-             </div>
-
-             {/* COUNTDOWN */}
-             <div className="mt-12 flex flex-wrap justify-center md:justify-start gap-4 md:gap-8 max-w-4xl mx-auto w-full">
-                 <TimeBlock val={timeLeft.days} label="Days" />
-                 <TimeBlock val={timeLeft.hours} label="Hours" />
-                 <TimeBlock val={timeLeft.minutes} label="Mins" />
-                 <TimeBlock val={timeLeft.seconds} label="Secs" />
-             </div>
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center animate-bounce">
+                <ArrowDown className="text-white opacity-70 w-6 h-6 md:w-8 md:h-8" />
+            </div>
         </header>
 
-        {/* 2. QUOTE (Minimalist) */}
-        <section className="py-24 px-6 bg-white relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-pink-50 rounded-bl-full opacity-50 z-0"></div>
-            <div className="max-w-2xl mx-auto text-center relative z-10">
-                <Heart className="w-8 h-8 mx-auto text-[#db2777] mb-6 fill-pink-100"/>
-                <p className="font-serif-mod text-xl md:text-2xl text-gray-700 italic leading-loose">
-                    "{data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri."}"
+        {/* 2. QUOTE */}
+        <section className="py-16 md:py-24 px-6 bg-emerald-50/50 text-center">
+            <div className="max-w-2xl mx-auto">
+                <Heart className="w-8 h-8 md:w-10 md:h-10 text-emerald-600 mx-auto mb-6 fill-current opacity-20" />
+                <p className="font-serif text-lg md:text-2xl text-emerald-900 leading-relaxed italic">
+                    "{quote}"
                 </p>
-                <p className="mt-6 font-sans-mod font-bold text-xs tracking-[0.2em] text-[#db2777] uppercase">
-                    — {data?.quote_source || "QS. Ar-Rum: 21"}
-                </p>
+                <p className="mt-6 text-xs md:text-sm font-bold text-emerald-700 tracking-widest uppercase">— {quoteSource}</p>
             </div>
         </section>
 
-        {/* 3. COUPLE (Asymmetrical Layout) */}
-        <section className="py-20 px-4 overflow-hidden">
-            <div className="max-w-5xl mx-auto space-y-20">
-                
-                {/* Groom Row */}
-                <div className="flex flex-col md:flex-row items-center gap-10">
-                    <div className="w-full md:w-1/2 relative group">
-                        <div className="aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl shadow-pink-100 relative z-10">
-                            <img src={photos.groom} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" alt="Groom"/>
-                        </div>
-                        {/* Decorative Box */}
-                        <div className="absolute -bottom-4 -left-4 w-full h-full border-2 border-[#db2777] rounded-[2rem] z-0"></div>
-                    </div>
-                    <div className="w-full md:w-1/2 text-center md:text-left">
-                        <h2 className="font-serif-mod text-5xl text-[#831843] mb-2">{groom}</h2>
-                        <p className="font-sans-mod text-sm text-[#db2777] font-bold tracking-widest mb-4">THE GROOM</p>
-                        <p className="font-sans-mod text-gray-600 leading-relaxed mb-6">
-                            Putra tercinta dari pasangan <br/>
-                            <span className="font-bold">{data?.groom_parents}</span>
-                        </p>
-                        <a href="#" className="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#db2777] transition">
-                           <Share2 size={16}/> @instagram_groom
-                        </a>
-                    </div>
-                </div>
-
-                {/* Bride Row */}
-                <div className="flex flex-col md:flex-row-reverse items-center gap-10">
-                    <div className="w-full md:w-1/2 relative group">
-                        <div className="aspect-[4/5] rounded-[2rem] overflow-hidden shadow-2xl shadow-pink-100 relative z-10">
-                            <img src={photos.bride} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" alt="Bride"/>
-                        </div>
-                        {/* Decorative Box */}
-                        <div className="absolute -top-4 -right-4 w-full h-full border-2 border-[#db2777] rounded-[2rem] z-0"></div>
-                    </div>
-                    <div className="w-full md:w-1/2 text-center md:text-right">
-                        <h2 className="font-serif-mod text-5xl text-[#831843] mb-2">{bride}</h2>
-                        <p className="font-sans-mod text-sm text-[#db2777] font-bold tracking-widest mb-4">THE BRIDE</p>
-                        <p className="font-sans-mod text-gray-600 leading-relaxed mb-6">
-                            Putri tercinta dari pasangan <br/>
-                            <span className="font-bold">{data?.bride_parents}</span>
-                        </p>
-                        <a href="#" className="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#db2777] transition justify-end">
-                           @instagram_bride <Share2 size={16}/> 
-                        </a>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        {/* 4. EVENTS (Timeline Style - Fixed Mobile Layout) */}
-        <section className="py-24 px-4 bg-white relative overflow-hidden">
-            {/* Dekorasi Background */}
-            <div className="absolute top-1/2 left-0 w-64 h-64 bg-pink-50 rounded-full blur-3xl -z-10 opacity-60"></div>
-
-            <div className="max-w-4xl mx-auto relative">
-                <h2 className="text-center font-serif-mod text-4xl text-[#831843] mb-16">Wedding Itinerary</h2>
-                
-                {/* GARIS VERTIKAL (Responsive Position) 
-                    Mobile: left-6 (rata kiri)
-                    Desktop: left-1/2 (tengah)
-                */}
-                <div className="absolute left-6 md:left-1/2 top-24 bottom-0 w-px bg-gradient-to-b from-[#db2777] to-transparent"></div>
-
-                <div className="space-y-12">
+        {/* 3. COUPLE PROFILE */}
+        <section className="py-16 md:py-24 px-4 bg-white overflow-hidden">
+            <div className="max-w-5xl mx-auto">
+                <div className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-16">
                     
-                    {/* --- ITEM 1: AKAD NIKAH --- */}
-                    <div className="relative flex flex-col md:flex-row items-start md:items-center w-full">
-                        
-                        {/* TITIK (DOT) 
-                           Mobile: left-6 (nempel garis kiri)
-                           Desktop: left-1/2 (tengah)
-                        */}
-                        <div className="absolute left-6 md:left-1/2 w-4 h-4 -translate-x-1/2 bg-[#db2777] rounded-full z-20 ring-4 ring-white shadow-md mt-6 md:mt-0"></div>
-
-                        {/* CONTENT KIRI (Desktop) / KANAN (Mobile) */}
-                        <div className="w-full md:w-1/2 md:pr-12 pl-16 md:pl-0">
-                             <div className="bg-[#fff0f3] p-6 rounded-2xl rounded-tl-none border border-pink-100 shadow-sm relative hover:-translate-y-1 transition duration-300">
-                                 {/* Arrow Pointer untuk Mobile */}
-                                 <div className="absolute top-6 -left-2 w-4 h-4 bg-[#fff0f3] transform rotate-45 border-l border-b border-pink-100 block md:hidden"></div>
-                                 {/* Arrow Pointer untuk Desktop */}
-                                 <div className="absolute top-1/2 -right-2 w-4 h-4 bg-[#fff0f3] transform -translate-y-1/2 -rotate-45 border-r border-b border-pink-100 hidden md:block"></div>
-
-                                 <div className="flex justify-between items-start mb-2">
-                                     <h3 className="font-serif-mod text-xl md:text-2xl font-bold text-[#db2777]">Akad Nikah</h3>
-                                     <span className="bg-white text-[#db2777] text-[10px] font-bold px-2 py-1 rounded-full shadow-sm border border-pink-100">
-                                         {data?.akad_time}
-                                     </span>
-                                 </div>
-                                 
-                                 <div className="text-sm text-gray-600 space-y-2">
-                                    <p className="flex items-center gap-2"><Calendar size={14} className="text-[#db2777]"/> {formattedDate}</p>
-                                    <p className="flex items-start gap-2"><MapPin size={14} className="text-[#db2777] mt-1 shrink-0"/> {data?.venue_name}</p>
-                                 </div>
-                             </div>
+                    {/* Groom */}
+                    <div className="flex flex-col items-center text-center group w-full md:w-1/3">
+                        <div className="w-48 h-48 md:w-64 md:h-64 rounded-full p-1.5 md:p-2 border-2 border-dashed border-emerald-300 relative mb-6">
+                             <img src={photos.groom} className="w-full h-full object-cover rounded-full shadow-xl" alt="Groom" />
+                             <div className="absolute -bottom-2 -right-2 bg-emerald-800 text-white px-3 py-1 md:px-4 md:py-1 text-[10px] md:text-xs font-bold rounded-full shadow-md z-10">THE GROOM</div>
                         </div>
-
-                        {/* SPACE KOSONG UNTUK DESKTOP (Agar seimbang) */}
-                        <div className="hidden md:block w-1/2"></div>
+                        <h2 className="font-serif text-3xl md:text-4xl text-slate-800 mb-1">{groom}</h2>
+                        <p className="text-emerald-600 text-xs font-bold tracking-wider mb-2">PUTRA TERCINTA</p>
+                        <p className="text-slate-500 text-xs md:text-sm px-4">{details.groom_parents}</p>
                     </div>
 
+                    <div className="text-emerald-200 font-serif text-4xl md:text-6xl italic opacity-50">&</div>
 
-                    {/* --- ITEM 2: RESEPSI --- */}
-                    <div className="relative flex flex-col md:flex-row items-start md:items-center w-full">
+                    {/* Bride */}
+                    <div className="flex flex-col items-center text-center group w-full md:w-1/3">
+                         <div className="w-48 h-48 md:w-64 md:h-64 rounded-full p-1.5 md:p-2 border-2 border-dashed border-emerald-300 relative mb-6">
+                             <img src={photos.bride} className="w-full h-full object-cover rounded-full shadow-xl" alt="Bride" />
+                             <div className="absolute -bottom-2 -right-2 bg-emerald-600 text-white px-3 py-1 md:px-4 md:py-1 text-[10px] md:text-xs font-bold rounded-full shadow-md z-10">THE BRIDE</div>
+                        </div>
+                        <h2 className="font-serif text-3xl md:text-4xl text-slate-800 mb-1">{bride}</h2>
+                        <p className="text-emerald-600 text-xs font-bold tracking-wider mb-2">PUTRI TERCINTA</p>
+                        <p className="text-slate-500 text-xs md:text-sm px-4">{details.bride_parents}</p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        {/* 4. EVENT DETAILS */}
+        <section className="py-16 md:py-24 bg-slate-900 text-white relative">
+            <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent bg-[length:20px_20px]"></div>
+            
+            <div className="container mx-auto px-4 relative z-10">
+                <div className="text-center mb-12">
+                    <h2 className="font-serif text-3xl md:text-5xl text-emerald-400 mb-3">Wedding Event</h2>
+                    <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto">Kami mengundang anda untuk menjadi saksi momen bahagia kami.</p>
+                </div>
+
+                {/* Grid Layout untuk Card: Mobile 1 kolom, Desktop 2 kolom */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                    
+                    {/* Akad Card */}
+                    <div className="bg-white/5 border border-white/10 p-6 md:p-10 rounded-xl hover:bg-white/10 transition duration-300 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="p-2 md:p-3 bg-emerald-500 rounded-full text-white"><Heart className="w-5 h-5 md:w-6 md:h-6 fill-current"/></div>
+                            <h3 className="font-serif text-2xl md:text-3xl">Akad Nikah</h3>
+                        </div>
+                        <div className="space-y-4 text-slate-300 text-sm md:text-base">
+                            <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-emerald-500 shrink-0"/> <span className="font-bold text-white">{formattedDate}</span></div>
+                            <div className="flex items-center gap-3"><Clock className="w-5 h-5 text-emerald-500 shrink-0"/> <span>{details.akad_time}</span></div>
+                            <div className="flex items-start gap-3"><MapPin className="w-5 h-5 text-emerald-500 mt-1 shrink-0"/> <span>{details.venue_name}<br/> <span className="text-xs opacity-70">{details.venue_address}</span></span></div>
+                        </div>
+                    </div>
+
+                    {/* Resepsi Card */}
+                    <div className="bg-gradient-to-br from-emerald-900 to-slate-900 border border-emerald-800 p-6 md:p-10 rounded-xl relative overflow-hidden shadow-2xl">
+                         <div className="absolute -right-6 -top-6 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl"></div>
+                         <div className="flex items-center gap-4 mb-6 relative z-10">
+                            <div className="p-2 md:p-3 bg-white text-emerald-900 rounded-full"><Share2 className="w-5 h-5 md:w-6 md:h-6"/></div>
+                            <h3 className="font-serif text-2xl md:text-3xl text-white">Resepsi</h3>
+                        </div>
+                        <div className="space-y-4 text-emerald-100 relative z-10 text-sm md:text-base">
+                            <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-emerald-400 shrink-0"/> <span className="font-bold text-white">{formattedDate}</span></div>
+                            <div className="flex items-center gap-3"><Clock className="w-5 h-5 text-emerald-400 shrink-0"/> <span>{details.resepsi_time}</span></div>
+                            <div className="flex items-start gap-3"><MapPin className="w-5 h-5 text-emerald-400 mt-1 shrink-0"/> <span>{details.venue_name} <br/> <span className="text-xs opacity-70">{details.venue_address}</span></span></div>
+                        </div>
                         
-                        {/* TITIK (DOT) */}
-                        <div className="absolute left-6 md:left-1/2 w-4 h-4 -translate-x-1/2 bg-white border-[3px] border-[#831843] rounded-full z-20 shadow-md mt-6 md:mt-0"></div>
-
-                        {/* SPACE KOSONG UNTUK DESKTOP */}
-                        <div className="hidden md:block w-1/2"></div>
-
-                        {/* CONTENT KANAN (Desktop) / KANAN (Mobile) */}
-                        <div className="w-full md:w-1/2 md:pl-12 pl-16 md:pr-0">
-                             <div className="bg-white p-6 rounded-2xl rounded-tl-none md:rounded-tl-2xl md:rounded-tr-none border border-gray-200 shadow-lg shadow-pink-50 relative hover:-translate-y-1 transition duration-300">
-                                 {/* Arrow Pointer untuk Mobile */}
-                                 <div className="absolute top-6 -left-2 w-4 h-4 bg-white transform rotate-45 border-l border-b border-gray-200 block md:hidden"></div>
-                                 {/* Arrow Pointer untuk Desktop */}
-                                 <div className="absolute top-1/2 -left-2 w-4 h-4 bg-white transform -translate-y-1/2 rotate-45 border-l border-b border-gray-200 hidden md:block"></div>
-
-                                 <div className="flex justify-between items-start mb-2">
-                                     <h3 className="font-serif-mod text-xl md:text-2xl font-bold text-[#831843]">Resepsi</h3>
-                                     <span className="bg-[#831843] text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
-                                         {data?.resepsi_time}
-                                     </span>
-                                 </div>
-
-                                 <div className="text-sm text-gray-600 space-y-2">
-                                    <p className="flex items-center gap-2"><Calendar size={14} className="text-[#831843]"/> {formattedDate}</p>
-                                    <p className="flex items-start gap-2"><MapPin size={14} className="text-[#831843] mt-1 shrink-0"/> {data?.venue_address}</p>
-                                 </div>
-
-                                 <a href={data?.maps_link} target="_blank" className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-[#db2777] border-b border-[#db2777] pb-0.5 hover:text-[#831843] transition">
-                                     LIHAT LOKASI <ArrowDown size={10} className="-rotate-90"/>
-                                 </a>
-                             </div>
+                        <div className="mt-8 relative z-10">
+                             <a href={details.maps_link} target="_blank" className="block w-full text-center py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition text-sm tracking-wider">
+                                VIEW LOCATION
+                             </a>
                         </div>
                     </div>
 
@@ -329,88 +267,91 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
             </div>
         </section>
 
-        {/* 5. GALLERY (Horizontal Scroll / Carousel Feel) */}
+        {/* 5. GALLERY (Responsive Grid) */}
         {gallery.length > 0 && (
-          <section className="py-20 bg-[#fff0f3] overflow-hidden">
-              <div className="text-center mb-10">
-                  <h2 className="font-serif-mod text-4xl text-[#831843]">Captured Moments</h2>
-              </div>
-              
-              <div className="flex overflow-x-auto pb-8 gap-4 px-6 md:justify-center no-scrollbar snap-x">
-                  {gallery.map((url, i) => (
-                      <div key={i} className="flex-shrink-0 w-72 h-96 relative snap-center group">
-                          <div className="w-full h-full bg-white p-3 shadow-lg rounded-xl rotate-0 group-hover:-rotate-2 transition duration-300">
-                              <img src={url} className="w-full h-[85%] object-cover rounded-lg mb-2" alt="Moment"/>
-                              <p className="font-serif-mod text-center text-gray-400 italic text-sm">#{groom}and{bride}</p>
-                          </div>
-                      </div>
-                  ))}
-              </div>
-          </section>
-        )}
-
-        {/* 6. GIFT */}
-        <section className="py-24 px-4 bg-white">
-            <div className="max-w-2xl mx-auto text-center bg-gradient-to-b from-white to-[#fff0f3] p-10 rounded-[3rem] border border-pink-100 shadow-xl shadow-pink-50">
-                <Gift className="w-12 h-12 mx-auto text-[#db2777] mb-4"/>
-                <h2 className="font-serif-mod text-3xl text-[#831843] mb-4">Wedding Gift</h2>
-                <p className="font-sans-mod text-sm text-gray-500 mb-8 max-w-md mx-auto">
-                    Tanpa mengurangi rasa hormat, bagi Anda yang ingin memberikan tanda kasih, dapat melalui:
-                </p>
-
-                <div className="grid gap-4">
-                    {banks.map((bank, i) => (
-                        <div key={i} className="flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                            <div className="text-left">
-                                <span className="block font-bold text-[#db2777] text-sm">{bank.bank}</span>
-                                <span className="text-xs text-gray-400">a.n {bank.name}</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <span className="font-mono font-bold text-gray-700">{bank.number}</span>
-                                <button onClick={() => {navigator.clipboard.writeText(bank.number); alert("Copied!")}} className="p-2 bg-pink-50 rounded-full hover:bg-pink-100 text-[#db2777] transition">
-                                    <Copy size={14}/>
-                                </button>
-                            </div>
+            <section className="py-16 md:py-24 px-4 bg-white">
+                <div className="text-center mb-10">
+                    <p className="text-emerald-600 font-bold tracking-widest uppercase mb-2 text-xs md:text-sm">Our Memories</p>
+                    <h2 className="font-serif text-3xl md:text-4xl text-slate-800">Photo Gallery</h2>
+                </div>
+                
+                {/* Mobile: 2 Kolom, Desktop: 4 Kolom */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 max-w-6xl mx-auto">
+                    {gallery.map((url, idx) => (
+                        <div key={idx} className={`relative group overflow-hidden rounded-lg aspect-square ${idx === 0 ? 'col-span-2 row-span-2' : ''}`}>
+                            <img src={url} alt="Gallery" className="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
                         </div>
                     ))}
                 </div>
-            </div>
+            </section>
+        )}
+
+        {/* 6. GIFT (Stacked Cards) */}
+        <section className="py-16 md:py-24 px-4 bg-slate-50 border-t border-slate-200">
+             <div className="max-w-3xl mx-auto text-center">
+                 <h2 className="font-serif text-3xl md:text-4xl mb-4 text-slate-800">Wedding Gift</h2>
+                 <p className="text-slate-600 mb-10 text-sm md:text-base leading-relaxed px-4">
+                    Tanpa mengurangi rasa hormat, bagi Bapak/Ibu/Saudara/i yang ingin memberikan tanda kasih untuk kami, dapat melalui:
+                 </p>
+
+                 <div className="flex flex-col gap-6 items-center w-full px-2">
+                    {banks.map((bank, idx) => (
+                        <div key={idx} className="w-full max-w-sm bg-gradient-to-r from-slate-800 to-slate-700 text-white rounded-xl p-6 shadow-lg relative overflow-hidden group transform transition md:hover:-translate-y-2">
+                             {/* Card Decor */}
+                             <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8"></div>
+                             
+                             <div className="flex justify-between items-start mb-6 relative z-10">
+                                 <div className="text-xl md:text-2xl font-serif italic tracking-widest">{bank.bank}</div>
+                                 <Gift className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
+                             </div>
+
+                             <div className="text-left relative z-10">
+                                 <p className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest mb-1">Account Number</p>
+                                 <div className="flex items-center justify-between bg-white/5 p-2 rounded border border-white/10">
+                                     <span className="font-mono text-lg md:text-xl tracking-wider text-emerald-300 truncate">{bank.number}</span>
+                                     <button onClick={() => copyToClipboard(bank.number)} className="p-2 bg-white/10 rounded hover:bg-white/20 transition shrink-0 ml-2">
+                                        <Copy className="w-4 h-4" />
+                                     </button>
+                                 </div>
+                                 <p className="mt-3 font-bold uppercase tracking-wide text-sm">{bank.name}</p>
+                             </div>
+                        </div>
+                    ))}
+                 </div>
+             </div>
         </section>
 
         {/* FOOTER */}
-        <footer className="py-10 text-center bg-[#fff0f3]">
-            <h2 className="font-serif-mod text-2xl text-[#831843] opacity-60">{groom} & {bride}</h2>
-            <p className="font-sans-mod text-xs text-gray-400 mt-2">Terima kasih atas doa restu Anda.</p>
+        <footer className="bg-white py-8 text-center border-t border-slate-100 pb-24 md:pb-8">
+            <h2 className="font-serif text-xl md:text-2xl text-slate-800">{groom} & {bride}</h2>
+            <p className="text-slate-400 text-[10px] md:text-xs mt-2">© 2024. Made with love.</p>
         </footer>
 
       </div>
 
-      {/* AUDIO PLAYER */}
-      <div className="fixed bottom-6 right-6 z-40">
-          <button 
-             onClick={toggleAudio}
-             className={`w-12 h-12 rounded-full flex items-center justify-center bg-white text-[#db2777] shadow-lg border border-pink-100 transition-transform hover:scale-110 ${isPlaying ? 'animate-spin-slow' : ''}`}
-          >
-              {isPlaying ? <Music size={20}/> : <Play size={20} className="ml-1"/>}
-          </button>
+      {/* FLOATING AUDIO (Posisi aman di mobile) */}
+      <div className="fixed bottom-6 right-4 md:left-6 md:right-auto z-40">
+        <button 
+            onClick={() => toggleAudio()}
+            className="bg-emerald-800 text-white p-3 md:p-4 rounded-full shadow-2xl hover:bg-emerald-700 transition-all border-2 border-white/20 animate-spin-slow"
+        >
+            {audioPlaying ? <Pause className="w-5 h-5 md:w-6 md:h-6" /> : <Play className="w-5 h-5 md:w-6 md:h-6 ml-0.5" />}
+        </button>
       </div>
 
-      <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/04/27/audio_65b355d911.mp3"} loop />
+      <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3?filename=wedding-piano-122972.mp3" loop />
     
     </div>
   );
 }
 
-// Simple Components
-function TimeBlock({ val, label }) {
+// --- SUB-COMPONENTS ---
+function TimeBox({ value, label }) {
     return (
-        <div className="text-center">
-            <div className="font-serif-mod text-4xl md:text-5xl text-[#db2777] font-bold">
-                {String(val).padStart(2, '0')}
-            </div>
-            <div className="font-sans-mod text-[10px] md:text-xs text-gray-400 tracking-widest uppercase mt-1">
-                {label}
-            </div>
+        <div className="flex flex-col items-center p-2 md:p-4 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
+            <span className="text-2xl md:text-5xl font-serif font-bold text-white mb-1 md:mb-2">{String(value).padStart(2, '0')}</span>
+            <span className="text-[10px] md:text-xs uppercase tracking-widest text-emerald-300 font-bold">{label}</span>
         </div>
     )
 }
+

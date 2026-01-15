@@ -13,6 +13,10 @@ import JavaneseTheme from './themes/JavaneseTheme';
 import LilacTheme from './themes/LilacTheme';
 import PlayfulPopTheme from './themes/PlayfulPopTheme';
 import StaticCanvasTheme from './themes/StaticCanvasTheme';
+import IphoneTheme from './themes/IphoneTheme';
+import BitTheme from './themes/BitTheme';
+import ComicTheme from './themes/ComicTheme';
+import DiaryTheme from './themes/DiaryTheme';
 
 const templates = {
   'rustic-floral': RusticTheme,
@@ -23,7 +27,10 @@ const templates = {
   'navy-gold': NavyGoldTheme,
   'bohaemin': BohaeminTheme,
   'elegant-pastel': ElegantTheme,
-
+  'iphone' : IphoneTheme,
+  'bit' : BitTheme,
+  'comic' : ComicTheme,
+  'diary' : DiaryTheme,
   // 🔽 NEW THEMES
   'japanese': JapaneseTheme,
   'javanese': JavaneseTheme,

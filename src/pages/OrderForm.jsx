@@ -21,7 +21,11 @@ const TEMPLATE_OPTIONS = [
   { slug: 'javanese', name: 'Javanese', category: 'Premium', price: 85000 },
   { slug: 'lilac', name: 'Lilac', category: 'Basic', price: 25000 },
   { slug: 'playful-pop', name: 'Playful Pop', category: 'Basic', price: 25000 },
-  { slug: 'static-canvas', name: 'Static Canvas', category: 'Premium', price: 85000 },
+  { slug: 'static-canvas', name: 'Bubble Chat', category: 'Premium', price: 85000 },
+  { slug: 'iphone', name: 'Iphone', category: 'Premium', price: 85000 },
+  { slug: 'bit', name: '8bit Retro', category: 'Premium', price: 85000 },
+  { slug: 'comic', name: 'Comic', category: 'Premium', price: 85000 },
+  { slug: 'diary', name: 'Diary Book', category: 'Premium', price: 85000 },
 ];
 
 export default function OrderForm() {

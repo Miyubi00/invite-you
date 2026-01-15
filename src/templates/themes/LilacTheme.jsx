@@ -9,6 +9,9 @@ export default function KoreanMinimalTheme({ groom, bride, date, guestName, data
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
 
+  // --- COUNTDOWN STATE ---
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
   // --- DATA ---
   const defaultImages = {
     cover: "https://images.unsplash.com/photo-1535295972055-1c762f4483e5?w=800&auto=format&fit=crop", // Soft aesthetic
@@ -37,6 +40,28 @@ export default function KoreanMinimalTheme({ groom, bride, date, guestName, data
   // Logic untuk Kalender
   const dayOfMonth = dateObj.getDate();
   const monthName = dateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+
+  // --- COUNTDOWN LOGIC ---
+  useEffect(() => {
+    const targetDate = new Date(date || new Date());
+    const interval = setInterval(() => {
+        const now = new Date();
+        const diff = targetDate - now;
+        
+        if (diff > 0) {
+            setTimeLeft({
+                days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+                minutes: Math.floor((diff / 1000 / 60) % 60),
+                seconds: Math.floor((diff / 1000) % 60)
+            });
+        } else {
+            clearInterval(interval);
+        }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [date]);
 
   // --- AUDIO & OPEN HANDLER ---
   const toggleAudio = () => {
@@ -139,8 +164,19 @@ export default function KoreanMinimalTheme({ groom, bride, date, guestName, data
                     <Heart className="text-[#FCA5A5] fill-[#FCA5A5] animate-bounce" size={24}/>
                 </div>
                 
+                {/* Countdown Timer (Minimalist Pill Style) */}
+                <div className="mt-6 bg-white/60 p-4 rounded-xl flex justify-between items-center gap-2 shadow-sm border border-white">
+                    <CountdownItem val={timeLeft.days} label="Days" />
+                    <div className="h-8 w-px bg-gray-200"></div>
+                    <CountdownItem val={timeLeft.hours} label="Hours" />
+                    <div className="h-8 w-px bg-gray-200"></div>
+                    <CountdownItem val={timeLeft.minutes} label="Mins" />
+                    <div className="h-8 w-px bg-gray-200"></div>
+                    <CountdownItem val={timeLeft.seconds} label="Secs" />
+                </div>
+
                 {/* Fake Music Progress Bar */}
-                <div className="mt-6 flex items-center gap-3 text-[#9CA3AF] text-[10px]">
+                <div className="mt-4 flex items-center gap-3 text-[#9CA3AF] text-[10px]">
                     <span>0:00</span>
                     <div className="flex-1 h-1 bg-[#E5E7EB] rounded-full overflow-hidden">
                         <div className="w-1/3 h-full bg-[#C4B5FD]"></div>
@@ -201,24 +237,40 @@ export default function KoreanMinimalTheme({ groom, bride, date, guestName, data
             </div>
         </section>
 
-        {/* 4. COUPLE (Minimal Circles) */}
+        {/* 4. COUPLE (Minimal Circles & Parents Data) */}
         <section className="px-6 py-10">
-            <div className="flex justify-center items-center gap-4">
-                <div className="text-center">
-                    <div className="w-28 h-28 rounded-full overflow-hidden border border-[#E5E7EB] p-1 mb-3">
+            <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12">
+                
+                {/* Groom */}
+                <div className="text-center w-full">
+                    <div className="w-28 h-28 mx-auto rounded-full overflow-hidden border border-[#E5E7EB] p-1 mb-3">
                         <img src={photos.groom} className="w-full h-full object-cover rounded-full" alt="Groom"/>
                     </div>
                     <h3 className="font-kr-hand text-xl text-[#374151]">{groom}</h3>
-                    <p className="text-[10px] text-[#9CA3AF] tracking-widest uppercase">The Groom</p>
+                    <p className="text-[10px] text-[#9CA3AF] tracking-widest uppercase font-bold">The Groom</p>
+                    {/* Parent Data */}
+                    <div className="mt-2 text-xs text-[#6B7280] font-kr-sans leading-snug">
+                        <p className="opacity-60 text-[10px]">Putra dari Pasangan</p>
+                        <p>{data?.groom_parents}</p>
+                    </div>
                 </div>
+
                 <span className="font-kr-hand text-xl text-[#D1D5DB]">&</span>
-                <div className="text-center">
-                    <div className="w-28 h-28 rounded-full overflow-hidden border border-[#E5E7EB] p-1 mb-3">
+
+                {/* Bride */}
+                <div className="text-center w-full">
+                    <div className="w-28 h-28 mx-auto rounded-full overflow-hidden border border-[#E5E7EB] p-1 mb-3">
                         <img src={photos.bride} className="w-full h-full object-cover rounded-full" alt="Bride"/>
                     </div>
                     <h3 className="font-kr-hand text-xl text-[#374151]">{bride}</h3>
-                    <p className="text-[10px] text-[#9CA3AF] tracking-widest uppercase">The Bride</p>
+                    <p className="text-[10px] text-[#9CA3AF] tracking-widest uppercase font-bold">The Bride</p>
+                    {/* Parent Data */}
+                    <div className="mt-2 text-xs text-[#6B7280] font-kr-sans leading-snug">
+                        <p className="opacity-60 text-[10px]">Putri dari Pasangan</p>
+                        <p>{data?.bride_parents}</p>
+                    </div>
                 </div>
+
             </div>
         </section>
 
@@ -320,4 +372,14 @@ export default function KoreanMinimalTheme({ groom, bride, date, guestName, data
       </div>
     </div>
   );
+}
+
+// --- HELPER COMPONENT (Countdown) ---
+function CountdownItem({ val, label }) {
+    return (
+        <div className="flex flex-col items-center">
+            <span className="font-kr-sans text-xl font-bold text-[#4B5563]">{String(val).padStart(2, '0')}</span>
+            <span className="text-[8px] uppercase tracking-wider text-[#9CA3AF]">{label}</span>
+        </div>
+    )
 }

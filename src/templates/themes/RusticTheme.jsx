@@ -222,9 +222,6 @@ export default function RusticTheme({ groom, bride, date, guestName, data }) {
                 <h2 className="font-script text-5xl text-[#712E1E] mb-2">{groom}</h2>
                 <p className="text-sm font-bold text-[#8C8075] tracking-widest mb-1">PUTRA TERCINTA</p>
                 <p className="text-sm text-[#5D534A]">{details.groom_parents}</p>
-                <div className="mt-4 flex justify-center">
-                    <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-[#E1306C] transition border border-gray-100"><Instagram className="w-5 h-5"/></a>
-                </div>
              </div>
 
              {/* Bride */}
@@ -238,9 +235,6 @@ export default function RusticTheme({ groom, bride, date, guestName, data }) {
                 <h2 className="font-script text-5xl text-[#712E1E] mb-2">{bride}</h2>
                 <p className="text-sm font-bold text-[#8C8075] tracking-widest mb-1">PUTRI TERCINTA</p>
                 <p className="text-sm text-[#5D534A]">{details.bride_parents}</p>
-                <div className="mt-4 flex justify-center">
-                    <a href="#" className="p-2 bg-white rounded-full shadow-sm hover:text-[#E1306C] transition border border-gray-100"><Instagram className="w-5 h-5"/></a>
-                </div>
              </div>
            </div>
         </section>

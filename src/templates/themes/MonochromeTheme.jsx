@@ -30,6 +30,30 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
 
   const formattedDate = new Date(date || new Date()).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
+  // --- COUNTDOWN STATE ---
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // --- COUNTDOWN LOGIC ---
+  useEffect(() => {
+    const targetDateStr = new Date(date || new Date()).toISOString().split('T')[0];
+    const targetTimeStr = (data?.akad_time || "08:00").split(' ')[0].substring(0, 5);
+    const targetDateTime = new Date(`${targetDateStr}T${targetTimeStr}:00`);
+
+    const interval = setInterval(() => {
+        const now = new Date();
+        const difference = targetDateTime - now;
+        if (difference > 0) {
+            setTimeLeft({
+                days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+                minutes: Math.floor((difference / 1000 / 60) % 60),
+                seconds: Math.floor((difference / 1000) % 60)
+            });
+        } else { clearInterval(interval); }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [date, data?.akad_time]);
+
   const toggleAudio = () => {
     if(!audioRef.current) return;
     if(isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
@@ -79,9 +103,10 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
                 <p className="font-body text-sm md:text-base tracking-[0.5em] mb-6">SAVE THE DATE</p>
                 <h2 className="font-display text-[12vw] leading-[0.8] tracking-tighter uppercase">{formattedDate}</h2>
                 <div className="mt-12 flex gap-4 md:gap-12">
-                   <div className="text-center"><span className="block font-display text-4xl">08</span><span className="text-xs font-bold uppercase">Days</span></div>
-                   <div className="text-center"><span className="block font-display text-4xl">12</span><span className="text-xs font-bold uppercase">Hours</span></div>
-                   <div className="text-center"><span className="block font-display text-4xl">45</span><span className="text-xs font-bold uppercase">Mins</span></div>
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.days}</span><span className="text-xs font-bold uppercase">Days</span></div>
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.hours}</span><span className="text-xs font-bold uppercase">Hours</span></div>
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.minutes}</span><span className="text-xs font-bold uppercase">Mins</span></div>
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.seconds}</span><span className="text-xs font-bold uppercase">Sec</span></div>
                 </div>
             </div>
             <div className="w-full h-64 md:h-96 mt-10 relative overflow-hidden border-2 border-black">
@@ -96,6 +121,7 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
                     <img src={photos.groom} className="w-full h-full object-cover grayscale" alt="Groom"/>
                 </div>
                 <h3 className="font-display text-4xl mb-2">{groom}</h3>
+                <p className="font-body text-xs text-gray-500 max-w-xs">Putra dari</p>
                 <p className="font-body text-xs text-gray-500 max-w-xs">{data?.groom_parents}</p>
             </div>
             <div className="p-8 md:p-16 flex flex-col justify-center items-center text-center">
@@ -103,6 +129,7 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
                     <img src={photos.bride} className="w-full h-full object-cover grayscale" alt="Bride"/>
                 </div>
                 <h3 className="font-display text-4xl mb-2">{bride}</h3>
+                <p className="font-body text-xs text-gray-500 max-w-xs">Putri dari</p>
                 <p className="font-body text-xs text-gray-500 max-w-xs">{data?.bride_parents}</p>
             </div>
         </section>

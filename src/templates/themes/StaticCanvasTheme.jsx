@@ -6,7 +6,7 @@ import {
 
 export default function ChatBubbleTheme({ groom, bride, date, guestName, data }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeChat, setActiveChat] = useState(null); // Menyimpan ID chat yang sedang dibuka
+  const [activeChat, setActiveChat] = useState(null); 
   const [isTyping, setIsTyping] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -14,7 +14,6 @@ export default function ChatBubbleTheme({ groom, bride, date, guestName, data })
 
   // --- DATA ---
   const photos = {
-    // Foto profil untuk avatar chat
     groom: data?.groom_photo || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&fit=crop",
     bride: data?.bride_photo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&fit=crop",
     bg: data?.cover_photo || "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=800&fit=crop"
@@ -25,12 +24,14 @@ export default function ChatBubbleTheme({ groom, bride, date, guestName, data })
   });
 
   // --- DAFTAR PERTANYAAN (BUBBLES) ---
+  // Position menggunakan persentase agar responsif
+  // animationType untuk variasi gerakan
   const questions = [
-    { id: 'date', text: "Kapan nikahnya? 📅", color: "bg-blue-500", position: "top-[15%] left-[5%]" },
-    { id: 'location', text: "Lokasi dimana? 📍", color: "bg-green-500", position: "top-[25%] right-[5%]" },
-    { id: 'couple', text: "Siapa pasangannya? 👩‍❤️‍👨", color: "bg-pink-500", position: "bottom-[30%] left-[10%]" },
-    { id: 'gift', text: "Mau kirim kado 🎁", color: "bg-purple-500", position: "bottom-[20%] right-[5%]" },
-    { id: 'gallery', text: "Lihat foto dong 📸", color: "bg-orange-500", position: "top-[50%] left-[50%] -translate-x-1/2" },
+    { id: 'date', text: "Kapan nikahnya? 📅", color: "bg-blue-600", position: "top-[10%] left-[5%]", anim: "animate-drift-1" },
+    { id: 'location', text: "Lokasi dimana? 📍", color: "bg-emerald-600", position: "top-[20%] right-[5%]", anim: "animate-drift-2" },
+    { id: 'couple', text: "Siapa pasangannya? 💑", color: "bg-rose-500", position: "bottom-[30%] left-[10%]", anim: "animate-drift-3" },
+    { id: 'gift', text: "Kirim kado 🎁", color: "bg-violet-600", position: "bottom-[15%] right-[5%]", anim: "animate-drift-2" },
+    { id: 'gallery', text: "Lihat foto dong 📸", color: "bg-amber-600", position: "top-[50%] left-[50%] -translate-x-1/2", anim: "animate-drift-1" },
   ];
 
   // --- LOGIC ---
@@ -39,7 +40,6 @@ export default function ChatBubbleTheme({ groom, bride, date, guestName, data })
     setIsTyping(true);
     setShowAnswer(false);
     
-    // Simulasi ngetik
     setTimeout(() => {
         setIsTyping(false);
         setShowAnswer(true);
@@ -72,51 +72,70 @@ export default function ChatBubbleTheme({ groom, bride, date, guestName, data })
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         
-        /* Animasi Mengapung (Floating) */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+        /* Animasi Drift (Gerak Kesana Kemari) */
+        /* Variasi 1: Gerak Melingkar Lebar */
+        @keyframes drift1 {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(40px, 30px); }
+            50% { transform: translate(0, 60px); }
+            75% { transform: translate(-40px, 30px); }
+            100% { transform: translate(0, 0); }
         }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        .delay-100 { animation-delay: 1s; }
-        .delay-200 { animation-delay: 2s; }
-        .delay-300 { animation-delay: 0.5s; }
+        
+        /* Variasi 2: Gerak Diagonal Lebar */
+        @keyframes drift2 {
+            0% { transform: translate(0, 0); }
+            33% { transform: translate(-50px, -40px); }
+            66% { transform: translate(30px, -20px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* Variasi 3: Gerak Vertikal Horizontal Acak */
+        @keyframes drift3 {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-30px, 50px); }
+            50% { transform: translate(50px, 0px); }
+            75% { transform: translate(20px, -40px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .animate-drift-1 { animation: drift1 12s ease-in-out infinite; }
+        .animate-drift-2 { animation: drift2 15s ease-in-out infinite; }
+        .animate-drift-3 { animation: drift3 10s ease-in-out infinite; }
 
         /* Typing Dots */
         @keyframes blink { 0% { opacity: .2; } 20% { opacity: 1; } 100% { opacity: .2; } }
         .typing-dot span { animation: blink 1.4s infinite both; }
         .typing-dot span:nth-child(2) { animation-delay: .2s; }
         .typing-dot span:nth-child(3) { animation-delay: .4s; }
-        
-        /* Wallpaper Chat Pattern */
-        .bg-chat-pattern {
-            background-image: url("https://www.transparenttextures.com/patterns/skulls.png"); /* Ganti dengan pattern chat whatsapp jika ada */
-            opacity: 0.05;
-        }
       `}</style>
 
-      {/* --- LOCK SCREEN (OPENING) --- */}
-      <div className={`fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center text-white transition-transform duration-700 ${isOpen ? '-translate-y-full' : 'translate-y-0'}`}>
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6 animate-bounce">
-              <MessageCircle size={40} className="text-green-400" />
-          </div>
-          <p className="text-gray-400 text-sm mb-2">Incoming Invitation from</p>
-          <h1 className="text-3xl font-bold mb-8">{groom} & {bride}</h1>
+      {/* --- LOCK SCREEN (OPENING - DIMMED COLOR) --- */}
+      {/* Background menggunakan Gradient Redup (Deep Purple ke Dark Slate) biar gak sakit mata */}
+      <div className={`fixed inset-0 z-50 bg-gradient-to-br from-[#2c2e3e] to-[#4a3b45] backdrop-blur-md flex flex-col items-center justify-center text-white transition-transform duration-700 ${isOpen ? '-translate-y-full' : 'translate-y-0'}`}>
           
-          {/* Notification Card */}
-          <div onClick={handleOpen} className="bg-white/10 p-4 rounded-2xl w-80 cursor-pointer hover:bg-white/20 transition border border-white/10 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+          <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 animate-[bounce_2s_infinite]">
+              <MessageCircle size={48} className="text-rose-300" />
+          </div>
+          
+          <p className="text-gray-300 text-sm mb-2 tracking-widest uppercase">Incoming Message</p>
+          <h1 className="text-4xl font-bold mb-10 text-rose-100 drop-shadow-md">{groom} & {bride}</h1>
+          
+          {/* Notification Card (Glass Effect) */}
+          <div onClick={handleOpen} className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl w-80 cursor-pointer hover:bg-white/20 transition border border-white/20 flex items-center gap-4 shadow-lg active:scale-95 transform duration-200">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-rose-300">
                   <img src={photos.groom} className="w-full h-full object-cover"/>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                   <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-sm">{groom}</span>
-                      <span className="text-[10px] text-gray-400">Now</span>
+                      <span className="font-bold text-sm text-white">{groom}</span>
+                      <span className="text-[10px] text-gray-300">Now</span>
                   </div>
-                  <p className="text-xs text-gray-300">Mengundang Anda ke pernikahan kami... 💌</p>
+                  <p className="text-xs text-gray-200">Mengundang Anda ke pernikahan kami... 💌</p>
               </div>
           </div>
-          <p className="mt-8 text-xs text-gray-500 animate-pulse">Ketuk notifikasi untuk membuka</p>
+          
+          <p className="mt-8 text-xs text-gray-400 animate-pulse">Ketuk notifikasi di atas untuk membuka</p>
       </div>
 
 
@@ -125,8 +144,8 @@ export default function ChatBubbleTheme({ groom, bride, date, guestName, data })
           
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
-             <img src={photos.bg} className="w-full h-full object-cover opacity-20 filter blur-sm" alt="bg"/>
-             <div className="absolute inset-0 bg-gradient-to-b from-[#E5E5E5] via-transparent to-[#E5E5E5]"></div>
+             <img src={photos.bg} className="w-full h-full object-cover opacity-30 filter blur-sm" alt="bg"/>
+             <div className="absolute inset-0 bg-[#E5E5E5]/80"></div>
           </div>
 
           {/* Header */}
@@ -141,8 +160,8 @@ export default function ChatBubbleTheme({ groom, bride, date, guestName, data })
               <button 
                   key={q.id}
                   onClick={() => handleBubbleClick(q.id)}
-                  className={`absolute z-20 px-5 py-3 rounded-full shadow-xl text-white font-semibold text-sm transform transition hover:scale-110 active:scale-95 animate-float flex items-center gap-2 ${q.color} ${q.position}`}
-                  style={{ animationDelay: `${i * 0.5}s` }}
+                  className={`absolute z-20 px-5 py-3 rounded-full shadow-lg text-white font-semibold text-sm transform transition hover:scale-110 active:scale-95 flex items-center gap-2 ${q.color} ${q.position} ${q.anim}`}
+                  style={{ animationDelay: `${i * 0.8}s` }} // Delay beda-beda biar geraknya natural
               >
                   {q.text}
               </button>
