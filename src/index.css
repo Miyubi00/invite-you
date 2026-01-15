@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Kita set default font ke Poppins */
+  --font-sans: "Poppins", sans-serif;
+  
+  /* Definisi Warna Custom sesuai request (Opsional, biar rapi) */
+  --color-brand-nav: #712E1E;
+  --color-brand-nav-text: #FFD5AF;
+  --color-brand-bg: #FFD5AF;
+  --color-brand-text: #712E1E;
+  --color-brand-muted: #888870;
+  --color-brand-primary: #E59A59;
+}
+
+/* Pastikan body menggunakan warna background yang diminta */
+body {
+  background-color: var(--color-brand-bg);
+  font-family: var(--font-sans);
+  color: var(--color-brand-text);
+}
