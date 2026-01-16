@@ -239,6 +239,11 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
               <span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.minutes}</span>
               <span className="font-body text-sm uppercase tracking-widest">Mins</span>
             </div>
+            <span className="font-title text-4xl text-[#D4C4B7]">:</span>
+            <div className="flex flex-col items-center">
+              <span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.seconds}</span>
+              <span className="font-body text-sm uppercase tracking-widest">Sec</span>
+            </div>
           </div>
           <div className="mt-8 flex justify-center gap-2">
             <Heart className="w-4 h-4 text-red-300 animate-bounce" fill="#FCA5A5" />

@@ -17,6 +17,11 @@ import IphoneTheme from './themes/IphoneTheme';
 import BitTheme from './themes/BitTheme';
 import ComicTheme from './themes/ComicTheme';
 import DiaryTheme from './themes/DiaryTheme';
+import CloudySkyTheme from './themes/CloudSkyTheme'
+import CyberpunkTheme from './themes/CyberPunkTheme';
+import CinamonTheme from './themes/CinamonTheme'
+import InstaTheme from './themes/InstaTheme'
+import HelloKityTheme from './themes/HelloKityTheme'
 
 const templates = {
   'rustic-floral': RusticTheme,
@@ -27,17 +32,26 @@ const templates = {
   'navy-gold': NavyGoldTheme,
   'bohaemin': BohaeminTheme,
   'elegant-pastel': ElegantTheme,
-  'iphone' : IphoneTheme,
-  'bit' : BitTheme,
-  'comic' : ComicTheme,
-  'diary' : DiaryTheme,
-  // 🔽 NEW THEMES
+  'iphone': IphoneTheme,
+  'bit': BitTheme,
+  'comic': ComicTheme,
+  'diary': DiaryTheme,
+
+  // 🔽 NEW THEMES (LOCAL / PREMIUM)
   'japanese': JapaneseTheme,
   'javanese': JavaneseTheme,
   'lilac': LilacTheme,
   'playful-pop': PlayfulPopTheme,
   'static-canvas': StaticCanvasTheme,
+
+  // 🔽 NEW EXPERIMENTAL / VIRAL THEMES
+  'cloud-sky': CloudySkyTheme,
+  'cyberpunk': CyberpunkTheme,
+  'cinamon': CinamonTheme,
+  'insta': InstaTheme,
+  'hello-kitty': HelloKityTheme,
 };
+
 
 export const getTemplateComponent = (slug) => {
   return templates[slug] || RusticTheme;
