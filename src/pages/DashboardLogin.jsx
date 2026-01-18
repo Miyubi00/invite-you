@@ -58,6 +58,7 @@ export default function DashboardLogin() {
       
       // Simpan Session ID (PENTING untuk Dashboard.jsx)
       sessionStorage.setItem('active_order_id', data.id);
+      sessionStorage.setItem('order_pin', pinValue);
       
       setTimeout(() => {
           // Redirect ke Dashboard dengan ID Order

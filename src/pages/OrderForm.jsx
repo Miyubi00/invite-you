@@ -96,9 +96,12 @@ export default function OrderForm() {
 
       const { data, error } = await supabase.functions.invoke('create-order', {
         body: {
-          ...formData,
+          groom_name: formData.groom_name,
+          bride_name: formData.bride_name,
+          wedding_date: formData.wedding_date,
           whatsapp: finalWhatsapp,
-          price: selectedTemplate.price
+          pin_code: formData.pin_code,
+          template_slug: formData.template_slug
         }
       });
 
