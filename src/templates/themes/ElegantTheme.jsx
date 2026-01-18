@@ -8,6 +8,8 @@ export default function ElegantResponsiveTheme({ groom, bride, date, guestName, 
   const [isOpen, setIsOpen] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef(null);
+  const audioUrl = data?.audio_url || '';
+
 
   // --- COUNTDOWN STATE ---
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -30,7 +32,7 @@ export default function ElegantResponsiveTheme({ groom, bride, date, guestName, 
   const gallery = data?.gallery || [];
   const banks = data?.banks || [];
   const quote = data?.quote || "Dan segala sesuatu Kami ciptakan berpasang-pasangan supaya kamu mengingat kebesaran Allah.";
-  const quoteSource = data?.quote_source || "QS. Adz-Dzariyat: 49";
+  const quoteSource = data?.quote_src || "QS. Adz-Dzariyat: 49";
   
   const details = data || {
     venue_name: "Grand Ballroom Hotel",
@@ -339,7 +341,7 @@ export default function ElegantResponsiveTheme({ groom, bride, date, guestName, 
         </button>
       </div>
 
-      <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3?filename=wedding-piano-122972.mp3" loop />
+      {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
     
     </div>
   );

@@ -8,6 +8,8 @@ export default function RusticTheme({ groom, bride, date, guestName, data }) {
   const [isOpen, setIsOpen] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef(null);
+  const audioUrl = data?.audio_url || '';
+
 
   // --- COUNTDOWN STATE ---
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -30,7 +32,7 @@ export default function RusticTheme({ groom, bride, date, guestName, data }) {
   const gallery = data?.gallery || [];
   const banks = data?.banks || [];
   const quote = data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya.";
-  const quoteSource = data?.quote_source || "QS. Ar-Rum: 21";
+  const quoteSource = data?.quote_src || "QS. Ar-Rum: 21";
   
   const details = data || {
     venue_name: "Grand Garden Venue",
@@ -346,8 +348,7 @@ export default function RusticTheme({ groom, bride, date, guestName, data }) {
           {audioPlaying ? <Music className="w-6 h-6" /> : <Play className="w-6 h-6 fill-current pl-1"/>}
         </button>
         
-        <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_243544c06f.mp3?filename=wedding-cinematic-11166.mp3" loop />
-
+        {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
       </div>
     </div>
   );

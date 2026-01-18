@@ -1,13 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import {
     Heart, MapPin, Calendar, Clock, Copy,
-    Music, Play, Pause, ChevronDown, Zap, Send
+    Music, Play, Pause, ChevronDown, Zap, Send, Quote, MessageSquare, CheckCircle2
 } from 'lucide-react';
 
-export default function ComicTheme({ groom, bride, date, guestName, data }) {
+export default function ComicTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef(null);
+
+    // --- RSVP STATE ---
+    const [rsvpStatus, setRsvpStatus] = useState('hadir');
+    const [rsvpPax, setRsvpPax] = useState(1);
+    const [rsvpMessage, setRsvpMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
 
     // --- COUNTDOWN STATE ---
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -27,6 +33,9 @@ export default function ComicTheme({ groom, bride, date, guestName, data }) {
     ];
 
     const banks = data?.banks || [];
+    const quote = data?.quote || "Two souls with but a single thought, two hearts that beat as one.";
+    const quoteSrc = data?.quote_src || "John Keats";
+    const audioUrl = data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3";
 
     const formattedDate = new Date(date || new Date()).toLocaleDateString('id-ID', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -65,6 +74,14 @@ export default function ComicTheme({ groom, bride, date, guestName, data }) {
         }, 500);
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!onRsvpSubmit) return alert("Mode Demo: RSVP Disabled");
+        setIsSending(true);
+        await onRsvpSubmit({ status: rsvpStatus, pax: parseInt(rsvpPax), message: rsvpMessage });
+        setIsSending(false);
+    };
+
     return (
         // CONTAINER: Off-White Paper Texture
         <div className="bg-[#F7F3E8] text-black min-h-screen relative overflow-x-hidden font-sans selection:bg-[#E63946] selection:text-white">
@@ -101,27 +118,51 @@ export default function ComicTheme({ groom, bride, date, guestName, data }) {
             color: white;
         }
 
+        .comic-input {
+            width: 100%;
+            border: 3px solid black;
+            padding: 10px;
+            font-family: 'Comic Neue', cursive;
+            font-weight: bold;
+            font-size: 1rem;
+            outline: none;
+            background: #fff;
+            transition: all 0.2s;
+        }
+        .comic-input:focus {
+            box-shadow: 4px 4px 0 #F4D35E;
+            transform: translate(-2px, -2px);
+        }
+
         /* Speech Bubbles */
         .speech-bubble {
             background: white;
             border: 2px solid black;
             border-radius: 50%;
-            padding: 10px;
+            padding: 20px;
             position: relative;
             text-align: center;
-            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
         }
         .speech-bubble::after {
             content: ''; position: absolute; bottom: -10px; left: 20%;
-            border-width: 10px 10px 0; border-style: solid;
+            border-width: 15px 15px 0; border-style: solid;
             border-color: black transparent; display: block; width: 0;
         }
-        .speech-bubble-rect {
-            background: white;
+        
+        .chat-bubble-comic {
+            background: #fff;
             border: 2px solid black;
+            border-radius: 12px;
             padding: 10px;
             position: relative;
-            box-shadow: 4px 4px 0 black;
+            box-shadow: 3px 3px 0 #E5E7EB;
+        }
+        .chat-bubble-comic::before {
+            content: ''; position: absolute; top: 12px; left: -8px;
+            width: 12px; height: 12px; background: #fff;
+            border-left: 2px solid black; border-bottom: 2px solid black;
+            transform: rotate(45deg);
         }
 
         /* Caption Box */
@@ -219,15 +260,15 @@ export default function ComicTheme({ groom, bride, date, guestName, data }) {
                 {/* PANEL 2: STORY & QUOTE */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="comic-panel p-4 flex items-center justify-center bg-[#F4D35E] rotate-1">
-                        <div className="text-center">
-                            <p className="font-hand text-lg font-bold leading-tight">
-                                “{data?.quote || "Two hearts, one story. Ready to start the next chapter together!"}”
+                        <div className="speech-bubble relative z-10">
+                            <Quote className="absolute -top-4 -left-2 w-6 h-6 text-black fill-black opacity-20"/>
+                            <p className="font-hand text-lg font-bold leading-tight relative z-10">
+                                “{quote}”
                             </p>
-                            <span className="block mt-2 text-sm opacity-70">
-                                — {data?.quote_source}
+                            <span className="block mt-2 text-sm font-comic-head text-gray-500 uppercase">
+                                — {quoteSrc}
                             </span>
                         </div>
-
                     </div>
                     <div className="comic-panel p-0 overflow-hidden -rotate-1">
                         <img src={photos.cover} className="w-full h-full object-cover grayscale contrast-125" />
@@ -350,7 +391,96 @@ export default function ComicTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 )}
 
-                {/* PANEL 7: GIFT (BANK CARD) */}
+                {/* PANEL 7: RSVP (COMIC DIALOGUE) */}
+                <div className="comic-panel p-6 bg-white rotate-1">
+                    <div className="absolute -top-4 right-6 bg-black text-white p-2 font-comic-head text-xl rotate-3 shadow-[4px_4px_0_#F4D35E]">
+                        SAY SOMETHING!
+                    </div>
+                    
+                    <h2 className="font-comic-head text-3xl mb-4 flex items-center gap-2">
+                        <MessageSquare className="text-[#E63946]" /> RSVP & WISHES
+                    </h2>
+
+                    {submittedData ? (
+                        <div className="bg-[#A8DADC] border-2 border-black p-6 text-center shadow-[4px_4px_0_black]">
+                            <CheckCircle2 size={48} className="mx-auto mb-2 text-[#1D3557]" />
+                            <h3 className="font-comic-head text-2xl text-[#1D3557]">THANKS HERO!</h3>
+                            <p className="font-comic-body font-bold mt-2">Your message has been sent to HQ.</p>
+                            <div className="mt-4 bg-white border-2 border-black p-2 text-left italic">
+                                "{submittedData.message}"
+                            </div>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="font-comic-head text-sm block mb-1">NAME</label>
+                                    <input value={guestName} disabled className="comic-input bg-gray-100 text-gray-500" />
+                                </div>
+                                <div>
+                                    <label className="font-comic-head text-sm block mb-1">ACTION</label>
+                                    <select value={rsvpStatus} onChange={(e) => setRsvpStatus(e.target.value)} className="comic-input cursor-pointer">
+                                        <option value="hadir">I'M IN! (HADIR)</option>
+                                        <option value="tidak_hadir">NOPE (ABSEN)</option>
+                                        <option value="ragu">MAYBE (RAGU)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            {rsvpStatus === 'hadir' && (
+                                <div>
+                                    <label className="font-comic-head text-sm block mb-1">TEAM SIZE</label>
+                                    <select value={rsvpPax} onChange={(e) => setRsvpPax(e.target.value)} className="comic-input cursor-pointer">
+                                        {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} PERSON</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            <div>
+                                <label className="font-comic-head text-sm block mb-1">MESSAGE</label>
+                                <textarea required value={rsvpMessage} onChange={(e) => setRsvpMessage(e.target.value)} className="comic-input h-24" placeholder="Type something cool..." />
+                            </div>
+                            <button disabled={isSending} className="w-full bg-[#E63946] text-white font-comic-head text-xl py-3 border-2 border-black shadow-[4px_4px_0_black] hover:translate-y-[2px] hover:shadow-[2px_2px_0_black] transition-all flex items-center justify-center gap-2">
+                                {isSending ? 'SENDING...' : <><Send size={20}/> SEND IT!</>}
+                            </button>
+                        </form>
+                    )}
+
+                    {/* COMIC CHAT LIST */}
+                    <div className="mt-8 space-y-4 max-h-[400px] overflow-y-auto pr-2 border-t-4 border-black pt-4 border-dashed">
+                        {(data?.rsvps || []).length === 0 ? (
+                            <p className="text-center font-comic-body font-bold text-gray-400">NO MESSAGES YET...</p>
+                        ) : (
+                            (data?.rsvps || []).map((item, idx) => (
+                                <div key={idx} className="flex gap-3 items-start animate-pop">
+                                    <div className="w-10 h-10 bg-black text-white border-2 border-black rounded-full flex items-center justify-center font-comic-head text-lg shrink-0">
+                                        {item.guest_name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="chat-bubble-comic">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="font-comic-head text-sm">{item.guest_name}</span>
+                                                <span className={`text-[10px] px-2 border border-black font-bold uppercase ${item.status === 'hadir' ? 'bg-[#A8DADC]' : 'bg-[#F4D35E]'}`}>
+                                                    {item.status}
+                                                </span>
+                                            </div>
+                                            <p className="font-comic-body text-sm leading-tight">{item.message}</p>
+                                        </div>
+                                        {item.reply && (
+                                            <div className="flex gap-2 mt-2 justify-end">
+                                                <div className="bg-[#1D3557] text-white p-2 rounded-lg border-2 border-black shadow-[2px_2px_0_gray] max-w-[80%] relative">
+                                                    <div className="absolute -right-2 top-2 w-4 h-4 bg-[#1D3557] border-r-2 border-t-2 border-black transform rotate-45"></div>
+                                                    <p className="font-comic-head text-xs text-[#F4D35E] mb-1">ADMIN REPLY:</p>
+                                                    <p className="font-comic-body text-xs">{item.reply}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* PANEL 8: GIFT (BANK CARD) */}
                 <div className="comic-panel p-6 bg-[#E9ECEF]">
                     <div className="absolute -top-4 left-4 font-comic-head text-6xl text-[#1D3557] opacity-20 rotate-[-10deg] pointer-events-none">$$$</div>
                     <h2 className="font-comic-head text-3xl text-center mb-6">WEDDING GIFT</h2>
@@ -377,7 +507,7 @@ export default function ComicTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 </div>
 
-                {/* PANEL 8: CLOSING */}
+                {/* PANEL 9: CLOSING */}
                 <div className="text-center py-10">
                     <h2 className="font-comic-head text-5xl text-black text-stroke-white drop-shadow-[3px_3px_0_black] mb-4">
                         THE END...
@@ -402,7 +532,7 @@ export default function ComicTheme({ groom, bride, date, guestName, data }) {
                 </button>
             </div>
 
-            <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3"} loop />
+            <audio ref={audioRef} src={audioUrl} loop />
         </div>
     );
 }

@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import {
     Heart, MessageCircle, Send, Bookmark, MoreHorizontal,
     Home, Search, PlusSquare, User, MapPin, Calendar,
-    ChevronLeft, ChevronRight, Grid, Music, Clock, Copy, CreditCard
+    ChevronLeft, ChevronRight, Grid, Music, Clock, Copy, CreditCard,
+    Quote 
 } from 'lucide-react';
 
 export default function InstaTheme({ groom, bride, date, guestName, data }) {
@@ -13,11 +14,13 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [coupleSlide, setCoupleSlide] = useState(0); // 0 = Groom, 1 = Bride
     const audioRef = useRef(null);
+    const audioUrl = data?.audio_url || '';
     const [showChat, setShowChat] = useState(false); // State untuk popup chat
 
     // --- REFS FOR SCROLLING ---
     const homeRef = useRef(null);
-    const coupleRef = useRef(null); // Ref baru untuk Couple
+    const coupleRef = useRef(null); 
+    const quoteRef = useRef(null); // Ref baru untuk Quote
     const eventRef = useRef(null);
     const galleryRef = useRef(null);
     const giftRef = useRef(null);
@@ -29,13 +32,14 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
     const photos = {
         profile: data?.cover_photo || "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=150&fit=crop",
         feed1: data?.cover_photo || "https://images.unsplash.com/photo-1511285560982-1356c11d4606?w=800&fit=crop",
-        // Foto Mempelai
         groom: data?.groom_photo || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&fit=crop",
         bride: data?.bride_photo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&fit=crop",
-
         gift_bg: "https://images.unsplash.com/photo-1549417229-aa67d3263c09?w=800&fit=crop",
         gallery: data?.gallery || []
     };
+
+    const quote = data?.quote || "And of His signs is that He created for you from yourselves mates that you may find tranquillity in them...";
+    const quoteSrc = data?.quote_src || "QS. Ar-Rum: 21";
 
     const formattedDate = new Date(date || new Date()).toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric'
@@ -106,7 +110,6 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
             <div className="w-full max-w-md bg-white min-h-screen shadow-xl relative pb-16 font-sans">
 
                 {/* --- TOP NAV --- */}
-                {/* --- TOP NAV --- */}
                 <nav className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 py-3 flex justify-between items-center">
                     <h1 className="font-bold text-xl tracking-tight" style={{ fontFamily: 'Grand Hotel, cursive', fontSize: '28px' }}>
                         Instagram
@@ -116,13 +119,11 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             <Heart size={24} className={isPlaying ? "fill-red-500 animate-pulse" : ""} />
                         </div>
 
-                        {/* MODIFIKASI DISINI: Ikon Pesan bisa diklik */}
                         <div
                             className="relative cursor-pointer transition-transform active:scale-90"
                             onClick={() => setShowChat(true)}
                         >
                             <MessageCircle size={24} className="-rotate-90" />
-                            {/* Badge notifikasi merah */}
                             <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-bounce">1</div>
                         </div>
                     </div>
@@ -134,6 +135,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                         {[
                             { name: "Start", img: photos.profile, ref: homeRef },
                             { name: "Couple", img: photos.groom, ref: coupleRef },
+                            { name: "Quote", img: photos.feed1, ref: quoteRef }, // Added Quote Story
                             { name: "Event", img: photos.feed1, ref: eventRef },
                             { name: "Gift", img: photos.gift_bg, ref: giftRef },
                         ].map((story, i) => (
@@ -173,51 +175,62 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 </div>
 
-                {/* POST 2: THE COUPLE (CAROUSEL SLIDE) */}
+                {/* POST 2: QUOTE (NEW) */}
+                <div ref={quoteRef} className="border-b border-gray-100 pb-2">
+                    <PostHeader locationText="Inspiration" />
+                    <div className="relative aspect-square bg-[#FAFAFA] flex flex-col items-center justify-center p-8 text-center" onDoubleClick={() => handleDoubleTap('post_quote')}>
+                        <Quote size={40} className="text-gray-300 mb-4 fill-gray-100"/>
+                        <p className="font-serif text-xl italic text-gray-800 leading-relaxed mb-6">
+                            "{quote}"
+                        </p>
+                        <div className="w-16 h-px bg-gray-300 mb-4"></div>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                            — {quoteSrc}
+                        </p>
+
+                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${showBigHeart === 'post_quote' ? 'opacity-100' : 'opacity-0'}`}>
+                            <Heart size={80} className="text-red-500 fill-red-500 animate-bounce" />
+                        </div>
+                    </div>
+                    <ActionBar id="post_quote" liked={likes['post_quote']} />
+                    <div className="px-3 pb-3">
+                        <p className="text-sm text-black">
+                            <span className="font-semibold mr-2">{username}</span>
+                            Words to live by. ✨
+                        </p>
+                    </div>
+                </div>
+
+                {/* POST 3: THE COUPLE */}
                 <div ref={coupleRef} className="border-b border-gray-100 pb-2">
                     <PostHeader locationText="The Happy Couple" />
-
-                    {/* Carousel Container */}
                     <div className="relative aspect-square bg-gray-100 overflow-hidden group" onDoubleClick={() => handleDoubleTap('post_couple')}>
-
-                        {/* Images */}
                         <div className="absolute inset-0 transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${coupleSlide * 100}%)` }}>
                             <div className="absolute top-0 left-0 w-full h-full">
                                 <img src={photos.groom} className="w-full h-full object-cover" />
-                                {/* Tag Label */}
                                 <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                                     <User size={12} /> The Groom
                                 </div>
                             </div>
                             <div className="absolute top-0 left-full w-full h-full">
                                 <img src={photos.bride} className="w-full h-full object-cover" />
-                                {/* Tag Label */}
                                 <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                                     <User size={12} /> The Bride
                                 </div>
                             </div>
                         </div>
 
-                        {/* Big Heart Animation */}
                         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${showBigHeart === 'post_couple' ? 'opacity-100' : 'opacity-0'}`}>
                             <Heart size={80} className="text-white fill-white animate-bounce" />
                         </div>
 
-                        {/* Nav Buttons (Hidden by default, visible on logic or hover) */}
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setCoupleSlide(0); }}
-                            className={`absolute top-1/2 left-2 -translate-y-1/2 bg-white/80 p-1 rounded-full text-black shadow-md ${coupleSlide === 0 ? 'hidden' : 'block'}`}
-                        >
+                        <button onClick={(e) => { e.stopPropagation(); setCoupleSlide(0); }} className={`absolute top-1/2 left-2 -translate-y-1/2 bg-white/80 p-1 rounded-full text-black shadow-md ${coupleSlide === 0 ? 'hidden' : 'block'}`}>
                             <ChevronLeft size={20} />
                         </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setCoupleSlide(1); }}
-                            className={`absolute top-1/2 right-2 -translate-y-1/2 bg-white/80 p-1 rounded-full text-black shadow-md ${coupleSlide === 1 ? 'hidden' : 'block'}`}
-                        >
+                        <button onClick={(e) => { e.stopPropagation(); setCoupleSlide(1); }} className={`absolute top-1/2 right-2 -translate-y-1/2 bg-white/80 p-1 rounded-full text-black shadow-md ${coupleSlide === 1 ? 'hidden' : 'block'}`}>
                             <ChevronRight size={20} />
                         </button>
 
-                        {/* Slide Indicators (Dots) */}
                         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                             <div className={`w-1.5 h-1.5 rounded-full shadow-sm ${coupleSlide === 0 ? 'bg-blue-500' : 'bg-white/70'}`}></div>
                             <div className={`w-1.5 h-1.5 rounded-full shadow-sm ${coupleSlide === 1 ? 'bg-blue-500' : 'bg-white/70'}`}></div>
@@ -226,7 +239,6 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
 
                     <ActionBar id="post_couple" liked={likes['post_couple']} />
 
-                    {/* Caption with Parents Info */}
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black mb-2">
                             <span className="font-semibold mr-2">{username}</span>
@@ -245,10 +257,9 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 </div>
 
-                {/* POST 3: EVENT INFO */}
+                {/* POST 4: EVENT INFO */}
                 <div ref={eventRef} className="border-b border-gray-100 pb-2">
                     <PostHeader locationText={location} />
-
                     <div className="relative aspect-square bg-[#F8F8F8] flex flex-col items-center justify-center text-center p-8 border-y border-gray-100" onDoubleClick={() => handleDoubleTap('post2')}>
                         <div className="border border-black p-6 w-full h-full flex flex-col items-center justify-center bg-white shadow-sm">
                             <p className="text-xs tracking-[0.3em] uppercase text-gray-500 mb-4">The Wedding</p>
@@ -272,12 +283,10 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                                 </div>
                             </div>
 
-                            {/* Z-INDEX DITAMBAHKAN AGAR TOMBOL DI ATAS */}
                             <a
                                 href={data?.maps_link}
                                 target="_blank"
                                 rel="noreferrer"
-                                // Stop propagation agar double click di parent tidak terganggu (opsional)
                                 onDoubleClick={(e) => e.stopPropagation()}
                                 className="mt-6 bg-blue-500 text-white text-xs font-bold py-2 px-6 rounded-md hover:bg-blue-600 transition relative z-20 cursor-pointer"
                             >
@@ -285,14 +294,11 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             </a>
                         </div>
 
-                        {/* PERBAIKAN: pointer-events-none DITAMBAHKAN */}
                         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${showBigHeart === 'post2' ? 'opacity-100' : 'opacity-0'}`}>
                             <Heart size={80} className="text-red-500 fill-red-500 animate-bounce" />
                         </div>
                     </div>
-
                     <ActionBar id="post2" liked={likes['post2']} />
-
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
                             <span className="font-semibold mr-2">{username}</span>
@@ -301,10 +307,9 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 </div>
 
-                {/* POST 4: GALLERY */}
+                {/* POST 5: GALLERY */}
                 <div ref={galleryRef} className="border-b border-gray-100 pb-2">
                     <PostHeader locationText="Captured Moments" />
-
                     <div className="grid grid-cols-3 gap-0.5" onDoubleClick={() => handleDoubleTap('post3')}>
                         {photos.gallery.slice(0, 6).map((url, i) => (
                             <div key={i} className="aspect-square relative group">
@@ -315,7 +320,6 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             <Heart size={100} className="text-white fill-white shadow-lg animate-ping" />
                         </div>
                     </div>
-
                     <ActionBar id="post3" liked={likes['post3']} />
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
@@ -325,20 +329,17 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 </div>
 
-                {/* POST 5: GIFT */}
+                {/* POST 6: GIFT */}
                 <div ref={giftRef} className="border-b border-gray-100 pb-20">
                     <PostHeader locationText="Wedding Gift" />
-
                     <div className="relative aspect-square bg-gray-50 flex items-center justify-center p-6" onDoubleClick={() => handleDoubleTap('post4')}>
                         <img src={photos.gift_bg} className="absolute inset-0 w-full h-full object-cover opacity-20" />
-
                         <div className="relative z-10 bg-white p-6 rounded-xl shadow-lg w-full max-w-xs border border-gray-200">
                             <div className="text-center mb-6">
                                 <CreditCard className="w-10 h-10 mx-auto text-blue-500 mb-2" />
                                 <h3 className="font-bold text-lg">Digital Envelope</h3>
                                 <p className="text-xs text-gray-500">Your presence is the best gift, but if you wish to contribute:</p>
                             </div>
-
                             <div className="space-y-4">
                                 {banks.map((bank, i) => (
                                     <div key={i} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
@@ -357,12 +358,10 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                                 ))}
                             </div>
                         </div>
-
                         <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 pointer-events-none ${showBigHeart === 'post4' ? 'opacity-100' : 'opacity-0'}`}>
                             <Heart size={100} className="text-red-500 fill-red-500 animate-bounce" />
                         </div>
                     </div>
-
                     <ActionBar id="post4" liked={likes['post4']} />
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
@@ -372,39 +371,31 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 </div>
 
-
                 {/* --- BOTTOM NAVIGATION (STICKY) --- */}
                 <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 px-6 py-3 flex justify-between items-center z-50">
                     <button onClick={() => scrollToSection(homeRef, 'home')}>
                         <Home size={26} className={activeTab === 'home' ? "text-black fill-black" : "text-gray-500"} />
                     </button>
-
-                    {/* Search now goes to Couple Profile */}
                     <button onClick={() => scrollToSection(coupleRef, 'search')}>
                         <Search size={26} className={activeTab === 'search' ? "text-black stroke-[3px]" : "text-gray-500"} />
                     </button>
-
                     <button onClick={() => scrollToSection(galleryRef, 'add')}>
                         <PlusSquare size={26} className={activeTab === 'add' ? "text-black stroke-[2.5px]" : "text-gray-500"} />
                     </button>
-
                     <button onClick={() => scrollToSection(giftRef, 'heart')}>
                         <Heart size={26} className={activeTab === 'heart' ? "text-black fill-black" : "text-gray-500"} />
                     </button>
-
                     <button onClick={() => scrollToSection(homeRef, 'profile')}>
                         <div className={`w-6 h-6 rounded-full overflow-hidden border ${activeTab === 'profile' ? 'border-black border-2' : 'border-gray-300'}`}>
                             <img src={photos.profile} className="w-full h-full object-cover" />
                         </div>
                     </button>
                 </div>
+
                 {/* --- POPUP DM CHAT --- */}
                 {showChat && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                        {/* Chat Card */}
                         <div className="bg-white w-full max-w-sm h-[400px] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-
-                            {/* Header Chat */}
                             <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-white sticky top-0">
                                 <div className="flex items-center gap-3">
                                     <button onClick={() => setShowChat(false)} className="text-black">
@@ -420,17 +411,12 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                                         </div>
                                     </div>
                                 </div>
-                                {/* Tombol Close Tambahan */}
                                 <button onClick={() => setShowChat(false)} className="text-gray-500 hover:text-red-500">
                                     <span className="text-xs font-bold">Tutup</span>
                                 </button>
                             </div>
-
-                            {/* Chat Body */}
                             <div className="flex-1 bg-white p-4 overflow-y-auto flex flex-col gap-4">
                                 <p className="text-center text-[10px] text-gray-400 my-2">Today {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-
-                                {/* Bubble Chat Couple */}
                                 <div className="flex items-end gap-2">
                                     <img src={photos.profile} className="w-7 h-7 rounded-full object-cover mb-1" />
                                     <div className="bg-gray-100 border border-gray-200 text-black px-4 py-2 rounded-2xl rounded-bl-none text-sm max-w-[80%] shadow-sm">
@@ -438,14 +424,12 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                                     </div>
                                 </div>
                                 <div className="flex items-end gap-2">
-                                    <div className="w-7 shrink-0"></div> {/* Spacer */}
+                                    <div className="w-7 shrink-0"></div>
                                     <div className="bg-gray-100 border border-gray-200 text-black px-4 py-2 rounded-2xl text-sm max-w-[80%] shadow-sm">
                                         Jangan lupa datang ya di acara pernikahan kami! Kami tunggu kehadirannya 🥰
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Fake Input */}
                             <div className="p-3 border-t border-gray-100 flex items-center gap-3 bg-white">
                                 <div className="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white shrink-0">
                                     <User size={14} fill="white" />
@@ -459,7 +443,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 )}
 
-                <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/02/07/audio_1808fbf07a.mp3"} loop />
+                {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
 
             </div>
         </div>

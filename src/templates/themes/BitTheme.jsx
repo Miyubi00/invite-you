@@ -1,14 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Gamepad2, Heart, MapPin, Calendar, Gift, 
-  Play, Pause, X, ChevronRight, Trophy, Image as ImageIcon 
+  Play, Pause, X, ChevronRight, Trophy, Image as ImageIcon,
+  Quote, MessageSquare, Save, Terminal
 } from 'lucide-react';
 
-export default function EightBitTheme({ groom, bride, date, guestName, data }) {
+export default function EightBitTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }) {
   const [gameStarted, setGameStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
   const sfxRef = useRef(null); // Efek suara tombol
+
+  // --- RSVP STATE ---
+  const [rsvpStatus, setRsvpStatus] = useState('hadir');
+  const [rsvpPax, setRsvpPax] = useState(1);
+  const [rsvpMessage, setRsvpMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   // --- COUNTDOWN STATE ---
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -17,7 +24,7 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
   const photos = {
     groom: data?.groom_photo || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&fit=crop",
     bride: data?.bride_photo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop",
-    cover: data?.cover_photo || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&fit=crop" // Retro vibes
+    cover: data?.cover_photo || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&fit=crop"
   };
 
   const gallery = data?.gallery || [
@@ -28,6 +35,9 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
   ];
   
   const banks = data?.banks || [];
+  const quote = data?.quote || "It's dangerous to go alone! Take this love.";
+  const quoteSrc = data?.quote_src || "Unknown Hero";
+  const audioUrl = data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3";
 
   const formattedDate = new Date(date || new Date()).toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'
@@ -79,6 +89,15 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
       alert("COINS ADDRESS COPIED!");
   }
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    playSfx();
+    if (!onRsvpSubmit) return alert("Mode Demo: RSVP Disabled");
+    setIsSending(true);
+    await onRsvpSubmit({ status: rsvpStatus, pax: parseInt(rsvpPax), message: rsvpMessage });
+    setIsSending(false);
+  };
+
   return (
     // MAIN CONTAINER: Dark Retro Console
     <div className="bg-[#0F172A] text-white min-h-screen relative overflow-x-hidden font-pixel selection:bg-[#22C55E] selection:text-black">
@@ -112,9 +131,18 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
                 0 4px 0 0 white;
             margin: 4px;
         }
-        .pixel-box-green {
-            box-shadow: -4px 0 0 0 #22C55E, 4px 0 0 0 #22C55E, 0 -4px 0 0 #22C55E, 0 4px 0 0 #22C55E;
+        
+        .pixel-input {
+            background: #000;
+            border: 4px solid #333;
+            color: #22C55E;
+            font-family: 'VT323', monospace;
+            width: 100%;
+            padding: 8px;
+            outline: none;
         }
+        .pixel-input:focus { border-color: #22C55E; }
+
         .pixel-btn:active { transform: translateY(4px); }
 
         /* Animations */
@@ -165,8 +193,30 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
             <p className="font-pixel-body text-xl text-gray-300">MISSION: CELEBRATE LOVE</p>
         </header>
 
-        {/* 2. CHARACTER SELECT (COUPLE) */}
+        {/* 2. QUOTE (RPG DIALOGUE STYLE) */}
         <section className="mb-12 animate-enter">
+            <div className="border-4 border-white bg-[#1E3A8A] p-4 relative shadow-lg">
+                {/* Pointer Box Name */}
+                <div className="absolute -top-4 left-4 bg-white border-4 border-[#1E3A8A] px-2 py-1">
+                    <p className="font-pixel-head text-[10px] text-black uppercase">NPC QUOTE</p>
+                </div>
+                
+                <div className="flex gap-4 items-start pt-2">
+                    <Quote className="text-white shrink-0 mt-1" size={24}/>
+                    <div className="space-y-2">
+                        <p className="font-pixel-body text-xl leading-relaxed text-white typing-effect">
+                            "{quote}"
+                        </p>
+                        <p className="font-pixel-head text-[10px] text-[#FACC15] text-right mt-2 animate-pulse">
+                            ▼ {quoteSrc}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {/* 3. CHARACTER SELECT (COUPLE) */}
+        <section className="mb-12 animate-enter" style={{animationDelay: '0.2s'}}>
             <div className="bg-[#1E293B] border-4 border-white p-1 mb-2">
                <h2 className="bg-[#EF4444] text-white font-pixel-head text-xs p-2 text-center">CHOOSE CHARACTER</h2>
             </div>
@@ -208,8 +258,8 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
             </div>
         </section>
 
-        {/* 3. COUNTDOWN (BOSS BATTLE) */}
-        <section className="mb-12 text-center animate-enter" style={{animationDelay: '0.2s'}}>
+        {/* 4. COUNTDOWN (BOSS BATTLE) */}
+        <section className="mb-12 text-center animate-enter" style={{animationDelay: '0.4s'}}>
             <div className="bg-black border-4 border-[#FACC15] p-6 pixel-box relative">
                 <p className="font-pixel-head text-[#FACC15] text-xs mb-4 animate-blink">⚠ FINAL BOSS APPROACHING ⚠</p>
                 <div className="grid grid-cols-4 gap-2 text-white">
@@ -221,14 +271,13 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
             </div>
         </section>
 
-        {/* 4. MISSION DETAILS (EVENT) */}
-        <section className="mb-12 animate-enter" style={{animationDelay: '0.4s'}}>
+        {/* 5. MISSION DETAILS (EVENT) */}
+        <section className="mb-12 animate-enter" style={{animationDelay: '0.6s'}}>
             <h2 className="font-pixel-head text-white text-center mb-6 text-sm flex items-center justify-center gap-2">
                 <MapPin size={16}/> MISSION BRIEFING
             </h2>
 
             <div className="space-y-6">
-                {/* Akad Box */}
                 <div className="bg-[#1E293B] p-4 border-l-8 border-[#22C55E] relative">
                     <div className="font-pixel-head text-xs text-[#22C55E] mb-2">STAGE 1: AKAD NIKAH</div>
                     <div className="font-pixel-body text-xl">
@@ -238,7 +287,6 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
                     </div>
                 </div>
 
-                {/* Resepsi Box */}
                 <div className="bg-[#1E293B] p-4 border-l-8 border-[#EF4444] relative">
                     <div className="font-pixel-head text-xs text-[#EF4444] mb-2">STAGE 2: RECEPTION</div>
                     <div className="font-pixel-body text-xl">
@@ -246,7 +294,6 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
                         <p>TIME: {data?.resepsi_time}</p>
                         <p className="text-gray-400 mt-2">LOC: {data?.venue_address}</p>
                     </div>
-                    
                     <a href={data?.maps_link} target="_blank" className="mt-4 block bg-white text-black font-pixel-head text-xs text-center py-3 border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 hover:bg-gray-200 transition">
                         OPEN MAP SYSTEM
                     </a>
@@ -254,9 +301,92 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
             </div>
         </section>
 
-        {/* 5. GALLERY (INVENTORY) */}
+        {/* 6. RSVP (COMMS LINK / SAVE POINT) */}
+        <section className="mb-12 animate-enter" style={{animationDelay: '0.8s'}}>
+            <div className="bg-black border-4 border-[#22C55E] p-4 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                <div className="flex items-center gap-2 text-[#22C55E] border-b-2 border-[#22C55E] pb-2 mb-4">
+                    <Terminal size={20} />
+                    <h2 className="font-pixel-head text-xs">COMMS CHANNEL (RSVP)</h2>
+                </div>
+
+                {submittedData ? (
+                    <div className="text-center py-6 text-[#22C55E]">
+                        <Save size={48} className="mx-auto mb-4 animate-pulse" />
+                        <p className="font-pixel-head text-sm mb-2">GAME SAVED!</p>
+                        <p className="font-pixel-body">Your message has been transmitted.</p>
+                        <div className="mt-4 border border-[#22C55E] p-2 text-left">
+                            <p className="text-xs text-gray-400">STATUS: {submittedData.status}</p>
+                            <p className="text-xs text-gray-400">MSG: "{submittedData.message}"</p>
+                        </div>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="font-pixel-head text-[10px] text-gray-400 mb-1 block">PLAYER NAME</label>
+                            <input value={guestName} disabled className="pixel-input text-gray-500 cursor-not-allowed border-gray-600" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="font-pixel-head text-[10px] text-gray-400 mb-1 block">STATUS</label>
+                                <select value={rsvpStatus} onChange={(e) => setRsvpStatus(e.target.value)} className="pixel-input cursor-pointer">
+                                    <option value="hadir">JOIN GAME</option>
+                                    <option value="tidak_hadir">LEAVE GAME</option>
+                                    <option value="ragu">AFK (MAYBE)</option>
+                                </select>
+                            </div>
+                            {rsvpStatus === 'hadir' && (
+                                <div>
+                                    <label className="font-pixel-head text-[10px] text-gray-400 mb-1 block">PARTY SIZE</label>
+                                    <select value={rsvpPax} onChange={(e) => setRsvpPax(e.target.value)} className="pixel-input cursor-pointer">
+                                        {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} P</option>)}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <label className="font-pixel-head text-[10px] text-gray-400 mb-1 block">TRANSMISSION (MSG)</label>
+                            <textarea required value={rsvpMessage} onChange={(e) => setRsvpMessage(e.target.value)} className="pixel-input h-24" placeholder="ENTER TEXT..." />
+                        </div>
+                        <button disabled={isSending} className="w-full bg-[#22C55E] text-black font-pixel-head text-xs py-4 hover:bg-[#86EFAC] pixel-btn border-b-4 border-[#15803D] active:border-b-0 active:mt-1 disabled:opacity-50">
+                            {isSending ? 'SAVING...' : 'SAVE & SEND'}
+                        </button>
+                    </form>
+                )}
+
+                {/* CHAT LOGS (SERVER MESSAGES) */}
+                <div className="mt-8 border-t-2 border-[#22C55E] pt-4">
+                    <p className="font-pixel-head text-[10px] text-[#22C55E] mb-4">SERVER LOGS:</p>
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 font-pixel-body">
+                        {(data?.rsvps || []).length === 0 ? (
+                            <p className="text-gray-600 text-center">NO DATA FOUND...</p>
+                        ) : (
+                            (data?.rsvps || []).map((item, idx) => (
+                                <div key={idx} className="mb-4">
+                                    <div className="flex gap-2 text-[#22C55E]">
+                                        <span className="text-yellow-400">{`>`}</span>
+                                        <span className="font-bold text-white uppercase">{item.guest_name}</span>
+                                        <span className={`text-xs px-1 ${item.status === 'hadir' ? 'bg-[#22C55E] text-black' : 'bg-red-500 text-white'}`}>
+                                            [{item.status === 'hadir' ? 'JOINED' : item.status === 'tidak_hadir' ? 'LEFT' : 'AFK'}]
+                                        </span>
+                                    </div>
+                                    <p className="pl-4 text-gray-300 text-lg leading-none mt-1">"{item.message}"</p>
+                                    
+                                    {item.reply && (
+                                        <div className="pl-8 mt-2 text-[#FACC15]">
+                                            <span className="text-red-500">ADMIN:</span> "{item.reply}"
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {/* 7. GALLERY (INVENTORY) */}
         {gallery.length > 0 && (
-          <section className="mb-12 animate-enter" style={{animationDelay: '0.6s'}}>
+          <section className="mb-12 animate-enter" style={{animationDelay: '1.0s'}}>
               <h2 className="font-pixel-head text-white text-center mb-6 text-sm flex items-center justify-center gap-2">
                   <ImageIcon size={16}/> UNLOCKED MEMORIES
               </h2>
@@ -270,8 +400,8 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
           </section>
         )}
 
-        {/* 6. GIFT (LOOT BOX) */}
-        <section className="mb-12 text-center animate-enter" style={{animationDelay: '0.8s'}}>
+        {/* 8. GIFT (LOOT BOX) */}
+        <section className="mb-12 text-center animate-enter" style={{animationDelay: '1.2s'}}>
             <div className="border-4 border-dashed border-[#FACC15] p-6 bg-[#0F172A] relative">
                 <Trophy size={32} className="text-[#FACC15] mx-auto mb-4 animate-bounce" />
                 <h2 className="font-pixel-head text-[#FACC15] text-sm mb-4">LOOT CHEST (GIFT)</h2>
@@ -294,7 +424,7 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
             </div>
         </section>
 
-        {/* 7. FOOTER */}
+        {/* 9. FOOTER */}
         <footer className="text-center border-t-4 border-white pt-8 opacity-60">
             <p className="font-pixel-head text-xs text-[#22C55E] mb-2">GAME OVER</p>
             <p className="font-pixel-body text-sm">THANK YOU FOR PLAYING!</p>
@@ -305,7 +435,6 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
 
       {/* FLOATING CONTROLS */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-4">
-          {/* Back to Top */}
           <button 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="w-12 h-12 bg-white border-4 border-black shadow-[4px_4px_0_black] flex items-center justify-center hover:bg-gray-200 active:translate-y-1 active:shadow-none transition-all"
@@ -313,7 +442,6 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
               <div className="w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-b-[12px] border-b-black"></div>
           </button>
 
-          {/* Audio Toggle */}
           <button 
             onClick={toggleAudio}
             className="w-12 h-12 bg-[#FACC15] border-4 border-black shadow-[4px_4px_0_black] flex items-center justify-center hover:bg-yellow-300 active:translate-y-1 active:shadow-none transition-all"
@@ -323,7 +451,7 @@ export default function EightBitTheme({ groom, bride, date, guestName, data }) {
       </div>
 
       {/* AUDIO & SFX */}
-      <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3"} loop />
+      <audio ref={audioRef} src={audioUrl} loop />
       <audio ref={sfxRef} src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c153e2.mp3" /> 
     </div>
   );

@@ -8,6 +8,8 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef(null);
+    const audioUrl = data?.audio_url || '';
+
 
     // --- COUNTDOWN STATE ---
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -146,7 +148,7 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
                 {/* 1. HERO HEADER */}
                 <header className="min-h-screen relative flex flex-col justify-end pb-20 px-6 overflow-hidden">
                     {/* Background Image Parallax */}
-                    <div className="absolute inset-0 z-[-1] opacity-90">
+                    <div className="absolute inset-0 z-0 opacity-90">
                         <img src={photos.cover} className="w-full h-full object-cover" alt="Cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#fff0f3] via-[#fff0f3]/60 to-transparent"></div>
                     </div>
@@ -161,15 +163,16 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
                         <p className="font-sans-mod text-gray-600 text-lg md:text-xl border-l-4 border-[#db2777] pl-4 md:ml-2 mt-4">
                             {formattedDate}
                         </p>
+                        <div className="mt-12 flex flex-wrap justify-center md:justify-start gap-4 md:gap-8 max-w-4xl mx-auto w-full">
+                            <TimeBlock val={timeLeft.days} label="Days" />
+                            <TimeBlock val={timeLeft.hours} label="Hours" />
+                            <TimeBlock val={timeLeft.minutes} label="Mins" />
+                            <TimeBlock val={timeLeft.seconds} label="Secs" />
+                        </div>
                     </div>
 
                     {/* COUNTDOWN */}
-                    <div className="mt-12 flex flex-wrap justify-center md:justify-start gap-4 md:gap-8 max-w-4xl mx-auto w-full">
-                        <TimeBlock val={timeLeft.days} label="Days" />
-                        <TimeBlock val={timeLeft.hours} label="Hours" />
-                        <TimeBlock val={timeLeft.minutes} label="Mins" />
-                        <TimeBlock val={timeLeft.seconds} label="Secs" />
-                    </div>
+
                 </header>
 
                 {/* 2. QUOTE (Minimalist) */}
@@ -181,7 +184,7 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
                             "{data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri."}"
                         </p>
                         <p className="mt-6 font-sans-mod font-bold text-xs tracking-[0.2em] text-[#db2777] uppercase">
-                            — {data?.quote_source || "QS. Ar-Rum: 21"}
+                            — {data?.quote_src || "QS. Ar-Rum: 21"}
                         </p>
                     </div>
                 </section>
@@ -273,7 +276,7 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
 
                                         <div className="text-sm text-gray-600 space-y-2">
                                             <p className="flex items-center gap-2"><Calendar size={14} className="text-[#db2777]" /> {formattedDate}</p>
-                                             <p className="flex items-start gap-2">
+                                            <p className="flex items-start gap-2">
                                                 <MapPin
                                                     size={14}
                                                     className="text-[#831843] mt-1 shrink-0"
@@ -415,7 +418,7 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
                 </button>
             </div>
 
-            <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/04/27/audio_65b355d911.mp3"} loop />
+            {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
 
         </div>
     );

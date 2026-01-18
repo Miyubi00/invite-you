@@ -5,6 +5,8 @@ export default function JavaneseTheme({ groom, bride, date, guestName, data }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef(null);
+    const audioUrl = data?.audio_url || '';
+
 
     // --- COUNTDOWN STATE ---
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -149,13 +151,13 @@ export default function JavaneseTheme({ groom, bride, date, guestName, data }) {
                 </div>
             </div>
 
-            <div 
+            <div
                 className={`transition-all duration-1000 ${isOpen ? 'opacity-100 visible delay-500' : 'opacity-0 invisible'}`}
             >
 
                 {/* 1. HERO SECTION */}
                 <header className="min-h-screen relative flex flex-col items-center justify-center text-center px-6 overflow-hidden border-b-4 border-[#D4AF37]">
-                    
+
                     {/* Background Image Parallax */}
                     <div className="absolute inset-0 z-0">
                         <div className="absolute inset-0 bg-[#291e1a] opacity-70 z-10 mix-blend-multiply"></div>
@@ -192,14 +194,22 @@ export default function JavaneseTheme({ groom, bride, date, guestName, data }) {
 
                         <h2 className="font-jawa text-2xl text-[#3E2723] mb-6 font-bold">Assalamu'alaikum Wr. Wb.</h2>
 
-                        <p className="font-classic text-xl md:text-2xl text-[#5D4037] italic leading-relaxed mb-8 px-4">
-                            "Tansah angajab sih wilasa dalem Gusti Ingkang Murbeng Dumadi, mugi kersa paring berkah pangestu dhumateng dhaup suci punika."
-                        </p>
+                        {/* KUTIPAN / QUOTE */}
+                        <div className="mb-8">
+                            <p className="font-classic text-xl md:text-2xl text-[#5D4037] italic leading-relaxed px-4">
+                                "{data?.quote || "Tansah angajab sih wilasa dalem Gusti Ingkang Murbeng Dumadi, mugi kersa paring berkah pangestu dhumateng dhaup suci punika."}"
+                            </p>
+                            <p className="font-jawa text-sm text-[#8D6E63] mt-3 font-bold uppercase tracking-widest">
+                                — {data?.quote_src || "Pepatah Jawa"}
+                            </p>
+                        </div>
+
                         <div className="flex items-center justify-center gap-4 mb-8">
                             <div className="h-px w-12 bg-[#D4AF37]"></div>
                             <div className="w-2 h-2 bg-[#D4AF37] rounded-full"></div>
                             <div className="h-px w-12 bg-[#D4AF37]"></div>
                         </div>
+
                         <p className="font-jawa text-sm text-[#795548] leading-loose max-w-xl mx-auto">
                             Dengan memohon Rahmat dan Ridho Allah SWT, kami bermaksud menyelenggarakan resepsi pernikahan putra-putri kami:
                         </p>
@@ -393,7 +403,7 @@ export default function JavaneseTheme({ groom, bride, date, guestName, data }) {
                 </button>
             </div>
 
-            <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3"} loop />
+            {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
         </div>
     );
 }

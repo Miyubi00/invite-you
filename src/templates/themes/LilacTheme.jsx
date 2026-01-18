@@ -8,6 +8,8 @@ export default function KoreanMinimalTheme({ groom, bride, date, guestName, data
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+  const audioUrl = data?.audio_url || '';
+
 
   // --- COUNTDOWN STATE ---
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -367,7 +369,7 @@ export default function KoreanMinimalTheme({ groom, bride, date, guestName, data
              </button>
         </div>
 
-        <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3"} loop />
+        {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
 
       </div>
     </div>

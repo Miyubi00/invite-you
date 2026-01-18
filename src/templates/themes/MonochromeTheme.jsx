@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, ArrowRight, MapPin, Calendar, Copy, Instagram, Aperture } from 'lucide-react';
+import { Play, Pause, ArrowRight, MapPin, Calendar, Copy, Instagram, Aperture, Quote } from 'lucide-react';
 
 export default function MonoEditorialTheme({ groom, bride, date, guestName, data }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,7 +19,7 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
     bride: data?.bride_photo || defaultImages.woman,
   };
 
-  // --- DATA GALLERY (Added) ---
+  // --- DATA ---
   const gallery = data?.gallery || [
      "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&auto=format&fit=crop",
      "https://images.unsplash.com/photo-1511285560982-1356c11d4606?w=500&auto=format&fit=crop",
@@ -27,6 +27,10 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
      "https://images.unsplash.com/photo-1522673607200-1645062cd958?w=500&auto=format&fit=crop",
      "https://images.unsplash.com/photo-1520854221256-17451cc330e7?w=500&auto=format&fit=crop"
   ];
+
+  const quote = data?.quote || "Love does not consist in gazing at each other, but in looking outward together in the same direction.";
+  const quoteSrc = data?.quote_src || "Antoine de Saint-Exupéry";
+  const audioUrl = data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/15/audio_243544c06f.mp3";
 
   const formattedDate = new Date(date || new Date()).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -134,8 +138,25 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
             </div>
         </section>
 
+        {/* QUOTE SECTION (NEW) */}
+        <section className="py-24 px-6 text-center border-b-2 border-black bg-gray-50 relative overflow-hidden">
+            {/* Background Text Decoration */}
+            <div className="absolute top-0 left-0 text-[10rem] font-display opacity-5 pointer-events-none select-none -translate-x-1/4 -translate-y-1/4">"</div>
+            
+            <div className="max-w-3xl mx-auto relative z-10">
+                <Quote size={48} className="mx-auto mb-8 text-black opacity-80" />
+                <p className="font-display text-3xl md:text-5xl italic leading-tight mb-8">
+                    "{quote}"
+                </p>
+                <div className="w-20 h-1 bg-black mx-auto mb-6"></div>
+                <p className="font-body text-sm font-bold tracking-[0.2em] uppercase">
+                    — {quoteSrc}
+                </p>
+            </div>
+        </section>
+
         {/* EVENTS (Ticket Style) */}
-        <section className="py-20 px-4 md:px-12 bg-gray-50 border-b-2 border-black">
+        <section className="py-20 px-4 md:px-12 bg-white border-b-2 border-black">
             <h2 className="font-display text-5xl md:text-6xl text-center mb-16 uppercase italic">The Events</h2>
             
             <div className="flex flex-col md:flex-row gap-8 justify-center">
@@ -165,25 +186,22 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
             </div>
         </section>
 
-        {/* --- GALLERY SECTION (BARU DITAMBAHKAN) --- */}
+        {/* GALLERY SECTION */}
         {gallery.length > 0 && (
           <section className="border-b-2 border-black">
-             {/* Header Section */}
              <div className="py-12 px-6 border-b-2 border-black flex justify-between items-end">
                 <h2 className="font-display text-4xl md:text-6xl uppercase leading-none">Visual <br/> <span className="italic">Diary</span></h2>
                 <Aperture size={32} className="animate-spin-slow"/>
              </div>
 
-             {/* Newspaper Grid Layout */}
              <div className="grid grid-cols-2 md:grid-cols-4 bg-black">
                 {gallery.map((url, i) => (
                    <div key={i} className={`relative group overflow-hidden border-r-2 border-b-2 border-white/0 md:border-white/0 bg-white aspect-[3/4] ${i === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}>
                       <img 
-                         src={url} 
-                         alt={`Gallery ${i}`} 
-                         className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 scale-100 group-hover:scale-105" 
+                          src={url} 
+                          alt={`Gallery ${i}`} 
+                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 scale-100 group-hover:scale-105" 
                       />
-                      {/* Black border overlay to mimic printing grid */}
                       <div className="absolute inset-0 border border-black pointer-events-none"></div>
                    </div>
                 ))}
@@ -213,9 +231,9 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
 
       {/* FLOATING CONTROLS */}
       <button onClick={toggleAudio} className="fixed bottom-6 right-6 z-40 bg-black text-white w-12 h-12 flex items-center justify-center border-2 border-white rounded-full hover:bg-white hover:text-black hover:border-black transition">
-         {isPlaying ? <Pause size={16}/> : <Play size={16} className="ml-1"/>}
+          {isPlaying ? <Pause size={16}/> : <Play size={16} className="ml-1"/>}
       </button>
-      <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_243544c06f.mp3" loop />
+      <audio ref={audioRef} src={audioUrl} loop />
     </div>
   );
 }

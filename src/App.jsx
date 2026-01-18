@@ -14,6 +14,7 @@ import InvitationRender from './pages/InvitationRender';
 import TemplateDemo from './pages/TemplateDemo';
 import AdminPanel from './pages/AdminPanel'; // Import
 import PaymentStatus from './pages/PaymentStatus'; // Import
+import NotFound from './pages/NotFound'; // Sesuaikan path import
 
 /* --- LAYOUTS --- */
 
@@ -53,6 +54,7 @@ function App() {
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/payment-status" element={<PaymentStatus />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
 
         <Route path="/demo/:slug" element={<TemplateDemo />} />
 
@@ -62,8 +64,6 @@ function App() {
           <Route path="/wedding/:slug" element={<InvitationRender />} />
         </Route>
 
-        {/* 404 */}
-        <Route path="*" element={<div className="text-center mt-20">404 Not Found</div>} />
 
       </Routes>
     </ToastProvider>

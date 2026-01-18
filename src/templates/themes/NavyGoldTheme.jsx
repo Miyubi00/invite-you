@@ -5,6 +5,8 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+  const audioUrl = data?.audio_url || '';
+
 
   // --- DATA IMAGES ---
   const photos = {
@@ -145,7 +147,7 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
                 <div className="border border-amber-600/30 rounded-lg p-8 md:p-12 bg-[#0d1321]">
                     <Star className="w-6 h-6 text-amber-500 mx-auto mb-4 fill-current"/>
                     <p className="font-royal text-lg md:text-xl text-amber-100/90 leading-loose italic">"{data?.quote || "Love is not about looking at each other, but looking in the same direction."}"</p>
-                    <p className="mt-4 text-xs font-modern text-amber-600 uppercase tracking-widest">{data?.quote_source}</p>
+                    <p className="mt-4 text-xs font-modern text-amber-600 uppercase tracking-widest">{data?.quote_src}</p>
                 </div>
             </div>
         </section>
@@ -274,7 +276,7 @@ export default function LuxuryGoldTheme({ groom, bride, date, guestName, data })
              {isPlaying ? <Music className="animate-pulse" size={20}/> : <Play size={20} className="ml-1"/>}
           </button>
       </div>
-      <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3" loop />
+      {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
     </div>
   );
 }

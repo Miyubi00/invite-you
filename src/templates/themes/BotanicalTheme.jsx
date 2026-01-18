@@ -8,6 +8,8 @@ export default function CelestialTheme({ groom, bride, date, guestName, data }) 
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+  const audioUrl = data?.audio_url || '';
+
 
   // --- SAFE DATA HANDLING (Agar tidak error/hilang) ---
   // Kita buat default value jika data dari 'TemplateDemo' belum masuk
@@ -178,7 +180,7 @@ export default function CelestialTheme({ groom, bride, date, guestName, data }) 
                  <p className="font-modern text-lg md:text-xl leading-relaxed italic text-gray-300 mt-4">
                      "{data?.quote || "Dan segala sesuatu Kami ciptakan berpasang-pasangan supaya kamu mengingat kebesaran Allah."}"
                  </p>
-                 <p className="mt-6 font-bold text-[#fbbf24] tracking-widest text-xs uppercase">— {data?.quote_source || "Maha Suci Allah"}</p>
+                 <p className="mt-6 font-bold text-[#fbbf24] tracking-widest text-xs uppercase">— {data?.quote_src || "Maha Suci Allah"}</p>
             </div>
         </section>
 
@@ -310,7 +312,7 @@ export default function CelestialTheme({ groom, bride, date, guestName, data }) 
           {isPlaying ? <Music size={20}/> : <Play size={20} className="ml-1"/>}
       </button>
 
-      <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792cb.mp3"} loop />
+      {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
     
     </div>
   );

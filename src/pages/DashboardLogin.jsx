@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '../components/GlobalToast'; // 1. Import Toast
+import { useToast } from '../components/GlobalToast'; 
 import { User, Calendar, Lock, LogIn, HeartHandshake, Eye, EyeOff } from 'lucide-react';
 
 export default function DashboardLogin() {
   const navigate = useNavigate();
-  const toast = useToast(); // 2. Init Toast
+  const toast = useToast(); 
   const [loading, setLoading] = useState(false);
   
   // State UX PIN
@@ -24,40 +24,48 @@ export default function DashboardLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const groom = e.target.groom.value;
-    const bride = e.target.bride.value;
+    const groom = e.target.groom.value.trim();
+    const bride = e.target.bride.value.trim();
     const date = e.target.date.value;
 
     try {
-      // Logic Login Aman: Cek Nama, Tanggal, DAN PIN
+      // --- PERBAIKAN DI SINI ---
+      // Menggunakan RPC (Function) agar bisa bypass RLS dengan aman
       const { data, error } = await supabase
-        .from('orders')
-        .select('id, slug, payment_status')
-        .ilike('groom_name', groom)
-        .ilike('bride_name', bride)
-        .eq('wedding_date', date)
-        .eq('pin_code', pinValue) 
-        .single();
+        .rpc('login_client', { // Panggil fungsi SQL yang kita buat
+            p_groom: groom,
+            p_bride: bride,
+            p_date: date,
+            p_pin: pinValue
+        })
+        .single(); // Ambil 1 hasil saja
 
-      if (error || !data) {
-        throw new Error('Login Gagal. Pastikan Nama, Tanggal, dan PIN sesuai.');
+      if (error) {
+          console.error("Login Error:", error);
+          throw new Error('Terjadi kesalahan sistem.');
       }
 
-      if (data.payment_status !== 'success') {
-        throw new Error('Undangan ditemukan tapi belum dibayar/dikonfirmasi.');
+      if (!data) {
+        throw new Error('Data tidak ditemukan. Cek Nama, Tanggal, atau PIN.');
+      }
+
+      if (data.payment_status !== 'success' && data.payment_status !== 'paid') {
+        throw new Error('Undangan ditemukan tapi status belum lunas.');
       }
 
       // Login Sukses
-      toast.success('Login Berhasil! Mengalihkan...'); // 3. Toast Sukses
+      toast.success('Login Berhasil! Mengalihkan...'); 
+      
+      // Simpan Session ID (PENTING untuk Dashboard.jsx)
       sessionStorage.setItem('active_order_id', data.id);
       
-      // Delay sedikit biar toast terbaca
       setTimeout(() => {
+          // Redirect ke Dashboard dengan ID Order
           navigate(`/dashboard/${data.id}`);
       }, 1000);
 
     } catch (err) {
-      toast.error(err.message); // 4. Toast Error
+      toast.error(err.message); 
     } finally {
       setLoading(false);
     }
@@ -76,8 +84,6 @@ export default function DashboardLogin() {
           <p className="text-[#888870] mt-2 text-sm">Masuk untuk mengedit undanganmu</p>
         </div>
 
-        {/* Note: Div Error merah lama sudah dihapus, diganti Toast Popup */}
-
         <form onSubmit={handleLogin} className="space-y-5">
           
           {/* Input Nama Pria */}
@@ -86,7 +92,7 @@ export default function DashboardLogin() {
             <div className="relative">
                 <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input 
-                  name="groom" required placeholder="Romeo" 
+                  name="groom" required placeholder="Contoh: Romeo" 
                   className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition" 
                 />
             </div>
@@ -98,7 +104,7 @@ export default function DashboardLogin() {
             <div className="relative">
                 <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input 
-                  name="bride" required placeholder="Juliet" 
+                  name="bride" required placeholder="Contoh: Juliet" 
                   className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition" 
                 />
             </div>
@@ -128,10 +134,10 @@ export default function DashboardLogin() {
                   type={showPin ? "text" : "password"} 
                   inputMode="numeric" 
                   maxLength={6} 
-                  placeholder="6 Digit PIN" 
+                  placeholder="6 Digit Angka" 
                   value={pinValue}
                   onChange={handlePinChange} 
-                  className="pl-10 pr-12 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition bg-white font-mono tracking-widest" 
+                  className="pl-10 pr-12 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition bg-white font-mono tracking-widest text-lg" 
                 />
 
                 <button 
@@ -142,7 +148,7 @@ export default function DashboardLogin() {
                   {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Masukkan 6 digit angka PIN saat order.</p>
+              <p className="text-xs text-gray-500 mt-2">PIN yang Anda buat saat pemesanan.</p>
           </div>
 
           <button 

@@ -8,6 +8,8 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
   const [isOpen, setIsOpen] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const audioRef = useRef(null);
+  const audioUrl = data?.audio_url || '';
+
   
   // --- COUNTDOWN STATE ---
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -30,7 +32,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
   const gallery = data?.gallery || [];
   const banks = data?.banks || [];
   const quote = data?.quote || "And of His signs is that He created for you from yourselves mates that you may find tranquility in them.";
-  const quoteSource = data?.quote_source || "QS. Ar-Rum: 21";
+  const quoteSource = data?.quote_src || "QS. Ar-Rum: 21";
   
   // DATA ORANG TUA (Mengambil dari props data atau default)
   const details = {
@@ -324,8 +326,7 @@ export default function ModernDarkTheme({ groom, bride, date, guestName, data })
           {audioPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 fill-current"/>}
         </button>
         
-        <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/15/audio_243544c06f.mp3?filename=wedding-cinematic-11166.mp3"} loop />
-
+        {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
       </div>
     </div>
   );

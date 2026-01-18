@@ -1,37 +1,35 @@
-// src/pages/TemplateDemo.jsx
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getTemplateComponent } from '../templates/Registry'; // Pastikan path ini sesuai struktur folder Anda
+import { getTemplateComponent } from '../templates/Registry'; 
 import { ArrowLeft } from 'lucide-react';
 
 export default function TemplateDemo() {
-  const { slug } = useParams(); // Ambil slug dari URL (misal: 'modern-dark')
+  const { slug } = useParams(); 
 
   // Ambil komponen template dari Registry
   const TemplateComponent = getTemplateComponent(slug);
 
-  // Jika slug tidak ditemukan di registry
   if (!TemplateComponent) {
-    return <div className="p-10 text-center">Template tidak ditemukan.</div>;
+    return <div className="p-10 text-center">Template "{slug}" tidak ditemukan.</div>;
   }
 
-  // Data Dummy untuk Preview
+  // Data Dummy untuk Preview (LENGKAP dengan Audio, Quote, & RSVP Chat)
   const dummyData = {
     groom: "Romeo",
     bride: "Juliet",
-    date: new Date(
-      new Date().setMonth(new Date().getMonth() + 6)
-    ).toISOString(),
+    date: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
     guestName: "Tamu Spesial",
+    
+    // Data JSON event_details lengkap
     event_details: {
-      // --- FOTO-FOTO (COVER & MEMPELAI) ---
-      cover_photo: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Gambar Cover Utama
-      groom_photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop", // Foto Pria
-      bride_photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop", // Foto Wanita
+      // --- FOTO ---
+      cover_photo: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=1470&auto=format&fit=crop",
+      groom_photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop",
+      bride_photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop",
 
-      // --- DETAIL ACARA ---
-      venue_name: "Grand Ballroom Hotel",
-      venue_address: "Jl. Jendral Sudirman No. 1, Jakarta",
+      // --- DETAIL ---
+      venue_name: "Grand Ballroom Hotel Indonesia",
+      venue_address: "Jl. Jendral Sudirman No. 1, Jakarta Pusat, DKI Jakarta",
       maps_link: "https://goo.gl/maps/example",
       akad_time: "08:00 WIB - 10:00 WIB",
       resepsi_time: "11:00 WIB - Selesai",
@@ -41,23 +39,49 @@ export default function TemplateDemo() {
       // --- GALLERY ---
       gallery: [
         "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&fit=crop",
-        "https://plus.unsplash.com/premium_photo-1663076211121-36754a46de8d?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=500&fit=crop",
-        "https://plus.unsplash.com/premium_photo-1690148812608-9942834931a1?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        "https://images.unsplash.com/photo-1621600411688-4be93cd68504?w=500&fit=crop",
+        "https://images.unsplash.com/photo-1522673607200-1645062cd958?w=500&fit=crop"
       ],
 
-      // --- BANK / GIFT ---
+      // --- BANK ---
       banks: [
         { bank: "BCA", number: "1234567890", name: "Romeo" },
         { bank: "Mandiri", number: "0987654321", name: "Juliet" }
       ],
 
-      // --- KUTIPAN ---
-      quote: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...",
-      quote_source: "QS. Ar-Rum: 21",
+      // --- KUTIPAN & MUSIK ---
+      quote: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya.",
+      quote_src: "QS. Ar-Rum: 21",
+      audio_url: "https://cdn.pixabay.com/download/audio/2022/10/25/audio_1086088e5d.mp3",
 
-      // --- AUDIO (Opsional) ---
-      audio_url: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3"
+      // --- DUMMY RSVPS (CHAT) ---
+      rsvps: [
+        {
+            id: 1,
+            guest_name: "Budi Santoso",
+            status: "hadir",
+            message: "Selamat menempuh hidup baru bro Romeo! Semoga samawa yaaa 🥳",
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 jam lalu
+            reply: "Aamiin, makasih banyak bro Budi! Ditunggu kehadirannya!"
+        },
+        {
+            id: 2,
+            guest_name: "Siti Aminah",
+            status: "tidak_hadir",
+            message: "Maaf ya Juliet belum bisa hadir karena ada dinas luar kota. Happy Wedding! ❤️",
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 jam lalu
+            reply: null
+        },
+        {
+            id: 3,
+            guest_name: "Dedi Corbuzier",
+            status: "ragu",
+            message: "Wah selamat! Cek jadwal dulu ya, semoga bisa mampir.",
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 hari lalu
+            reply: null
+        }
+      ]
     }
   };
 
@@ -67,19 +91,22 @@ export default function TemplateDemo() {
       <div className="fixed top-4 left-4 z-50">
         <Link
           to="/"
-          className="flex items-center gap-2 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-sm transition shadow-lg text-sm font-medium"
+          className="flex items-center gap-2 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-sm transition shadow-lg text-sm font-medium border border-white/20"
         >
           <ArrowLeft className="w-4 h-4" /> Kembali
         </Link>
       </div>
 
-      {/* Render Template yang Dipilih */}
-      {/* Kita passing spread props untuk groom/bride/dll dan object 'data' untuk detail lainnya */}
+      {/* Render Template */}
       <TemplateComponent
         groom={dummyData.groom}
         bride={dummyData.bride}
         date={dummyData.date}
         guestName={dummyData.guestName}
+        
+        // Pass 'demo' ID agar RSVP tidak error saat diklik
+        orderId="demo" 
+        
         data={dummyData.event_details}
       />
     </div>

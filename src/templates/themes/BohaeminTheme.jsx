@@ -5,6 +5,7 @@ export default function RusticBohoTheme({ groom, bride, date, guestName, data })
     const [isOpen, setIsOpen] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef(null);
+    const audioUrl = data?.audio_url || '';
 
     // --- IMAGES ---
     const defaultImages = {
@@ -151,7 +152,7 @@ export default function RusticBohoTheme({ groom, bride, date, guestName, data })
                         <p className="font-body text-xl md:text-2xl italic leading-relaxed text-[#6d6875]">
                             {data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya."}
                         </p>
-                        <p className="mt-4 font-bold text-[#b5838d]">— {data?.quote_source || "QS. Ar-Rum: 21"}</p>
+                        <p className="mt-4 font-bold text-[#b5838d]">— {data?.quote_src || "QS. Ar-Rum: 21"}</p>
                     </div>
                 </section>
 
@@ -297,7 +298,7 @@ export default function RusticBohoTheme({ groom, bride, date, guestName, data })
             <button onClick={toggleAudio} className="fixed bottom-6 right-6 bg-[#d4a373] text-white p-3 rounded-full shadow-lg hover:bg-[#b08968] transition z-50 animate-bounce-slow">
                 {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
             </button>
-            <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" loop />
+            {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
         </div>
     );
 }

@@ -1,20 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Heart, MapPin, Calendar, Check, Copy,
-  Music, Play, Pause, PenTool, Star, ArrowDown
+  Music, Play, Pause, PenTool, Star, ArrowDown, Quote, Mail, MessageSquare, Send, CheckCircle2
 } from 'lucide-react';
 
-export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, data }) {
+export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+
+  // --- RSVP STATE ---
+  const [rsvpStatus, setRsvpStatus] = useState('hadir');
+  const [rsvpPax, setRsvpPax] = useState(1);
+  const [rsvpMessage, setRsvpMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
 
   // --- COUNTDOWN STATE ---
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // --- DATA ---
   const photos = {
-    cover: data?.cover_photo || "https://images.unsplash.com/photo-1516961642265-531546e84af2?w=800&fit=crop", // Paper/Book feel
+    cover: data?.cover_photo || "https://images.unsplash.com/photo-1516961642265-531546e84af2?w=800&fit=crop", 
     groom: data?.groom_photo || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&fit=crop",
     bride: data?.bride_photo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop",
   };
@@ -26,12 +32,15 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
   ];
 
   const banks = data?.banks || [];
+  const quote = data?.quote || "Every love story is beautiful, but ours is my favorite.";
+  const quoteSrc = data?.quote_src || "Unknown";
+  const audioUrl = data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/05/17/audio_1615a96c4d.mp3";
 
   const formattedDate = new Date(date || new Date()).toLocaleDateString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  // --- COUNTDOWN LOGIC ---
+  // --- LOGIC ---
   useEffect(() => {
     const targetDate = new Date(date || new Date());
     const interval = setInterval(() => {
@@ -49,7 +58,6 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
     return () => clearInterval(interval);
   }, [date]);
 
-  // --- HANDLERS ---
   const toggleAudio = () => {
     if (!audioRef.current) return;
     if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
@@ -62,6 +70,14 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
       if (audioRef.current) audioRef.current.play().catch(() => { });
       setIsPlaying(true);
     }, 800);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!onRsvpSubmit) return alert("Mode Demo: RSVP tidak disimpan.");
+    setIsSending(true);
+    await onRsvpSubmit({ status: rsvpStatus, pax: parseInt(rsvpPax), message: rsvpMessage });
+    setIsSending(false);
   };
 
   return (
@@ -97,16 +113,18 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
             0% { stroke-dashoffset: 1000; }
             100% { stroke-dashoffset: 0; }
         }
-        .animate-scribble {
-            stroke-dasharray: 1000;
-            animation: scribble 2s ease-out forwards;
-        }
+        .animate-scribble { stroke-dasharray: 1000; animation: scribble 2s ease-out forwards; }
 
         @keyframes float-gentle {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-5px) rotate(2deg); }
         }
         .animate-float { animation: float-gentle 4s ease-in-out infinite; }
+
+        /* Custom Scrollbar for Diary */
+        .diary-scroll::-webkit-scrollbar { width: 6px; }
+        .diary-scroll::-webkit-scrollbar-thumb { background-color: #D4C4B7; border-radius: 10px; }
+        .diary-scroll::-webkit-scrollbar-track { background: transparent; }
       `}</style>
 
       {/* Texture Overlay */}
@@ -115,29 +133,17 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
       {/* --- COVER PAGE (DIARY COVER) --- */}
       <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#8B5E3C] transition-transform duration-1000 ease-[cubic-bezier(0.7,0,0.3,1)] ${isOpen ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="absolute inset-4 border-2 border-[#6d4c33] rounded-lg border-dashed opacity-50 pointer-events-none"></div>
-
-        {/* Leather/Book Texture Effect */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/leather.png')] opacity-30 mix-blend-overlay"></div>
 
         <div className="relative z-10 bg-[#FAF7F2] p-8 md:p-12 max-w-sm w-[90%] shadow-2xl rotate-1 transform transition-transform hover:rotate-0 duration-500">
-          {/* Sticker/Label */}
           <div className="border-4 border-double border-[#2B2B2B] p-6 text-center">
             <p className="font-body text-[#6B7280] text-lg mb-2">The Wedding Diary of</p>
-            <h1 className="font-title text-5xl md:text-6xl text-[#2B2B2B] mb-4 leading-tight">
-              {groom} <br /> <span className="text-[#8B5E3C]">&</span> <br /> {bride}
-            </h1>
+            <h1 className="font-title text-5xl md:text-6xl text-[#2B2B2B] mb-4 leading-tight">{groom} <br /> <span className="text-[#8B5E3C]">&</span> <br /> {bride}</h1>
             <p className="font-doodle text-xl text-[#6B7280]">{formattedDate}</p>
           </div>
-
-          {/* Hand-drawn Button */}
-          <button
-            onClick={handleOpen}
-            className="mt-8 mx-auto block group relative"
-          >
+          <button onClick={handleOpen} className="mt-8 mx-auto block group relative">
             <div className="absolute inset-0 border-2 border-[#2B2B2B] rounded-full translate-x-1 translate-y-1 transition-transform group-hover:translate-x-0 group-hover:translate-y-0 bg-[#E5E7EB]"></div>
-            <div className="relative border-2 border-[#2B2B2B] bg-white px-8 py-3 rounded-full font-title text-2xl font-bold text-[#2B2B2B] group-active:translate-x-1 group-active:translate-y-1 transition-transform">
-              Open Diary 📖
-            </div>
+            <div className="relative border-2 border-[#2B2B2B] bg-white px-8 py-3 rounded-full font-title text-2xl font-bold text-[#2B2B2B] group-active:translate-x-1 group-active:translate-y-1 transition-transform">Open Diary 📖</div>
           </button>
         </div>
       </div>
@@ -147,19 +153,12 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
 
         {/* 1. INTRO (NOTE) */}
         <section className="mb-24 relative">
-          <div className="absolute -left-4 top-0 -rotate-12 opacity-80">
-            <DoodleStar className="w-10 h-10 text-[#D4C4B7]" />
-          </div>
-
+          <div className="absolute -left-4 top-0 -rotate-12 opacity-80"><DoodleStar className="w-10 h-10 text-[#D4C4B7]" /></div>
           <div className="text-center space-y-6">
             <h2 className="font-title text-4xl text-[#2B2B2B]">Dear Friends & Family,</h2>
             <div className="font-body text-xl text-[#4B5563] leading-loose">
-              <p>
-                "We are writing this new chapter of our lives, and we want you to be part of the story."
-              </p>
-              <p className="mt-4">
-                Please join us as we celebrate our love.
-              </p>
+              <p>"We are writing this new chapter of our lives, and we want you to be part of the story."</p>
+              <p className="mt-4">Please join us as we celebrate our love.</p>
             </div>
             <div className="w-32 h-1 bg-[#2B2B2B] mx-auto rounded-full opacity-10 rotate-1"></div>
           </div>
@@ -172,140 +171,81 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
             <img src={photos.cover} className="w-64 h-80 object-cover filter sepia-[0.2]" alt="Couple" />
             <p className="font-title text-3xl mt-4 text-[#2B2B2B]">Our Happy Beginning</p>
           </div>
-
-          <div className="mt-12 flex justify-center">
-            <ArrowDown className="animate-bounce text-[#8B5E3C]" />
-          </div>
+          <div className="mt-12 flex justify-center"><ArrowDown className="animate-bounce text-[#8B5E3C]" /></div>
         </section>
 
-        {/* 3. COUPLE (SCRAPBOOK ENTRIES) */}
-        <section className="mb-24 space-y-16">
-          <div className="text-center font-title text-4xl mb-8 underline decoration-wavy decoration-[#D4C4B7]">
-            Meet The Couple
-          </div>
+        {/* 3. QUOTE (STICKY NOTE) */}
+        <section className="mb-24 px-4">
+            <div className="bg-[#FEF9C3] p-8 shadow-md transform -rotate-1 max-w-md mx-auto relative border border-yellow-200">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-8 bg-yellow-100/50 tape rotate-2"></div>
+                <Quote className="text-yellow-600 w-8 h-8 mb-4 opacity-50"/>
+                <p className="font-doodle text-2xl text-[#854D0E] text-center leading-relaxed">
+                    "{quote}"
+                </p>
+                <p className="font-body text-sm text-[#A16207] text-right mt-4">— {quoteSrc}</p>
+            </div>
+        </section>
 
-          {/* Groom */}
+        {/* 4. COUPLE (SCRAPBOOK ENTRIES) */}
+        <section className="mb-24 space-y-16">
+          <div className="text-center font-title text-4xl mb-8 underline decoration-wavy decoration-[#D4C4B7]">Meet The Couple</div>
           <div className="flex flex-col md:flex-row items-center gap-8 group">
             <div className="relative -rotate-2 group-hover:rotate-0 transition duration-500">
               <div className="absolute -top-3 -left-3 w-24 h-8 tape rotate-[-10deg]"></div>
-              <div className="bg-white p-2 pb-10 shadow-md border border-gray-200">
-                <img src={photos.groom} className="w-48 h-56 object-cover grayscale-[0.3]" alt="Groom" />
-              </div>
+              <div className="bg-white p-2 pb-10 shadow-md border border-gray-200"><img src={photos.groom} className="w-48 h-56 object-cover grayscale-[0.3]" alt="Groom" /></div>
             </div>
             <div className="text-center md:text-left">
               <h3 className="font-title text-4xl text-[#2B2B2B]">{groom}</h3>
               <p className="font-doodle text-lg text-[#8B5E3C] mt-1">The Groom</p>
-              <div className="mt-4 font-body text-lg text-[#4B5563] border-l-2 border-[#2B2B2B] pl-4">
-                <p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Son of:</p>
-                <p>{data?.groom_parents}</p>
-              </div>
+              <div className="mt-4 font-body text-lg text-[#4B5563] border-l-2 border-[#2B2B2B] pl-4"><p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Son of:</p><p>{data?.groom_parents}</p></div>
             </div>
           </div>
-
-          {/* Bride */}
           <div className="flex flex-col md:flex-row-reverse items-center gap-8 group">
             <div className="relative rotate-2 group-hover:rotate-0 transition duration-500">
               <div className="absolute -top-3 -right-3 w-24 h-8 tape rotate-[10deg]"></div>
-              <div className="bg-white p-2 pb-10 shadow-md border border-gray-200">
-                <img src={photos.bride} className="w-48 h-56 object-cover grayscale-[0.3]" alt="Bride" />
-              </div>
+              <div className="bg-white p-2 pb-10 shadow-md border border-gray-200"><img src={photos.bride} className="w-48 h-56 object-cover grayscale-[0.3]" alt="Bride" /></div>
             </div>
             <div className="text-center md:text-right">
               <h3 className="font-title text-4xl text-[#2B2B2B]">{bride}</h3>
               <p className="font-doodle text-lg text-[#8B5E3C] mt-1">The Bride</p>
-              <div className="mt-4 font-body text-lg text-[#4B5563] border-r-2 md:border-r-2 md:border-l-0 border-l-2 border-[#2B2B2B] px-4">
-                <p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Daughter of:</p>
-                <p>{data?.bride_parents}</p>
-              </div>
+              <div className="mt-4 font-body text-lg text-[#4B5563] border-r-2 md:border-r-2 md:border-l-0 border-l-2 border-[#2B2B2B] px-4"><p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Daughter of:</p><p>{data?.bride_parents}</p></div>
             </div>
           </div>
         </section>
 
-        {/* 4. COUNTDOWN (HANDWRITTEN) */}
+        {/* 5. COUNTDOWN */}
         <section className="mb-24 text-center">
           <h2 className="font-doodle text-2xl text-[#6B7280] mb-6">Counting the days...</h2>
           <div className="flex justify-center gap-4 md:gap-8 flex-wrap">
-            <div className="flex flex-col items-center">
-              <span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.days}</span>
-              <span className="font-body text-sm uppercase tracking-widest">Days</span>
-            </div>
+            <div className="flex flex-col items-center"><span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.days}</span><span className="font-body text-sm uppercase tracking-widest">Days</span></div>
             <span className="font-title text-4xl text-[#D4C4B7]">:</span>
-            <div className="flex flex-col items-center">
-              <span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.hours}</span>
-              <span className="font-body text-sm uppercase tracking-widest">Hours</span>
-            </div>
+            <div className="flex flex-col items-center"><span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.hours}</span><span className="font-body text-sm uppercase tracking-widest">Hours</span></div>
             <span className="font-title text-4xl text-[#D4C4B7]">:</span>
-            <div className="flex flex-col items-center">
-              <span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.minutes}</span>
-              <span className="font-body text-sm uppercase tracking-widest">Mins</span>
-            </div>
+            <div className="flex flex-col items-center"><span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.minutes}</span><span className="font-body text-sm uppercase tracking-widest">Mins</span></div>
             <span className="font-title text-4xl text-[#D4C4B7]">:</span>
-            <div className="flex flex-col items-center">
-              <span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.seconds}</span>
-              <span className="font-body text-sm uppercase tracking-widest">Sec</span>
-            </div>
-          </div>
-          <div className="mt-8 flex justify-center gap-2">
-            <Heart className="w-4 h-4 text-red-300 animate-bounce" fill="#FCA5A5" />
-            <Heart className="w-4 h-4 text-red-300 animate-bounce delay-100" fill="#FCA5A5" />
-            <Heart className="w-4 h-4 text-red-300 animate-bounce delay-200" fill="#FCA5A5" />
+            <div className="flex flex-col items-center"><span className="font-title text-5xl md:text-6xl text-[#2B2B2B]">{timeLeft.seconds}</span><span className="font-body text-sm uppercase tracking-widest">Sec</span></div>
           </div>
         </section>
 
-        {/* 5. EVENT DETAILS (CHECKLIST) */}
+        {/* 6. EVENT DETAILS */}
         <section className="mb-24">
           <div className="border-2 border-[#2B2B2B] p-8 relative bg-white/50 transform -rotate-1 shadow-sm">
-            {/* Pin Effect */}
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-400 border border-black shadow-sm z-10"></div>
-
             <h2 className="text-center font-title text-4xl mb-8">Save The Date!</h2>
-
             <div className="space-y-8">
-              {/* Akad */}
               <div className="flex gap-4 items-start">
-                <div className="mt-1 bg-[#D1FAE5] text-[#065F46] p-1 rounded-full border border-[#065F46]">
-                  <Check size={20} />
-                </div>
-                <div>
-                  <h3 className="font-title text-2xl font-bold">Akad Nikah</h3>
-                  <p className="font-body text-lg">{formattedDate} • {data?.akad_time}</p>
-                  <div className="mt-1 font-doodle text-sm text-gray-500">
-                    <p className="font-bold text-gray-700">
-                      {data?.venue_name}
-                    </p>
-                    <p className="opacity-80">
-                      {data?.venue_address}
-                    </p>
-                  </div>
-                </div>
+                <div className="mt-1 bg-[#D1FAE5] text-[#065F46] p-1 rounded-full border border-[#065F46]"><Check size={20} /></div>
+                <div><h3 className="font-title text-2xl font-bold">Akad Nikah</h3><p className="font-body text-lg">{formattedDate} • {data?.akad_time}</p><div className="mt-1 font-doodle text-sm text-gray-500"><p className="font-bold text-gray-700">{data?.venue_name}</p><p className="opacity-80">{data?.venue_address}</p></div></div>
               </div>
-
-              {/* Resepsi */}
               <div className="flex gap-4 items-start">
-                <div className="mt-1 bg-[#FCE7F3] text-[#831843] p-1 rounded-full border border-[#831843]">
-                  <Check size={20} />
-                </div>
-                <div>
-                  <h3 className="font-title text-2xl font-bold">Reception Party</h3>
-                  <p className="font-body text-lg">{formattedDate} • {data?.resepsi_time}</p>
-                  <div className="mt-1 font-doodle text-sm text-gray-500">
-                    <p className="font-bold text-gray-700">
-                      {data?.venue_name}
-                    </p>
-                    <p className="opacity-80">
-                      {data?.venue_address}
-                    </p>
-                  </div>
-                  <a href={data?.maps_link} target="_blank" className="inline-block mt-3 border-b border-[#2B2B2B] text-[#2B2B2B] font-body hover:text-[#8B5E3C] transition">
-                    <MapPin className="inline w-4 h-4 mr-1" /> See Location on Map
-                  </a>
-                </div>
+                <div className="mt-1 bg-[#FCE7F3] text-[#831843] p-1 rounded-full border border-[#831843]"><Check size={20} /></div>
+                <div><h3 className="font-title text-2xl font-bold">Reception Party</h3><p className="font-body text-lg">{formattedDate} • {data?.resepsi_time}</p><div className="mt-1 font-doodle text-sm text-gray-500"><p className="font-bold text-gray-700">{data?.venue_name}</p><p className="opacity-80">{data?.venue_address}</p></div><a href={data?.maps_link} target="_blank" className="inline-block mt-3 border-b border-[#2B2B2B] text-[#2B2B2B] font-body hover:text-[#8B5E3C] transition"><MapPin className="inline w-4 h-4 mr-1" /> See Location on Map</a></div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 6. GALLERY (POLAROID GRID) */}
+        {/* 7. GALLERY */}
         {gallery.length > 0 && (
           <section className="mb-24 text-center">
             <h2 className="font-title text-4xl mb-12">Captured Memories 📸</h2>
@@ -314,35 +254,24 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
                 <div key={i} className={`bg-white p-3 pb-12 shadow-md border border-gray-200 transform hover:scale-105 transition duration-300 relative ${i % 2 === 0 ? 'rotate-2' : '-rotate-1'}`}>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-8 tape opacity-80"></div>
                   <img src={url} className="w-full h-64 object-cover filter sepia-[0.1]" alt="Memory" />
-                  <p className="absolute bottom-4 left-0 right-0 text-center font-doodle text-gray-400 text-sm">
-                    moments #{i + 1}
-                  </p>
+                  <p className="absolute bottom-4 left-0 right-0 text-center font-doodle text-gray-400 text-sm">moments #{i + 1}</p>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* 7. GIFT (NOTE STYLE) */}
+        {/* 8. GIFT */}
         <section className="mb-24">
           <div className="bg-[#FEF3C7] p-8 shadow-md relative rotate-1 max-w-md mx-auto border border-[#FCD34D]">
             <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-[#FDE68A] border border-[#F59E0B]"></div>
-
             <h2 className="font-title text-3xl text-center mb-4 text-[#92400E]">Wedding Gift</h2>
-            <p className="font-body text-center text-[#92400E] mb-6">
-              "Your presence is the best gift. But if you wish to send a token of love, here it is:"
-            </p>
-
+            <p className="font-body text-center text-[#92400E] mb-6">"Your presence is the best gift. But if you wish to send a token of love, here it is:"</p>
             <div className="space-y-4">
               {banks.map((bank, i) => (
                 <div key={i} className="border-b border-[#D97706]/30 pb-2">
                   <p className="font-bold font-title text-xl text-[#92400E]">{bank.bank}</p>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="font-body text-lg text-[#78350F]">{bank.number}</span>
-                    <button onClick={() => navigator.clipboard.writeText(bank.number)} className="text-[#92400E] hover:scale-110 transition">
-                      <Copy size={18} />
-                    </button>
-                  </div>
+                  <div className="flex justify-between items-center mt-1"><span className="font-body text-lg text-[#78350F]">{bank.number}</span><button onClick={() => navigator.clipboard.writeText(bank.number)} className="text-[#92400E] hover:scale-110 transition"><Copy size={18} /></button></div>
                   <p className="font-doodle text-xs text-[#92400E]/70 uppercase">a.n {bank.name}</p>
                 </div>
               ))}
@@ -350,7 +279,90 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
           </div>
         </section>
 
-        {/* 8. CLOSING */}
+        {/* 9. RSVP (POSTCARD STYLE) */}
+        <section className="mb-24 px-4 max-w-xl mx-auto">
+            <div className="bg-white p-6 shadow-lg border border-gray-300 relative transform rotate-1">
+                {/* Stamp */}
+                <div className="absolute top-4 right-4 w-16 h-20 border-2 border-dashed border-gray-400 flex items-center justify-center rotate-3 opacity-50">
+                    <Heart className="text-gray-400"/>
+                </div>
+                
+                <h2 className="font-title text-3xl mb-6 flex items-center gap-2">
+                    <Mail size={28}/> RSVP & Notes
+                </h2>
+
+                {submittedData ? (
+                    <div className="text-center py-8">
+                        <CheckCircle2 size={48} className="text-[#8B5E3C] mx-auto mb-4" />
+                        <h3 className="font-title text-2xl text-[#2B2B2B]">Thank You!</h3>
+                        <p className="font-body text-gray-600 mt-2">"Your message has been written in our diary."</p>
+                        <div className="mt-6 p-4 bg-[#FAF7F2] border border-[#D4C4B7] text-left italic font-doodle text-gray-700 transform -rotate-1 shadow-sm">
+                            "{submittedData.message}"
+                        </div>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="font-body font-bold text-gray-500 block mb-1">Name</label>
+                            <input value={guestName} disabled className="w-full bg-[#FAF7F2] border-b-2 border-gray-300 p-2 font-doodle text-lg focus:outline-none text-gray-500" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="font-body font-bold text-gray-500 block mb-1">Attendance</label>
+                                <select value={rsvpStatus} onChange={(e) => setRsvpStatus(e.target.value)} className="w-full bg-white border-2 border-[#2B2B2B] rounded-lg p-2 font-body text-lg focus:outline-none">
+                                    <option value="hadir">Will Attend</option>
+                                    <option value="tidak_hadir">Sorry, Can't</option>
+                                    <option value="ragu">Maybe</option>
+                                </select>
+                            </div>
+                            {rsvpStatus === 'hadir' && (
+                                <div>
+                                    <label className="font-body font-bold text-gray-500 block mb-1">Pax</label>
+                                    <select value={rsvpPax} onChange={(e) => setRsvpPax(e.target.value)} className="w-full bg-white border-2 border-[#2B2B2B] rounded-lg p-2 font-body text-lg focus:outline-none">
+                                        {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} Person</option>)}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <label className="font-body font-bold text-gray-500 block mb-1">Leave a Note</label>
+                            <textarea required value={rsvpMessage} onChange={(e) => setRsvpMessage(e.target.value)} className="w-full bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] bg-white border border-gray-300 p-4 font-doodle text-xl h-32 focus:outline-none focus:border-[#8B5E3C] leading-loose" placeholder="Write something sweet..."></textarea>
+                        </div>
+                        <button disabled={isSending} className="w-full bg-[#2B2B2B] text-white font-title text-xl py-3 rounded hover:bg-[#4B4B4B] transition flex items-center justify-center gap-2">
+                            {isSending ? 'Sending...' : <><Send size={18}/> Send Note</>}
+                        </button>
+                    </form>
+                )}
+
+                {/* DIARY ENTRIES (COMMENTS) */}
+                <div className="mt-10 border-t-2 border-dashed border-gray-300 pt-6">
+                    <p className="font-title text-2xl mb-4 text-[#8B5E3C]">Friends' Notes:</p>
+                    <div className="space-y-6 max-h-[300px] overflow-y-auto diary-scroll pr-2">
+                        {(data?.rsvps || []).length === 0 ? (
+                            <p className="text-center font-doodle text-gray-400">Page is empty...</p>
+                        ) : (
+                            (data?.rsvps || []).map((item, idx) => (
+                                <div key={idx} className="relative pl-6 border-l-2 border-[#D4C4B7]">
+                                    <div className="absolute -left-[5px] top-0 w-2 h-2 bg-[#8B5E3C] rounded-full"></div>
+                                    <div className="flex justify-between items-baseline mb-1">
+                                        <span className="font-title text-xl font-bold text-[#2B2B2B]">{item.guest_name}</span>
+                                        <span className={`text-xs font-body uppercase tracking-wider ${item.status === 'hadir' ? 'text-green-600' : 'text-red-500'}`}>{item.status}</span>
+                                    </div>
+                                    <p className="font-doodle text-lg text-gray-600">"{item.message}"</p>
+                                    {item.reply && (
+                                        <div className="mt-2 bg-[#FAF7F2] p-2 border-l-2 border-[#8B5E3C] text-sm font-body text-[#8B5E3C]">
+                                            <strong>Reply:</strong> {item.reply}
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {/* 10. CLOSING */}
         <footer className="text-center py-12 relative">
           <DoodleHeart className="w-16 h-16 mx-auto text-[#2B2B2B] opacity-20 mb-4 animate-pulse" />
           <h2 className="font-title text-4xl text-[#2B2B2B] mb-2">{groom} & {bride}</h2>
@@ -359,7 +371,7 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
 
       </div>
 
-      {/* FLOATING MUSIC BUTTON (SKETCHY) */}
+      {/* AUDIO BUTTON */}
       <button
         onClick={toggleAudio}
         className="fixed bottom-6 right-6 z-40 w-12 h-12 flex items-center justify-center bg-white border-2 border-[#2B2B2B] rounded-full shadow-[2px_2px_0_#2B2B2B] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#2B2B2B] transition-all"
@@ -367,7 +379,7 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
         {isPlaying ? <Music size={20} className="animate-spin-slow" /> : <Play size={20} className="ml-1" />}
       </button>
 
-      <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/05/17/audio_1615a96c4d.mp3"} loop />
+      <audio ref={audioRef} src={audioUrl} loop />
     </div>
   );
 }

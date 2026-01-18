@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { useToast } from '../components/GlobalToast'; // Pastikan path ini benar
-import ConfirmDialog from '../components/ConfirmDialog'; // Pastikan path ini benar
+import { useToast } from '../components/GlobalToast';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { TEMPLATE_OPTIONS } from '../lib/constants'; 
 import { 
   Trash2, Edit, Search, Clock, CheckCircle, XCircle, 
   ShieldCheck, LogOut, Save, X, Calendar, User, Image as ImageIcon, 
-  MapPin, Loader2, PlusCircle, Grid, Eye, Gift, MessageCircle
+  MapPin, Loader2, PlusCircle, Grid, Gift, Music, Link as LinkIcon, Layout, UploadCloud, Eye, MessageSquare
 } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 
@@ -16,7 +17,7 @@ export default function AdminPanel() {
   const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State untuk Dialog Konfirmasi
+  // State Dialog
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   
@@ -28,76 +29,51 @@ export default function AdminPanel() {
   // Edit Modal State
   const [editingOrder, setEditingOrder] = useState(null);
   const [editFormData, setEditFormData] = useState({});
-  const [activeTab, setActiveTab] = useState('data'); // data | photo | gallery | gift | details
   const [uploading, setUploading] = useState(false);
+  
+  // State Khusus Komentar (RSVP)
+  const [rsvps, setRsvps] = useState([]);
 
-  // 1. CEK SESSION
+  // 1. CEK SESSION & FETCH DATA
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchOrders();
-      else setLoading(false);
+      if (session) fetchOrders(); else setLoading(false);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) fetchOrders();
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  // 2. LOGIN
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginLoading(true);
+    e.preventDefault(); setLoginLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoginLoading(false);
-    if (error) {
-       toast.error("Login Gagal: " + error.message);
-    } else {
-       toast.success("Selamat datang, Admin!");
-    }
+    if (error) toast.error("Login Gagal: " + error.message);
+    else toast.success("Selamat datang, Admin!");
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setOrders([]);
-    toast.success("Berhasil Logout");
-  };
+  const handleLogout = async () => { await supabase.auth.signOut(); setOrders([]); toast.success("Berhasil Logout"); };
 
-  // 3. FETCH DATA
   const fetchOrders = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) toast.error("Gagal ambil data");
-    else setOrders(data);
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (error) toast.error("Gagal ambil data"); else setOrders(data);
     setLoading(false);
   };
 
-  // 4. HAPUS DATA (DENGAN CONFIRM DIALOG)
-  const openDeleteDialog = (id) => {
-    setDeleteId(id);
-    setShowConfirm(true);
-  };
-
+  // 4. HAPUS DATA ORDER
+  const openDeleteDialog = (id) => { setDeleteId(id); setShowConfirm(true); };
   const executeDelete = async () => {
     setShowConfirm(false);
     const { error } = await supabase.from('orders').delete().eq('id', deleteId);
-    if (!error) {
-      toast.success("Data berhasil dihapus permanen");
-      fetchOrders();
-    } else {
-      toast.error("Gagal menghapus (Cek Permission RLS): " + error.message);
-    }
+    if (!error) { toast.success("Data dihapus"); fetchOrders(); } else { toast.error("Gagal hapus"); }
   };
 
-  // 5. BUKA MODAL EDIT
-  const openEditModal = (order) => {
+  // 5. BUKA MODAL EDIT (PREPARE DATA)
+  const openEditModal = async (order) => {
     setEditingOrder(order);
     setEditFormData({
       ...order.event_details,
@@ -105,33 +81,36 @@ export default function AdminPanel() {
       bride_name: order.bride_name,
       wedding_date: order.wedding_date,
       payment_status: order.payment_status,
+      slug: order.slug,
+      template_slug: order.template_slug,
       gallery: order.event_details?.gallery || [],
-      banks: order.event_details?.banks || [] 
+      banks: order.event_details?.banks || [],
+      audio_url: order.event_details?.audio_url || '',
+      quote: order.event_details?.quote || '',
+      quote_src: order.event_details?.quote_src || ''
     });
-    setActiveTab('data');
+
+    // Fetch RSVPs (Komentar) untuk Order ini
+    const { data: rsvpData } = await supabase
+        .from('rsvps')
+        .select('*')
+        .eq('order_id', order.id)
+        .order('created_at', { ascending: false });
+    
+    setRsvps(rsvpData || []);
   };
 
   // 6. SIMPAN PERUBAHAN
   const handleSaveUpdate = async (e) => {
     e.preventDefault();
     if (!editingOrder) return;
-
-    // Pisahkan data kolom tabel & JSON
-    const { groom_name, bride_name, wedding_date, payment_status, ...eventDetailsJSON } = editFormData;
-
-    const { error } = await supabase
-      .from('orders')
-      .update({
-        groom_name,
-        bride_name,
-        wedding_date,
-        payment_status,
-        event_details: eventDetailsJSON
-      })
-      .eq('id', editingOrder.id);
+    const { groom_name, bride_name, wedding_date, payment_status, slug, template_slug, ...eventDetailsJSON } = editFormData;
+    const { error } = await supabase.from('orders').update({
+        groom_name, bride_name, wedding_date, payment_status, slug, template_slug, event_details: eventDetailsJSON
+      }).eq('id', editingOrder.id);
 
     if (!error) {
-      toast.success("Data berhasil disimpan!");
+      toast.success("Berhasil disimpan!");
       setEditingOrder(null);
       fetchOrders();
     } else {
@@ -139,81 +118,56 @@ export default function AdminPanel() {
     }
   };
 
-  const handleInputChange = (e) => {
-    setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
+  const handleInputChange = (e) => setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
+
+  // --- LOGIC HAPUS KOMENTAR ---
+  const handleDeleteRsvp = async (rsvpId) => {
+      if(!window.confirm("Hapus komentar ini?")) return;
+      
+      const { error } = await supabase.from('rsvps').delete().eq('id', rsvpId);
+      if(!error) {
+          setRsvps(prev => prev.filter(r => r.id !== rsvpId));
+          toast.success("Komentar dihapus");
+      } else {
+          toast.error("Gagal hapus komentar");
+      }
   };
 
-  // --- LOGIC BANK / GIFT ---
-  const addAdminBank = () => {
-    setEditFormData(prev => ({
-      ...prev,
-      banks: [...(prev.banks || []), { bank: '', number: '', name: '' }]
-    }));
-  };
+  // --- LOGIC UTILS ---
+  const addAdminBank = () => setEditFormData(prev => ({ ...prev, banks: [...(prev.banks || []), { bank: '', number: '', name: '' }] }));
+  const updateAdminBank = (index, field, value) => { const newBanks = [...(editFormData.banks || [])]; newBanks[index][field] = value; setEditFormData(prev => ({ ...prev, banks: newBanks })); };
+  const removeAdminBank = (index) => { const newBanks = [...(editFormData.banks || [])]; newBanks.splice(index, 1); setEditFormData(prev => ({ ...prev, banks: newBanks })); };
 
-  const updateAdminBank = (index, field, value) => {
-    const newBanks = [...(editFormData.banks || [])];
-    newBanks[index][field] = value;
-    setEditFormData(prev => ({ ...prev, banks: newBanks }));
-  };
-
-  const removeAdminBank = (index) => {
-    const newBanks = [...(editFormData.banks || [])];
-    newBanks.splice(index, 1);
-    setEditFormData(prev => ({ ...prev, banks: newBanks }));
-  };
-
-  // --- LOGIC GAMBAR ---
   const handleAdminUpload = async (e, fieldName) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
-
+    const file = e.target.files[0]; if (!file) return; setUploading(true);
     try {
         const fileExt = file.name.split('.').pop();
-        const filePath = `${editingOrder.id}/ADMIN_${fieldName}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
-        if (uploadError) throw uploadError;
+        const prefix = fieldName === 'audio_url' ? 'AUDIO_' : 'ADMIN_IMG_';
+        const filePath = `${editingOrder.id}/${prefix}${Date.now()}.${fileExt}`;
+        const { error } = await supabase.storage.from('images').upload(filePath, file); if (error) throw error;
         const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-        setEditFormData(prev => ({ ...prev, [fieldName]: data.publicUrl }));
-        toast.success("Foto berhasil diupload.");
-    } catch (err) { toast.error("Upload Gagal: " + err.message); } finally { setUploading(false); }
+        setEditFormData(prev => ({ ...prev, [fieldName]: data.publicUrl })); toast.success("Upload berhasil.");
+    } catch (err) { toast.error("Gagal: " + err.message); } finally { setUploading(false); }
   };
 
   const handleGalleryUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploading(true);
+    const file = e.target.files[0]; if (!file) return; setUploading(true);
     try {
         const fileExt = file.name.split('.').pop();
         const filePath = `${editingOrder.id}/GALLERY_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
-        if (uploadError) throw uploadError;
+        const { error } = await supabase.storage.from('images').upload(filePath, file); if (error) throw error;
         const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-        setEditFormData(prev => ({ ...prev, gallery: [...(prev.gallery || []), data.publicUrl] }));
-        toast.success("Foto galeri ditambahkan");
-    } catch (err) { toast.error("Gagal upload galeri: " + err.message); } finally { setUploading(false); }
+        setEditFormData(prev => ({ ...prev, gallery: [...(prev.gallery || []), data.publicUrl] })); toast.success("Foto ditambahkan");
+    } catch (err) { toast.error("Gagal: " + err.message); } finally { setUploading(false); }
   };
 
-  const removeGalleryItem = (index) => {
-      setEditFormData(prev => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== index) }));
-  };
+  const removeGalleryItem = (index) => setEditFormData(prev => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== index) }));
+  const calculateDuration = (dateString) => { const diff = Math.abs(new Date() - new Date(dateString)); return Math.ceil(diff / (1000 * 60 * 60 * 24)); }; 
 
-  const calculateDuration = (dateString) => {
-    const created = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - created);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-  }; 
-
-  // --- LOGIN VIEW ---
-  if (!session) {
-    return (
+  if (!session) return (
       <div className="min-h-screen bg-[#FFD5AF] flex items-center justify-center p-4 font-sans">
         <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm border-2 border-[#712E1E] text-center">
-          <div className="bg-[#712E1E] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-             <ShieldCheck className="w-8 h-8 text-[#FFD5AF]" />
-          </div>
+          <div className="bg-[#712E1E] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse"><ShieldCheck className="w-8 h-8 text-[#FFD5AF]" /></div>
           <h1 className="text-2xl font-bold text-[#712E1E] mb-2">Admin Login</h1>
           <form onSubmit={handleLogin} className="space-y-4">
             <input type="email" required placeholder="admin@nikahyuk.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:border-[#712E1E] outline-none" />
@@ -222,14 +176,10 @@ export default function AdminPanel() {
           </form>
         </div>
       </div>
-    );
-  }
+  );
 
-  // --- DASHBOARD VIEW ---
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-20">
-      
-      {/* Header */}
       <div className="bg-[#712E1E] text-[#FFD5AF] p-6 shadow-lg sticky top-0 z-30">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div><h1 className="text-xl md:text-2xl font-bold flex items-center gap-2"><ShieldCheck className="w-6 h-6" /> Admin Panel</h1><p className="text-xs opacity-80">Superuser: {session.user.email}</p></div>
@@ -269,36 +219,13 @@ export default function AdminPanel() {
                     <td className="p-4"><div className="font-bold text-[#712E1E] text-base">{order.groom_name} & {order.bride_name}</div><div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Calendar className="w-3 h-3"/> {order.wedding_date}</div></td>
                     <td className="p-4"><span className="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-100 font-medium">{order.template_slug}</span></td>
                     <td className="p-4">
-                      {order.payment_status === 'success' ? (
-                        <span className="flex items-center gap-1 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-green-100"><CheckCircle className="w-3 h-3" /> Lunas</span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-red-700 bg-red-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-red-100"><XCircle className="w-3 h-3" /> {order.payment_status}</span>
-                      )}
+                      {order.payment_status === 'success' ? <span className="flex items-center gap-1 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-green-100"><CheckCircle className="w-3 h-3" /> Lunas</span> : <span className="flex items-center gap-1 text-red-700 bg-red-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-red-100"><XCircle className="w-3 h-3" /> {order.payment_status}</span>}
                     </td>
                     <td className="p-4 text-center">
                       <div className="flex justify-center gap-2">
-                        {/* 1. Preview */}
-                        <a href={`/wedding/${order.slug}`} target="_blank" rel="noreferrer" className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-100 transition border border-green-200" title="Lihat Website">
-                          <Eye className="w-4 h-4" />
-                        </a>
-                        
-                        {/* 2. WhatsApp (Menggunakan Icon MessageCircle Hijau) */}
-                        {order.whatsapp && (
-                          <a 
-                            href={`https://wa.me/${order.whatsapp.replace(/[^0-9]/g, '')}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="bg-emerald-50 text-emerald-600 p-2 rounded-lg hover:bg-emerald-100 transition border border-emerald-200" 
-                            title="Chat WhatsApp"
-                          >
-                            <FaWhatsapp className="w-4 h-4" />
-                          </a>
-                        )}
-
-                        {/* 3. Edit */}
+                        <a href={`/wedding/${order.slug}`} target="_blank" rel="noreferrer" className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-100 transition border border-green-200" title="Lihat Website"><Eye className="w-4 h-4" /></a>
+                        {order.whatsapp && <a href={`https://wa.me/${order.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-600 p-2 rounded-lg hover:bg-emerald-100 transition border border-emerald-200" title="Chat WhatsApp"><FaWhatsapp className="w-4 h-4" /></a>}
                         <button onClick={() => openEditModal(order)} className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition border border-blue-200" title="Edit Full Data"><Edit className="w-4 h-4" /></button>
-                        
-                        {/* 4. Delete */}
                         <button onClick={() => openDeleteDialog(order.id)} className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition border border-red-200" title="Hapus Permanen"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
@@ -310,153 +237,212 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* --- CONFIRM DIALOG (CUSTOM) --- */}
-      <ConfirmDialog 
-        isOpen={showConfirm}
-        title="Hapus Data Permanen?"
-        message="Data undangan ini akan dihapus selamanya dari database. Akses link undangan akan hilang. Lanjutkan?"
-        isDanger={true}
-        onCancel={() => setShowConfirm(false)}
-        onConfirm={executeDelete}
-      />
+      <ConfirmDialog isOpen={showConfirm} title="Hapus Data Permanen?" message="Data undangan ini akan dihapus selamanya." isDanger={true} onCancel={() => setShowConfirm(false)} onConfirm={executeDelete} />
 
-      {/* --- MODAL SUPER EDIT --- */}
+      {/* --- MODAL BENTO EDIT LAYOUT --- */}
       {editingOrder && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden transform transition-all scale-100">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#F3F4F6] rounded-3xl shadow-2xl w-full max-w-6xl h-[95vh] flex flex-col overflow-hidden relative">
             
-            <div className="bg-[#712E1E] p-4 px-6 flex justify-between items-center text-white shrink-0">
-              <div className="flex items-center gap-3"><div className="bg-white/20 p-2 rounded-lg"><Edit className="w-5 h-5"/></div><div><h2 className="text-lg font-bold leading-tight">Edit Data Klien</h2><p className="text-xs opacity-80 font-mono">ID: {editingOrder.id}</p></div></div>
-              <button onClick={() => setEditingOrder(null)} className="hover:bg-white/20 p-2 rounded-full transition"><X className="w-6 h-6"/></button>
+            {/* Header Modal */}
+            <div className="bg-white p-4 px-6 flex justify-between items-center shrink-0 border-b">
+              <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 text-blue-600 p-2 rounded-xl"><Edit className="w-5 h-5"/></div>
+                  <div><h2 className="text-xl font-bold text-gray-800">Edit Data Undangan</h2><p className="text-xs text-gray-500 font-mono">ID: {editingOrder.id}</p></div>
+              </div>
+              <div className="flex gap-3">
+                  <button onClick={() => setEditingOrder(null)} className="px-4 py-2 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition">Batal</button>
+                  <button onClick={handleSaveUpdate} className="px-6 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center gap-2"><Save className="w-4 h-4"/> Simpan</button>
+              </div>
             </div>
 
-            <div className="flex border-b bg-gray-50 shrink-0 overflow-x-auto">
-               <TabButton active={activeTab === 'data'} onClick={() => setActiveTab('data')} icon={<User className="w-4 h-4"/>} label="Data Utama" />
-               <TabButton active={activeTab === 'photo'} onClick={() => setActiveTab('photo')} icon={<ImageIcon className="w-4 h-4"/>} label="Foto" />
-               <TabButton active={activeTab === 'gallery'} onClick={() => setActiveTab('gallery')} icon={<Grid className="w-4 h-4"/>} label="Galeri" />
-               <TabButton active={activeTab === 'gift'} onClick={() => setActiveTab('gift')} icon={<Gift className="w-4 h-4"/>} label="Amplop & Gift" />
-               <TabButton active={activeTab === 'details'} onClick={() => setActiveTab('details')} icon={<MapPin className="w-4 h-4"/>} label="Acara & Lokasi" />
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-white relative">
-               <form id="editForm" onSubmit={handleSaveUpdate} className="space-y-6">
-                  
-                  {/* DATA UTAMA */}
-                  {activeTab === 'data' && (
-                    <div className="space-y-5 animate-fade-in">
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <InputGroup label="Mempelai Pria" name="groom_name" val={editFormData.groom_name} onChange={handleInputChange} />
-                          <InputGroup label="Mempelai Wanita" name="bride_name" val={editFormData.bride_name} onChange={handleInputChange} />
-                       </div>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          <InputGroup label="Ortu Pria" name="groom_parents" val={editFormData.groom_parents} onChange={handleInputChange} />
-                          <InputGroup label="Ortu Wanita" name="bride_parents" val={editFormData.bride_parents} onChange={handleInputChange} />
-                       </div>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t">
-                          <InputGroup label="Tanggal Pernikahan" name="wedding_date" type="date" val={editFormData.wedding_date} onChange={handleInputChange} />
-                          <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">Status Pembayaran</label><select name="payment_status" value={editFormData.payment_status} onChange={handleInputChange} className="w-full border p-3 rounded-xl bg-yellow-50 font-bold text-[#712E1E] focus:ring-2 focus:ring-[#E59A59] outline-none"><option value="pending">Pending</option><option value="success">Success (Lunas)</option><option value="failed">Failed</option></select></div>
-                       </div>
-                    </div>
-                  )}
-
-                  {/* FOTO UTAMA */}
-                  {activeTab === 'photo' && (
-                    <div className="space-y-6 animate-fade-in">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                           {['groom_photo', 'bride_photo', 'cover_photo'].map((field) => (
-                               <div key={field} className="text-center p-4 border rounded-xl bg-gray-50">
-                                  <p className="text-xs font-bold mb-3 uppercase text-gray-500">{field.replace('_photo', '')}</p>
-                                  <img src={editFormData[field] || "https://via.placeholder.com/150"} className="w-full h-32 object-cover rounded-lg mx-auto mb-3 border-4 border-white shadow-md bg-gray-200"/>
-                                  <input type="file" className="text-xs w-full" disabled={uploading} onChange={(e) => handleAdminUpload(e, field)} />
-                               </div>
-                           ))}
+            {/* BENTO GRID CONTENT */}
+            <div className="flex-1 overflow-y-auto p-6">
+                <form id="editForm" className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    
+                    {/* 1. MAIN INFO */}
+                    <BentoCard title="Informasi Mempelai" icon={<User className="text-pink-500"/>} colSpan="md:col-span-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            <InputGroup label="Mempelai Pria" name="groom_name" val={editFormData.groom_name} onChange={handleInputChange} />
+                            <InputGroup label="Mempelai Wanita" name="bride_name" val={editFormData.bride_name} onChange={handleInputChange} />
                         </div>
-                    </div>
-                  )}
-
-                  {/* GALERI */}
-                  {activeTab === 'gallery' && (
-                    <div className="space-y-6 animate-fade-in">
-                       <div className="border-2 border-dashed border-[#E59A59]/50 bg-[#FFF0E0]/30 rounded-xl p-6 text-center hover:bg-[#FFF0E0] transition">
-                          <label className="cursor-pointer block">
-                             <PlusCircle className="w-8 h-8 text-[#E59A59] mx-auto mb-2" />
-                             <span className="text-sm font-bold text-[#712E1E]">{uploading ? 'Mengupload...' : 'Tambah Foto Galeri'}</span>
-                             <input type="file" className="hidden" disabled={uploading} onChange={handleGalleryUpload} />
-                          </label>
-                       </div>
-                       <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-                          {editFormData.gallery && editFormData.gallery.map((url, idx) => (
-                                <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border bg-gray-100">
-                                   <img src={url} className="w-full h-full object-cover" />
-                                   <button type="button" onClick={() => removeGalleryItem(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-red-700"><X className="w-3 h-3" /></button>
-                                </div>
-                          ))}
-                       </div>
-                    </div>
-                  )}
-
-                  {/* GIFT / BANK */}
-                  {activeTab === 'gift' && (
-                    <div className="space-y-6 animate-fade-in">
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-bold text-[#712E1E]">Daftar Rekening & E-Wallet</h3>
-                            <button type="button" onClick={addAdminBank} className="text-xs bg-black text-white px-3 py-2 rounded-lg flex items-center gap-1">+ Tambah</button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            <InputGroup label="Ortu Pria" name="groom_parents" val={editFormData.groom_parents} onChange={handleInputChange} />
+                            <InputGroup label="Ortu Wanita" name="bride_parents" val={editFormData.bride_parents} onChange={handleInputChange} />
                         </div>
-                        
-                        {(!editFormData.banks || editFormData.banks.length === 0) && <p className="text-center text-gray-400 text-sm">Belum ada rekening.</p>}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t pt-4">
+                            <InputGroup label="Tanggal Acara" name="wedding_date" type="date" val={editFormData.wedding_date} onChange={handleInputChange} />
+                            <div><label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Status Pembayaran</label><select name="payment_status" value={editFormData.payment_status} onChange={handleInputChange} className="w-full border p-2.5 rounded-lg bg-gray-50 font-bold text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none"><option value="pending">Pending</option><option value="success">Success (Lunas)</option><option value="failed">Failed</option></select></div>
+                        </div>
+                    </BentoCard>
 
+                    {/* 2. SETTINGS */}
+                    <BentoCard title="Pengaturan Sistem" icon={<Layout className="text-indigo-500"/>} colSpan="md:col-span-4">
                         <div className="space-y-4">
-                            {editFormData.banks && editFormData.banks.map((bank, idx) => (
-                                <div key={idx} className="bg-gray-50 p-4 rounded-xl border relative group">
-                                    <button type="button" onClick={() => removeAdminBank(idx)} className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition"><Trash2 className="w-4 h-4"/></button>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div><label className="text-[10px] text-gray-400 uppercase font-bold">Nama Bank/Dompet</label><input value={bank.bank} onChange={(e) => updateAdminBank(idx, 'bank', e.target.value)} className="w-full border p-2 rounded text-sm" placeholder="BCA / DANA"/></div>
-                                        <div><label className="text-[10px] text-gray-400 uppercase font-bold">Nomor Rekening</label><input value={bank.number} onChange={(e) => updateAdminBank(idx, 'number', e.target.value)} className="w-full border p-2 rounded text-sm font-mono" placeholder="123xxxxx"/></div>
-                                        <div><label className="text-[10px] text-gray-400 uppercase font-bold">Atas Nama</label><input value={bank.name} onChange={(e) => updateAdminBank(idx, 'name', e.target.value)} className="w-full border p-2 rounded text-sm" placeholder="Nama Pemilik"/></div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Tema Undangan</label>
+                                <select name="template_slug" value={editFormData.template_slug} onChange={handleInputChange} className="w-full border p-2.5 rounded-lg bg-indigo-50 font-medium text-indigo-900 outline-none">
+                                    {TEMPLATE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                                </select>
+                            </div>
+                            <InputGroup label="Link Slug (URL)" name="slug" val={editFormData.slug} onChange={handleInputChange} placeholder="misal: romeo-juliet" />
+                            <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-xs text-yellow-700 italic">
+                                *Mengubah slug akan mengubah link undangan yang sudah disebar.
+                            </div>
+                        </div>
+                    </BentoCard>
+
+                    {/* 3. EVENT DETAILS */}
+                    <BentoCard title="Lokasi & Acara" icon={<MapPin className="text-red-500"/>} colSpan="md:col-span-6">
+                        <div className="space-y-4">
+                            <InputGroup label="Nama Gedung / Tempat" name="venue_name" val={editFormData.venue_name} onChange={handleInputChange} />
+                            <div><label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Alamat Lengkap</label><textarea name="venue_address" value={editFormData.venue_address || ''} onChange={handleInputChange} className="w-full border p-3 rounded-lg h-20 focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Alamat..."></textarea></div>
+                            <InputGroup label="Link Google Maps" name="maps_link" val={editFormData.maps_link} onChange={handleInputChange} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <InputGroup label="Jam Akad" name="akad_time" val={editFormData.akad_time} onChange={handleInputChange} />
+                                <InputGroup label="Jam Resepsi" name="resepsi_time" val={editFormData.resepsi_time} onChange={handleInputChange} />
+                            </div>
+                        </div>
+                    </BentoCard>
+
+                    {/* 4. MAIN PHOTOS */}
+                    <BentoCard title="Foto Utama" icon={<ImageIcon className="text-green-500"/>} colSpan="md:col-span-6">
+                        <div className="grid grid-cols-3 gap-4 items-end">
+                            {[
+                                { field: 'groom_photo', label: 'Groom', style: 'aspect-square rounded-full' },
+                                { field: 'bride_photo', label: 'Bride', style: 'aspect-square rounded-full' },
+                                { field: 'cover_photo', label: 'Cover', style: 'aspect-[3/4] rounded-lg' }
+                            ].map((item) => (
+                                <div key={item.field} className="text-center">
+                                    <div className={`${item.style} w-full bg-gray-100 border border-dashed border-gray-300 relative overflow-hidden group mb-2 mx-auto shadow-sm`}>
+                                        <img 
+                                            src={editFormData[item.field] || "https://via.placeholder.com/150"} 
+                                            className="w-full h-full object-cover"
+                                            alt={item.label}
+                                        />
+                                        <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-white text-xs">
+                                            <UploadCloud className="w-6 h-6 mb-1"/> Ganti
+                                            <input 
+                                                type="file" 
+                                                className="hidden" 
+                                                disabled={uploading} 
+                                                onChange={(e) => handleAdminUpload(e, item.field)} 
+                                            />
+                                        </label>
                                     </div>
+                                    <p className="text-[10px] font-bold uppercase text-gray-500">{item.label}</p>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                  )}
+                    </BentoCard>
 
-                  {/* ACARA & LOKASI */}
-                  {activeTab === 'details' && (
-                     <div className="space-y-5 animate-fade-in">
-                        <InputGroup label="Nama Gedung / Hotel" name="venue_name" val={editFormData.venue_name} onChange={handleInputChange} />
-                        <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">Alamat Lengkap</label><textarea name="venue_address" value={editFormData.venue_address || ''} onChange={handleInputChange} className="w-full border p-3 rounded-xl h-24 focus:ring-2 focus:ring-[#E59A59] outline-none" placeholder="Jl. Sudirman No..."></textarea></div>
-                        <InputGroup label="Link Google Maps" name="maps_link" val={editFormData.maps_link} onChange={handleInputChange} />
-                        <div className="grid grid-cols-2 gap-5 pt-2 border-t">
-                           <InputGroup label="Waktu Akad" name="akad_time" val={editFormData.akad_time} onChange={handleInputChange} placeholder="08:00 WIB" />
-                           <InputGroup label="Waktu Resepsi" name="resepsi_time" val={editFormData.resepsi_time} onChange={handleInputChange} placeholder="11:00 WIB" />
+                    {/* 5. GALLERY */}
+                    <BentoCard title="Galeri Foto" icon={<Grid className="text-purple-500"/>} colSpan="md:col-span-12">
+                        <div className="flex flex-wrap gap-4">
+                            <label className="w-32 h-32 rounded-xl border-2 border-dashed border-purple-300 bg-purple-50 flex flex-col items-center justify-center cursor-pointer hover:bg-purple-100 transition text-purple-600">
+                                <PlusCircle className="w-8 h-8 mb-2"/> <span className="text-xs font-bold">Tambah</span>
+                                <input type="file" className="hidden" disabled={uploading} onChange={handleGalleryUpload} />
+                            </label>
+                            {editFormData.gallery && editFormData.gallery.map((url, idx) => (
+                                <div key={idx} className="w-32 h-32 relative group rounded-xl overflow-hidden shadow-sm border">
+                                    <img src={url} className="w-full h-full object-cover" />
+                                    <button type="button" onClick={() => removeGalleryItem(idx)} className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-red-700"><X className="w-3 h-3" /></button>
+                                </div>
+                            ))}
                         </div>
-                     </div>
-                  )}
+                    </BentoCard>
 
-               </form>
+                    {/* 6. AUDIO & QUOTE */}
+                    <BentoCard title="Musik & Kutipan" icon={<Music className="text-blue-500"/>} colSpan="md:col-span-6">
+                        <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 mb-4 flex items-center gap-3">
+                            <div className="bg-white p-2 rounded-full shadow-sm"><Music className="w-4 h-4 text-blue-500"/></div>
+                            <div className="flex-1 overflow-hidden">
+                                <p className="text-xs font-bold text-blue-900 truncate">{editFormData.audio_url ? 'Musik Terpasang' : 'Belum ada musik'}</p>
+                                <audio controls src={editFormData.audio_url} className="h-6 w-full mt-1 max-w-[200px]"/>
+                            </div>
+                            <label className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-blue-700">Upload <input type="file" accept="audio/*" onChange={(e) => handleAdminUpload(e, 'audio_url')} className="hidden" disabled={uploading}/></label>
+                        </div>
+                        <div className="space-y-3">
+                            <div><label className="block text-xs font-bold text-gray-400 mb-1 uppercase">Kutipan / Quote</label><textarea name="quote" value={editFormData.quote || ''} onChange={handleInputChange} className="w-full border p-3 rounded-lg h-24 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Tulis kutipan..."></textarea></div>
+                            <InputGroup label="Sumber Kutipan" name="quote_src" val={editFormData.quote_src} onChange={handleInputChange} placeholder="Contoh: QS. Ar-Rum" />
+                        </div>
+                    </BentoCard>
+
+                    {/* 7. GIFT / BANK */}
+                    <BentoCard title="Rekening & Gift" icon={<Gift className="text-orange-500"/>} colSpan="md:col-span-6">
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scroll">
+                            {(!editFormData.banks || editFormData.banks.length === 0) && <p className="text-center text-gray-400 text-sm py-4 italic">Belum ada rekening.</p>}
+                            {editFormData.banks && editFormData.banks.map((bank, idx) => (
+                                <div key={idx} className="bg-white border p-3 rounded-xl relative group hover:border-orange-300 transition">
+                                    <button type="button" onClick={() => removeAdminBank(idx)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                    <div className="grid grid-cols-3 gap-2 pr-6">
+                                        <input value={bank.bank} onChange={(e) => updateAdminBank(idx, 'bank', e.target.value)} className="border-b border-dashed p-1 text-sm outline-none font-bold text-gray-700" placeholder="Bank"/>
+                                        <input value={bank.number} onChange={(e) => updateAdminBank(idx, 'number', e.target.value)} className="border-b border-dashed p-1 text-sm outline-none font-mono" placeholder="No. Rek"/>
+                                        <input value={bank.name} onChange={(e) => updateAdminBank(idx, 'name', e.target.value)} className="border-b border-dashed p-1 text-sm outline-none" placeholder="Atas Nama"/>
+                                    </div>
+                                </div>
+                            ))}
+                            <button type="button" onClick={addAdminBank} className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold border border-dashed border-gray-300 flex items-center justify-center gap-2">+ Tambah Rekening</button>
+                        </div>
+                    </BentoCard>
+
+                    {/* 8. KOMENTAR (BARU) - FULL WIDTH */}
+                    <BentoCard title="Buku Tamu / Komentar" icon={<MessageSquare className="text-teal-500"/>} colSpan="md:col-span-12">
+                        {rsvps.length === 0 ? (
+                            <p className="text-center text-gray-400 text-sm py-6 italic">Belum ada komentar masuk.</p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {rsvps.map((rsvp) => (
+                                    <div key={rsvp.id} className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition relative group">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => handleDeleteRsvp(rsvp.id)} 
+                                            className="absolute top-3 right-3 text-red-300 hover:text-red-500 transition"
+                                            title="Hapus Komentar"
+                                        >
+                                            <Trash2 className="w-4 h-4"/>
+                                        </button>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h4 className="font-bold text-gray-800 text-sm">{rsvp.guest_name}</h4>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${rsvp.status === 'hadir' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {rsvp.status.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 italic bg-gray-50 p-2 rounded mb-2">"{rsvp.message}"</p>
+                                        <p className="text-[10px] text-gray-400">{new Date(rsvp.created_at).toLocaleString()}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </BentoCard>
+
+                </form>
             </div>
-
-            <div className="p-4 bg-gray-50 border-t flex justify-end gap-3 shrink-0">
-               <button onClick={() => setEditingOrder(null)} className="px-6 py-3 rounded-xl bg-white border border-gray-300 font-bold text-gray-600 hover:bg-gray-100 transition">Batal</button>
-               <button type="submit" form="editForm" className="px-8 py-3 rounded-xl bg-[#E59A59] font-bold text-white hover:bg-[#d48b4b] transition flex items-center gap-2 shadow-lg"><Save className="w-4 h-4" /> Simpan Perubahan</button>
-            </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
 
-function InputGroup({ label, name, val, onChange, type="text", placeholder="" }) {
-  return (
-    <div><label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">{label}</label><input type={type} name={name} value={val || ''} onChange={onChange} placeholder={placeholder} className="w-full border p-3 rounded-xl outline-none focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 transition" /></div>
-  )
+// --- SUB COMPONENTS (BENTO UI) ---
+function BentoCard({ title, icon, children, colSpan = "col-span-12" }) {
+    return (
+        <div className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 h-full ${colSpan}`}>
+            <div className="flex items-center gap-2 mb-4 border-b pb-3">
+                <div className="p-1.5 bg-gray-50 rounded-lg">{icon}</div>
+                <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide">{title}</h3>
+            </div>
+            {children}
+        </div>
+    )
 }
 
-function TabButton({ active, onClick, icon, label }) {
+function InputGroup({ label, name, val, onChange, type="text", placeholder="" }) {
   return (
-    <button type="button" onClick={onClick} className={`flex-1 py-4 px-6 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition ${active ? 'border-[#712E1E] text-[#712E1E] bg-white' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>{icon} {label}</button>
+    <div>
+        <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">{label}</label>
+        <input type={type} name={name} value={val || ''} onChange={onChange} placeholder={placeholder} className="w-full border p-2.5 rounded-lg text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+    </div>
   )
 }

@@ -3,35 +3,9 @@ import { supabase } from '../lib/supabaseClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/GlobalToast'; // 1. Import Toast
 import ConfirmDialog from '../components/ConfirmDialog'; // 2. Import Confirm
+import { TEMPLATE_OPTIONS } from '../lib/constants'; // Import ini
 import { User, Calendar, Phone, Lock, CreditCard, ShieldCheck, Palette, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
-
-// 1. DEFINISI DATA TEMPLATE (UPDATED)
-const TEMPLATE_OPTIONS = [
-  { slug: 'rustic-floral', name: 'Rustic Floral', category: 'Premium', price: 85000 },
-  { slug: 'modern-dark', name: 'Modern Dark', category: 'Basic', price: 25000 },
-  { slug: 'botanical-gold', name: 'Botanical Gold', category: 'Premium', price: 85000 },
-  { slug: 'monochrome', name: 'Monochrome', category: 'Basic', price: 25000 },
-  { slug: 'navy-gold', name: 'Navy Gold', category: 'Premium', price: 85000 },
-  { slug: 'bohaemin', name: 'Bohaemin', category: 'Premium', price: 85000 },
-  { slug: 'rustic-boho', name: 'Rustic Boho', category: 'Premium', price: 85000 },
-  { slug: 'elegant-pastel', name: 'Elegant Pastel', category: 'Basic', price: 25000 },
-  // 🔽 NEW
-  { slug: 'japanese', name: 'Japanese', category: 'Premium', price: 85000 },
-  { slug: 'javanese', name: 'Javanese', category: 'Premium', price: 85000 },
-  { slug: 'lilac', name: 'Lilac', category: 'Basic', price: 25000 },
-  { slug: 'playful-pop', name: 'Playful Pop', category: 'Basic', price: 25000 },
-  { slug: 'static-canvas', name: 'Bubble Chat', category: 'Premium', price: 85000 },
-  { slug: 'iphone', name: 'Iphone', category: 'Premium', price: 85000 },
-  { slug: 'bit', name: '8bit Retro', category: 'Premium', price: 85000 },
-  { slug: 'comic', name: 'Comic', category: 'Premium', price: 85000 },
-  { slug: 'diary', name: 'Diary Book', category: 'Premium', price: 85000 },
-  { slug: 'cloud-sky', name: 'Cloudy Sky', category: 'Premium', price: 100000 },
-  { slug: 'cyberpunk', name: 'Cyberpunk Neon', category: 'Premium', price: 100000 },
-  { slug: 'cinamon', name: 'Cinnamon Blue', category: 'Premium', price: 90000 },
-  { slug: 'insta', name: 'Instagram Feed', category: 'Premium', price: 95000 },
-  { slug: 'hello-kitty', name: 'Hello Kitty Pink', category: 'Premium', price: 90000 },
-];
 
 export default function OrderForm() {
   const navigate = useNavigate();

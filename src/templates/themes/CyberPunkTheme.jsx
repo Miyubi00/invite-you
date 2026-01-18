@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Terminal, MapPin, Calendar, Clock, CreditCard, 
-  Copy, Music, Play, Pause, Power, Cpu, ShieldCheck 
+  Copy, Music, Play, Pause, Power, Cpu, ShieldCheck, Quote, Database
 } from 'lucide-react';
 
 export default function CyberpunkTheme({ groom, bride, date, guestName, data }) {
@@ -27,6 +27,9 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
   ];
 
   const banks = data?.banks || [];
+  const quote = data?.quote || "Two souls, one protocol. Connected forever.";
+  const quoteSrc = data?.quote_src || "System.log";
+  const audioUrl = data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3";
 
   const formattedDate = new Date(date || new Date()).toLocaleDateString('en-GB', {
     day: '2-digit', month: '2-digit', year: 'numeric'
@@ -232,7 +235,24 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
                   </p>
               </header>
 
-              {/* 2. COUNTDOWN (DIGITAL CLOCK) */}
+              {/* 2. QUOTE (TERMINAL LOG) */}
+              <section className="px-4 mb-16">
+                  <div className="bg-[#0A0C16] border border-[#FF2BD6]/50 p-4 font-mono text-sm relative glow-pink">
+                      <div className="flex items-center gap-2 mb-2 border-b border-[#FF2BD6]/30 pb-2">
+                          <Database size={14} className="text-[#FF2BD6]"/>
+                          <span className="text-[#FF2BD6]">SYSTEM_MESSAGE.LOG</span>
+                      </div>
+                      <div className="text-gray-300 font-cyber-body text-lg leading-relaxed">
+                          <span className="text-[#22FF88] mr-2">{`>`}</span>
+                          "{quote}"
+                      </div>
+                      <div className="text-right mt-2 text-[#00F5FF] text-xs uppercase tracking-wider">
+                          // SOURCE: {quoteSrc}
+                      </div>
+                  </div>
+              </section>
+
+              {/* 3. COUNTDOWN (DIGITAL CLOCK) */}
               <section className="px-4 mb-16">
                   <div className="holo-card p-6 flex justify-between items-center text-center">
                       <TimeDigit val={timeLeft.days} label="DAYS" color="text-[#00F5FF]" />
@@ -245,7 +265,7 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
                   </div>
               </section>
 
-              {/* 3. COUPLE (HOLOGRAM CARDS) */}
+              {/* 4. COUPLE (HOLOGRAM CARDS) */}
               <section className="px-4 mb-16 space-y-8">
                   {/* Groom */}
                   <div className="holo-card p-1 corner-brackets group">
@@ -280,7 +300,7 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
                   </div>
               </section>
 
-              {/* 4. EVENT INFO (DATA PANEL) */}
+              {/* 5. EVENT INFO (DATA PANEL) */}
               <section className="px-4 mb-16">
                   <div className="border border-[#22FF88]/50 bg-black/80 p-6 relative">
                       <div className="absolute -top-3 left-4 bg-black px-2 text-[#22FF88] font-cyber-head text-sm border border-[#22FF88] flex items-center gap-2">
@@ -315,7 +335,7 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
                   </div>
               </section>
 
-              {/* 5. GALLERY (NEON GRID) */}
+              {/* 6. GALLERY (NEON GRID) */}
               {gallery.length > 0 && (
                 <section className="px-4 mb-16">
                     <h2 className="font-cyber-head text-2xl text-center mb-6 text-white text-glow">VISUAL_LOGS</h2>
@@ -332,7 +352,7 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
                 </section>
               )}
 
-              {/* 6. GIFT (DATA CHIP) */}
+              {/* 7. GIFT (DATA CHIP) */}
               <section className="px-4 mb-16">
                   <div className="bg-[#1a1a2e] border-l-4 border-[#FF2BD6] p-6 relative overflow-hidden shadow-[0_0_15px_rgba(255,43,214,0.2)]">
                       <div className="absolute top-0 right-0 p-2 opacity-20"><CreditCard size={64}/></div>
@@ -357,7 +377,7 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
                   </div>
               </section>
 
-              {/* 7. CLOSING */}
+              {/* 8. CLOSING */}
               <footer className="text-center py-12 border-t border-gray-900">
                   <ShieldCheck className="mx-auto text-[#00F5FF] mb-4" size={32}/>
                   <p className="font-cyber-body text-gray-500 text-sm tracking-widest">END_OF_LINE</p>
@@ -376,7 +396,7 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }) 
 
       </div>
 
-      <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3"} loop />
+      <audio ref={audioRef} src={audioUrl} loop />
     </div>
   );
 }

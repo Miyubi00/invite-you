@@ -5,6 +5,8 @@ export default function ElegantBotanicalTheme({ groom, bride, date, guestName, d
     const [isOpen, setIsOpen] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef(null);
+    const audioUrl = data?.audio_url || '';
+
 
     // --- DATA HANDLING ---
     const defaultImages = {
@@ -191,7 +193,7 @@ export default function ElegantBotanicalTheme({ groom, bride, date, guestName, d
                             {data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya."}
                         </p>
                         <div className="w-12 h-1 bg-[#C5A059] mx-auto mt-8 mb-4"></div>
-                        <p className="font-body text-xs font-bold tracking-widest text-gray-500 uppercase">{data?.quote_source || "QS. AR-RUM: 21"}</p>
+                        <p className="font-body text-xs font-bold tracking-widest text-gray-500 uppercase">{data?.quote_src || "QS. AR-RUM: 21"}</p>
                     </div>
                 </section>
 
@@ -381,7 +383,7 @@ export default function ElegantBotanicalTheme({ groom, bride, date, guestName, d
                 </button>
             </div>
 
-            <audio ref={audioRef} src={data?.audio_url || "https://cdn.pixabay.com/download/audio/2022/02/07/audio_1808fbf07a.mp3"} loop />
+             {audioUrl && <audio ref={audioRef} src={audioUrl} loop />}
         </div>
     );
 }
