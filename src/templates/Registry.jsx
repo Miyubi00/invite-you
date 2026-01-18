@@ -17,11 +17,15 @@ import IphoneTheme from './themes/IphoneTheme';
 import BitTheme from './themes/BitTheme';
 import ComicTheme from './themes/ComicTheme';
 import DiaryTheme from './themes/DiaryTheme';
-import CloudySkyTheme from './themes/CloudSkyTheme'
+import CloudySkyTheme from './themes/CloudSkyTheme';
 import CyberpunkTheme from './themes/CyberPunkTheme';
-import CinamonTheme from './themes/CinamonTheme'
-import InstaTheme from './themes/InstaTheme'
-import HelloKityTheme from './themes/HelloKityTheme'
+import CinamonTheme from './themes/CinamonTheme';
+import InstaTheme from './themes/InstaTheme';
+import HelloKityTheme from './themes/HelloKityTheme';
+import MobileTheme from './themes/MobileTheme';
+import BinderBookTheme from './themes/BinderTheme';
+import ArtGalleryTheme from './themes/ArtTheme';
+import ArtBlockTheme from './themes/ArtBlockTheme';
 
 const templates = {
   'rustic-floral': RusticTheme,
@@ -50,6 +54,10 @@ const templates = {
   'cinamon': CinamonTheme,
   'insta': InstaTheme,
   'hello-kitty': HelloKityTheme,
+  'mobile' : MobileTheme,
+  'binder-book' : BinderBookTheme,
+  'art-gallery' : ArtGalleryTheme,
+  'art-block' : ArtBlockTheme,
 };
 
 

@@ -28,6 +28,10 @@ export const MASTER_TEMPLATES = [
   { id: 17, slug: 'diary', name: 'Diary Book', category: 'RSVP', price: 65000, image: '/diary.png' },
   { id: 18, slug: 'cloud-sky', name: 'Cloudy Sky', category: 'RSVP', price: 65000, image: '/cloud-sky.png' },
   { id: 22, slug: 'hello-kitty', name: 'Hello Kitty Pink', category: 'RSVP', price: 65000, image: '/hello-kitty.png' },
+  { id: 23, slug: 'mobile', name: 'Android Mobile', category: 'RSVP', price: 65000, image: '/mobile.png' },
+  { id: 24, slug: 'binder-book', name: 'Binder Book', category: 'RSVP', price: 65000, image: '/binder-book.png' },
+  { id: 25, slug: 'art-gallery', name: 'Art Gallery', category: 'RSVP', price: 65000, image: '/art-gallery.png' },
+  { id: 26, slug: 'art-block', name: 'Art Block', category: 'RSVP', price: 65000, image: '/art-block.png' },
 ];
 
 
