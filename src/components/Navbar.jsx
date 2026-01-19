@@ -21,7 +21,7 @@ export default function Navbar() {
 
   // --- LOGIKA PINTAR (CONFIG) ---
   let navConfig = {
-    title: 'invyta',
+    title: 'Wedory',
     icon: <HeartHandshake className="w-5 h-5 md:w-8 md:h-8" />, // Ukuran icon responsif
     mode: 'default' // default (Login) | home | logout
   };

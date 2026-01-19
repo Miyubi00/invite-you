@@ -17,7 +17,7 @@ export default function Landing() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 text-center">
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 md:mb-6 leading-tight text-[#712E1E] drop-shadow-sm">
-          invyta Menyediakan <br />
+          Wedory Menyediakan <br />
           <span className="text-[#E59A59]">Undangan Digital</span> Termurah
         </h1>
 

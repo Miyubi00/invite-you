@@ -55,7 +55,7 @@ export default function NotFound() {
 
         {/* FOOTER TEXT */}
         <p className="mt-12 text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} invyta Platform.
+          &copy; {new Date().getFullYear()} Wedory Platform.
         </p>
       </div>
     </div>

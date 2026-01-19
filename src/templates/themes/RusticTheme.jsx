@@ -335,7 +335,7 @@ export default function RusticTheme({ groom, bride, date, guestName, data }) {
 
           <footer className="pt-10 border-t border-[#F0EBE5]">
              <h1 className="font-script text-4xl text-[#D4C3B7] mb-4">{groom} & {bride}</h1>
-             <p className="text-xs text-[#8C8075] font-bold tracking-widest">Created with <Heart className="w-3 h-3 inline text-red-300 fill-current"/> by invyta</p>
+             <p className="text-xs text-[#8C8075] font-bold tracking-widest">Created with <Heart className="w-3 h-3 inline text-red-300 fill-current"/> by Wedory</p>
           </footer>
         </section>
 

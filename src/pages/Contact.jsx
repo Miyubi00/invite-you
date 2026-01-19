@@ -6,8 +6,8 @@ export default function Contact() {
   // Data Kontak (Ganti dengan nomor aslimu)
   const contacts = {
     instagram: {
-      username: '@invyta.id',
-      link: 'https://instagram.com/invyta.id'
+      username: '@Wedory.id',
+      link: 'https://instagram.com/Wedory.id'
     },
     whatsappMain: {
       name: 'Admin Utama (Sales)',
@@ -34,7 +34,7 @@ export default function Contact() {
       <div className="w-full max-w-2xl text-center space-y-2 mb-10">
         <h1 className="text-3xl md:text-5xl font-extrabold text-[#712E1E]">Hubungi Kami</h1>
         <p className="opacity-80 text-sm md:text-base">
-          Punya pertanyaan atau butuh bantuan? Tim invyta siap membantu!
+          Punya pertanyaan atau butuh bantuan? Tim Wedory siap membantu!
         </p>
       </div>
 
