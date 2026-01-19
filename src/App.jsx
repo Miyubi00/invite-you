@@ -15,6 +15,7 @@ import TemplateDemo from './pages/TemplateDemo';
 import AdminPanel from './pages/AdminPanel'; // Import
 import PaymentStatus from './pages/PaymentStatus'; // Import
 import NotFound from './pages/NotFound'; // Sesuaikan path import
+import Contact from './pages/Contact';
 
 /* --- LAYOUTS --- */
 
@@ -53,6 +54,7 @@ function App() {
           <Route path="/dashboard/:orderId" element={<Dashboard />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/payment-status" element={<PaymentStatus />} />
+          <Route path="/contact" element={<Contact />} /> 
         </Route>
         <Route path="*" element={<NotFound />} />
 
