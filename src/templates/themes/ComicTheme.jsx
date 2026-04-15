@@ -261,7 +261,7 @@ export default function ComicTheme({ groom, bride, date, guestName, data, onRsvp
                 <div className="grid grid-cols-2 gap-4">
                     <div className="comic-panel p-4 flex items-center justify-center bg-[#F4D35E] rotate-1">
                         <div className="speech-bubble relative z-10">
-                            <Quote className="absolute -top-4 -left-2 w-6 h-6 text-black fill-black opacity-20"/>
+                            <Quote className="absolute -top-4 -left-2 w-6 h-6 text-black fill-black opacity-20" />
                             <p className="font-hand text-lg font-bold leading-tight relative z-10">
                                 “{quote}”
                             </p>
@@ -396,7 +396,7 @@ export default function ComicTheme({ groom, bride, date, guestName, data, onRsvp
                     <div className="absolute -top-4 right-6 bg-black text-white p-2 font-comic-head text-xl rotate-3 shadow-[4px_4px_0_#F4D35E]">
                         SAY SOMETHING!
                     </div>
-                    
+
                     <h2 className="font-comic-head text-3xl mb-4 flex items-center gap-2">
                         <MessageSquare className="text-[#E63946]" /> RSVP & WISHES
                     </h2>
@@ -436,10 +436,23 @@ export default function ComicTheme({ groom, bride, date, guestName, data, onRsvp
                             )}
                             <div>
                                 <label className="font-comic-head text-sm block mb-1">MESSAGE</label>
-                                <textarea required value={rsvpMessage} onChange={(e) => setRsvpMessage(e.target.value)} className="comic-input h-24" placeholder="Type something cool..." />
+
+                                <textarea
+                                    required
+                                    maxLength={100} // <-- Batas karakter
+                                    value={rsvpMessage}
+                                    onChange={(e) => setRsvpMessage(e.target.value)}
+                                    className="comic-input h-24 w-full" // pastikan ada w-full biar rapi
+                                    placeholder="Type something cool..."
+                                />
+
+                                {/* Indikator karakter dengan font komik */}
+                                <div className="text-right text-xs font-comic-head mt-1 opacity-70">
+                                    {rsvpMessage.length}/100
+                                </div>
                             </div>
                             <button disabled={isSending} className="w-full bg-[#E63946] text-white font-comic-head text-xl py-3 border-2 border-black shadow-[4px_4px_0_black] hover:translate-y-[2px] hover:shadow-[2px_2px_0_black] transition-all flex items-center justify-center gap-2">
-                                {isSending ? 'SENDING...' : <><Send size={20}/> SEND IT!</>}
+                                {isSending ? 'SENDING...' : <><Send size={20} /> SEND IT!</>}
                             </button>
                         </form>
                     )}

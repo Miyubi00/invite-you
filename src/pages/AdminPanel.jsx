@@ -14,13 +14,36 @@ export default function AdminPanel() {
   const toast = useToast();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // STATE DATA
   const [orders, setOrders] = useState([]);
+  const [pendingOrders, setPendingOrders] = useState([]); 
   const [searchTerm, setSearchTerm] = useState('');
   
-  // State Dialog
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
+  // ==========================================
+  // STATE DIALOG DINAMIS (PENGGANTI WINDOW.CONFIRM)
+  // ==========================================
+  const [dialog, setDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    isDanger: true,
+    onConfirm: null
+  });
+
+  const closeDialog = () => setDialog(prev => ({ ...prev, isOpen: false }));
   
+  const confirmAction = (title, message, isDanger, onConfirmFunc) => {
+    setDialog({
+      isOpen: true,
+      title,
+      message,
+      isDanger,
+      onConfirm: onConfirmFunc
+    });
+  };
+  // ==========================================
+
   // Login State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,11 +61,11 @@ export default function AdminPanel() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchOrders(); else setLoading(false);
+      if (session) fetchData(); else setLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchOrders();
+      if (session) fetchData();
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -55,24 +78,86 @@ export default function AdminPanel() {
     else toast.success("Selamat datang, Admin!");
   };
 
-  const handleLogout = async () => { await supabase.auth.signOut(); setOrders([]); toast.success("Berhasil Logout"); };
+  const handleLogout = async () => { await supabase.auth.signOut(); setOrders([]); setPendingOrders([]); toast.success("Berhasil Logout"); };
 
-  const fetchOrders = async () => {
+  // 2. FETCH KEDUA TABEL
+  const fetchData = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    if (error) toast.error("Gagal ambil data"); else setOrders(data);
+    const [resOrders, resPending] = await Promise.all([
+        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('pending_orders').select('*').order('created_at', { ascending: false })
+    ]);
+
+    if (resOrders.error) toast.error("Gagal ambil data orders"); else setOrders(resOrders.data);
+    if (resPending.error) toast.error("Gagal ambil data pending"); else setPendingOrders(resPending.data);
     setLoading(false);
   };
 
-  // 4. HAPUS DATA ORDER
-  const openDeleteDialog = (id) => { setDeleteId(id); setShowConfirm(true); };
-  const executeDelete = async () => {
-    setShowConfirm(false);
-    const { error } = await supabase.from('orders').delete().eq('id', deleteId);
-    if (!error) { toast.success("Data dihapus"); fetchOrders(); } else { toast.error("Gagal hapus"); }
+  // 3. LOGIC AKTIFKAN PENDING ORDER (Sudah Pakai ConfirmDialog)
+  const handleApprovePending = (pendingOrder) => {
+    confirmAction(
+      "Aktifkan Pesanan?",
+      `Pesanan atas nama ${pendingOrder.groom_name} & ${pendingOrder.bride_name} akan dimasukkan ke data utama.`,
+      false, // isDanger = false (karena ini aksi positif)
+      async () => {
+        closeDialog(); // Tutup dialog
+        
+        const generatedSlug = `${pendingOrder.groom_name}-${pendingOrder.bride_name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+        const { error: insertError } = await supabase.from('orders').insert([{
+            groom_name: pendingOrder.groom_name,
+            bride_name: pendingOrder.bride_name,
+            wedding_date: pendingOrder.wedding_date,
+            whatsapp: pendingOrder.whatsapp,
+            pin_code: pendingOrder.pin_code,
+            template_slug: pendingOrder.template_slug,
+            slug: generatedSlug,
+            payment_status: 'success',
+            event_details: {}
+        }]);
+
+        if (insertError) {
+            toast.error("Gagal mengaktifkan: " + insertError.message);
+            return;
+        }
+
+        await supabase.from('pending_orders').delete().eq('id', pendingOrder.id);
+        toast.success("Pesanan diaktifkan! Data masuk ke tabel utama.");
+        fetchData(); 
+      }
+    );
   };
 
-  // 5. BUKA MODAL EDIT (PREPARE DATA)
+  // Hapus Pending Order (Spam/Batal) (Sudah Pakai ConfirmDialog)
+  const handleRejectPending = (id) => {
+    confirmAction(
+      "Tolak & Hapus Pesanan?",
+      "Pesanan ini akan ditolak dan dihapus secara permanen dari daftar.",
+      true, // isDanger = true
+      async () => {
+        closeDialog();
+        const { error } = await supabase.from('pending_orders').delete().eq('id', id);
+        if (!error) { toast.success("Pesanan ditolak & dihapus."); fetchData(); } 
+        else { toast.error("Gagal menghapus."); }
+      }
+    );
+  };
+
+  // 4. HAPUS DATA ORDER UTAMA (Sudah Pakai ConfirmDialog Dinamis)
+  const openDeleteDialog = (id) => {
+    confirmAction(
+      "Hapus Data Permanen?",
+      "Data undangan ini akan dihapus selamanya. Tindakan ini tidak bisa dibatalkan.",
+      true,
+      async () => {
+        closeDialog();
+        const { error } = await supabase.from('orders').delete().eq('id', id);
+        if (!error) { toast.success("Data dihapus"); fetchData(); } else { toast.error("Gagal hapus"); }
+      }
+    );
+  };
+
+  // 5. BUKA MODAL EDIT 
   const openEditModal = async (order) => {
     setEditingOrder(order);
     setEditFormData({
@@ -90,13 +175,7 @@ export default function AdminPanel() {
       quote_src: order.event_details?.quote_src || ''
     });
 
-    // Fetch RSVPs (Komentar) untuk Order ini
-    const { data: rsvpData } = await supabase
-        .from('rsvps')
-        .select('*')
-        .eq('order_id', order.id)
-        .order('created_at', { ascending: false });
-    
+    const { data: rsvpData } = await supabase.from('rsvps').select('*').eq('order_id', order.id).order('created_at', { ascending: false });
     setRsvps(rsvpData || []);
   };
 
@@ -112,7 +191,7 @@ export default function AdminPanel() {
     if (!error) {
       toast.success("Berhasil disimpan!");
       setEditingOrder(null);
-      fetchOrders();
+      fetchData();
     } else {
       toast.error("Gagal update: " + error.message);
     }
@@ -120,17 +199,19 @@ export default function AdminPanel() {
 
   const handleInputChange = (e) => setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
 
-  // --- LOGIC HAPUS KOMENTAR ---
-  const handleDeleteRsvp = async (rsvpId) => {
-      if(!window.confirm("Hapus komentar ini?")) return;
-      
-      const { error } = await supabase.from('rsvps').delete().eq('id', rsvpId);
-      if(!error) {
-          setRsvps(prev => prev.filter(r => r.id !== rsvpId));
-          toast.success("Komentar dihapus");
-      } else {
-          toast.error("Gagal hapus komentar");
+  // --- LOGIC HAPUS KOMENTAR (Sudah Pakai ConfirmDialog) ---
+  const handleDeleteRsvp = (rsvpId) => {
+    confirmAction(
+      "Hapus Komentar?",
+      "Komentar dari tamu ini akan dihapus permanen dari buku tamu.",
+      true,
+      async () => {
+        closeDialog();
+        const { error } = await supabase.from('rsvps').delete().eq('id', rsvpId);
+        if(!error) { setRsvps(prev => prev.filter(r => r.id !== rsvpId)); toast.success("Komentar dihapus"); } 
+        else { toast.error("Gagal hapus komentar"); }
       }
+    );
   };
 
   // --- LOGIC UTILS ---
@@ -170,13 +251,16 @@ export default function AdminPanel() {
           <div className="bg-[#712E1E] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse"><ShieldCheck className="w-8 h-8 text-[#FFD5AF]" /></div>
           <h1 className="text-2xl font-bold text-[#712E1E] mb-2">Admin Login</h1>
           <form onSubmit={handleLogin} className="space-y-4">
-            <input type="email" required placeholder="admin@Wedory.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:border-[#712E1E] outline-none" />
+            <input type="email" required placeholder="admin@LoVerse.com" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:border-[#712E1E] outline-none" />
             <input type="password" required placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:border-[#712E1E] outline-none" />
             <button disabled={loginLoading} className="w-full bg-[#E59A59] text-white py-3 rounded-xl font-bold hover:bg-[#d48b4b] transition flex justify-center shadow-lg">{loginLoading ? <Loader2 className="animate-spin" /> : "Masuk Dashboard"}</button>
           </form>
         </div>
       </div>
   );
+
+  const filteredPending = pendingOrders.filter(o => o.groom_name?.toLowerCase().includes(searchTerm.toLowerCase()) || o.bride_name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredOrders = orders.filter(o => o.groom_name?.toLowerCase().includes(searchTerm.toLowerCase()) || o.bride_name?.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans pb-20">
@@ -191,7 +275,7 @@ export default function AdminPanel() {
         <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-center">
            <div className="bg-white px-5 py-3 rounded-xl shadow-sm border flex items-center gap-3 text-[#712E1E] w-full md:w-auto">
               <div className="bg-[#FFF0E0] p-2 rounded-lg"><Clock className="w-5 h-5"/></div>
-              <div><p className="text-xs text-gray-400 font-bold uppercase">Total Undangan</p><p className="text-xl font-bold">{orders.length} Pesanan</p></div>
+              <div><p className="text-xs text-gray-400 font-bold uppercase">Total Undangan</p><p className="text-xl font-bold">{orders.length} Aktif | {pendingOrders.length} Pending</p></div>
            </div>
            <div className="relative flex-1 w-full max-w-md">
               <Search className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
@@ -199,52 +283,98 @@ export default function AdminPanel() {
            </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-[#FFF0E0] text-[#712E1E] uppercase font-bold text-xs tracking-wider border-b border-[#E59A59]/20">
-                <tr>
-                  <th className="p-4">Info Order</th>
-                  <th className="p-4">Mempelai & Tanggal</th>
-                  <th className="p-4">Template</th>
-                  <th className="p-4">Pembayaran</th>
-                  <th className="p-4 text-center">Kontrol</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (<tr><td colSpan="5" className="p-10 text-center text-gray-400">Sedang memuat data...</td></tr>) : 
-                orders.filter(o => o.groom_name?.toLowerCase().includes(searchTerm) || o.bride_name?.toLowerCase().includes(searchTerm)).map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50 transition group">
-                    <td className="p-4"><span className="font-mono text-xs text-gray-400 block mb-1">#{order.id.slice(0,8)}</span><span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded border">{calculateDuration(order.created_at)} Hari Yg Lalu</span></td>
-                    <td className="p-4"><div className="font-bold text-[#712E1E] text-base">{order.groom_name} & {order.bride_name}</div><div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Calendar className="w-3 h-3"/> {order.wedding_date}</div></td>
-                    <td className="p-4"><span className="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-100 font-medium">{order.template_slug}</span></td>
-                    <td className="p-4">
-                      {order.payment_status === 'success' ? <span className="flex items-center gap-1 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-green-100"><CheckCircle className="w-3 h-3" /> Lunas</span> : <span className="flex items-center gap-1 text-red-700 bg-red-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-red-100"><XCircle className="w-3 h-3" /> {order.payment_status}</span>}
-                    </td>
-                    <td className="p-4 text-center">
-                      <div className="flex justify-center gap-2">
-                        <a href={`/wedding/${order.slug}`} target="_blank" rel="noreferrer" className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-100 transition border border-green-200" title="Lihat Website"><Eye className="w-4 h-4" /></a>
-                        {order.whatsapp && <a href={`https://wa.me/${order.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-600 p-2 rounded-lg hover:bg-emerald-100 transition border border-emerald-200" title="Chat WhatsApp"><FaWhatsapp className="w-4 h-4" /></a>}
-                        <button onClick={() => openEditModal(order)} className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition border border-blue-200" title="Edit Full Data"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => openDeleteDialog(order.id)} className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition border border-red-200" title="Hapus Permanen"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
+        {/* --- TABEL 1: PENDING ORDERS --- */}
+        {filteredPending.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-lg font-bold text-orange-600 mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5" /> Menunggu Persetujuan (Via WhatsApp)
+            </h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-gray-600">
+                  <thead className="bg-orange-50 text-orange-800 uppercase font-bold text-xs tracking-wider border-b border-orange-200">
+                    <tr>
+                      <th className="p-4">Tanggal Order</th>
+                      <th className="p-4">Mempelai</th>
+                      <th className="p-4">Template</th>
+                      <th className="p-4">Kontak Info</th>
+                      <th className="p-4 text-center">Tindakan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredPending.map((order) => (
+                      <tr key={order.id} className="hover:bg-orange-50/50 transition group">
+                        <td className="p-4"><span className="text-xs text-gray-500 font-medium">{new Date(order.created_at).toLocaleDateString('id-ID')}</span></td>
+                        <td className="p-4"><div className="font-bold text-orange-800 text-base">{order.groom_name} & {order.bride_name}</div><div className="text-xs text-gray-500 mt-1">Acara: {order.wedding_date}</div></td>
+                        <td className="p-4"><span className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs border border-orange-200 font-medium">{order.template_slug}</span></td>
+                        <td className="p-4">
+                          <a href={`https://wa.me/${order.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-bold text-xs bg-emerald-50 w-fit px-2 py-1 rounded border border-emerald-100 transition"><FaWhatsapp className="w-3 h-3"/> Chat Pembeli</a>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="flex justify-center gap-2">
+                            <button onClick={() => handleApprovePending(order)} className="bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition shadow-sm font-bold text-xs flex items-center gap-1"><CheckCircle className="w-4 h-4"/> Aktifkan</button>
+                            <button onClick={() => handleRejectPending(order.id)} className="bg-red-50 text-red-600 p-1.5 rounded-lg hover:bg-red-100 transition border border-red-200" title="Tolak / Hapus"><XCircle className="w-4 h-4" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- TABEL 2: DATA UNDANGAN AKTIF --- */}
+        <div>
+          <h2 className="text-lg font-bold text-[#712E1E] mb-3 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" /> Data Undangan Aktif
+          </h2>
+          <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-gray-600">
+                <thead className="bg-[#FFF0E0] text-[#712E1E] uppercase font-bold text-xs tracking-wider border-b border-[#E59A59]/20">
+                  <tr>
+                    <th className="p-4">Info Order</th>
+                    <th className="p-4">Mempelai & Tanggal</th>
+                    <th className="p-4">Template</th>
+                    <th className="p-4">Pembayaran</th>
+                    <th className="p-4 text-center">Kontrol</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (<tr><td colSpan="5" className="p-10 text-center text-gray-400">Sedang memuat data...</td></tr>) : 
+                  filteredOrders.length === 0 ? (<tr><td colSpan="5" className="p-10 text-center text-gray-400">Tidak ada data ditemukan</td></tr>) :
+                  filteredOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50 transition group">
+                      <td className="p-4"><span className="font-mono text-xs text-gray-400 block mb-1">#{order.id.slice(0,8)}</span><span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded border">{calculateDuration(order.created_at)} Hari Yg Lalu</span></td>
+                      <td className="p-4"><div className="font-bold text-[#712E1E] text-base">{order.groom_name} & {order.bride_name}</div><div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Calendar className="w-3 h-3"/> {order.wedding_date}</div></td>
+                      <td className="p-4"><span className="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-100 font-medium">{order.template_slug}</span></td>
+                      <td className="p-4">
+                        {order.payment_status === 'success' ? <span className="flex items-center gap-1 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-green-100"><CheckCircle className="w-3 h-3" /> Lunas</span> : <span className="flex items-center gap-1 text-red-700 bg-red-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-red-100"><XCircle className="w-3 h-3" /> {order.payment_status}</span>}
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <a href={`/wedding/${order.slug}`} target="_blank" rel="noreferrer" className="bg-green-50 text-green-600 p-2 rounded-lg hover:bg-green-100 transition border border-green-200" title="Lihat Website"><Eye className="w-4 h-4" /></a>
+                          {order.whatsapp && <a href={`https://wa.me/${order.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="bg-emerald-50 text-emerald-600 p-2 rounded-lg hover:bg-emerald-100 transition border border-emerald-200" title="Chat WhatsApp"><FaWhatsapp className="w-4 h-4" /></a>}
+                          <button onClick={() => openEditModal(order)} className="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition border border-blue-200" title="Edit Full Data"><Edit className="w-4 h-4" /></button>
+                          <button onClick={() => openDeleteDialog(order.id)} className="bg-red-50 text-red-600 p-2 rounded-lg hover:bg-red-100 transition border border-red-200" title="Hapus Permanen"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
-      <ConfirmDialog isOpen={showConfirm} title="Hapus Data Permanen?" message="Data undangan ini akan dihapus selamanya." isDanger={true} onCancel={() => setShowConfirm(false)} onConfirm={executeDelete} />
-
       {/* --- MODAL BENTO EDIT LAYOUT --- */}
       {editingOrder && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#F3F4F6] rounded-3xl shadow-2xl w-full max-w-6xl h-[95vh] flex flex-col overflow-hidden relative">
             
-            {/* Header Modal */}
             <div className="bg-white p-4 px-6 flex justify-between items-center shrink-0 border-b">
               <div className="flex items-center gap-3">
                   <div className="bg-blue-100 text-blue-600 p-2 rounded-xl"><Edit className="w-5 h-5"/></div>
@@ -256,11 +386,9 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* BENTO GRID CONTENT */}
             <div className="flex-1 overflow-y-auto p-6">
                 <form id="editForm" className="grid grid-cols-1 md:grid-cols-12 gap-6">
                     
-                    {/* 1. MAIN INFO */}
                     <BentoCard title="Informasi Mempelai" icon={<User className="text-pink-500"/>} colSpan="md:col-span-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                             <InputGroup label="Mempelai Pria" name="groom_name" val={editFormData.groom_name} onChange={handleInputChange} />
@@ -276,7 +404,6 @@ export default function AdminPanel() {
                         </div>
                     </BentoCard>
 
-                    {/* 2. SETTINGS */}
                     <BentoCard title="Pengaturan Sistem" icon={<Layout className="text-indigo-500"/>} colSpan="md:col-span-4">
                         <div className="space-y-4">
                             <div>
@@ -292,7 +419,6 @@ export default function AdminPanel() {
                         </div>
                     </BentoCard>
 
-                    {/* 3. EVENT DETAILS */}
                     <BentoCard title="Lokasi & Acara" icon={<MapPin className="text-red-500"/>} colSpan="md:col-span-6">
                         <div className="space-y-4">
                             <InputGroup label="Nama Gedung / Tempat" name="venue_name" val={editFormData.venue_name} onChange={handleInputChange} />
@@ -305,7 +431,6 @@ export default function AdminPanel() {
                         </div>
                     </BentoCard>
 
-                    {/* 4. MAIN PHOTOS */}
                     <BentoCard title="Foto Utama" icon={<ImageIcon className="text-green-500"/>} colSpan="md:col-span-6">
                         <div className="grid grid-cols-3 gap-4 items-end">
                             {[
@@ -336,7 +461,6 @@ export default function AdminPanel() {
                         </div>
                     </BentoCard>
 
-                    {/* 5. GALLERY */}
                     <BentoCard title="Galeri Foto" icon={<Grid className="text-purple-500"/>} colSpan="md:col-span-12">
                         <div className="flex flex-wrap gap-4">
                             <label className="w-32 h-32 rounded-xl border-2 border-dashed border-purple-300 bg-purple-50 flex flex-col items-center justify-center cursor-pointer hover:bg-purple-100 transition text-purple-600">
@@ -352,7 +476,6 @@ export default function AdminPanel() {
                         </div>
                     </BentoCard>
 
-                    {/* 6. AUDIO & QUOTE */}
                     <BentoCard title="Musik & Kutipan" icon={<Music className="text-blue-500"/>} colSpan="md:col-span-6">
                         <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 mb-4 flex items-center gap-3">
                             <div className="bg-white p-2 rounded-full shadow-sm"><Music className="w-4 h-4 text-blue-500"/></div>
@@ -368,7 +491,6 @@ export default function AdminPanel() {
                         </div>
                     </BentoCard>
 
-                    {/* 7. GIFT / BANK */}
                     <BentoCard title="Rekening & Gift" icon={<Gift className="text-orange-500"/>} colSpan="md:col-span-6">
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scroll">
                             {(!editFormData.banks || editFormData.banks.length === 0) && <p className="text-center text-gray-400 text-sm py-4 italic">Belum ada rekening.</p>}
@@ -386,7 +508,6 @@ export default function AdminPanel() {
                         </div>
                     </BentoCard>
 
-                    {/* 8. KOMENTAR (BARU) - FULL WIDTH */}
                     <BentoCard title="Buku Tamu / Komentar" icon={<MessageSquare className="text-teal-500"/>} colSpan="md:col-span-12">
                         {rsvps.length === 0 ? (
                             <p className="text-center text-gray-400 text-sm py-6 italic">Belum ada komentar masuk.</p>
@@ -421,6 +542,17 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
+
+      {/* COMPONENT CONFIRM DIALOG - Pindah ke paling bawah agar tidak tertutup Modal Edit (Z-Index) */}
+      <ConfirmDialog 
+        isOpen={dialog.isOpen} 
+        title={dialog.title} 
+        message={dialog.message} 
+        isDanger={dialog.isDanger} 
+        onCancel={closeDialog} 
+        onConfirm={dialog.onConfirm} 
+      />
+
     </div>
   );
 }

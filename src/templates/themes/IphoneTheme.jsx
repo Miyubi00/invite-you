@@ -312,7 +312,7 @@ export default function IosGlassTheme({ groom, bride, date, guestName, data, onR
                                     <CheckCircle2 size={48} className="text-green-500 mx-auto mb-4" />
                                     <h3 className="text-xl font-bold text-gray-900 mb-1">Thank You!</h3>
                                     <p className="text-gray-500 text-sm mb-6">You have submitted your response.</p>
-                                    
+
                                     <div className="bg-white/60 rounded-xl p-4 text-left border border-gray-200 text-sm space-y-2">
                                         <div className="flex justify-between"><span className="text-gray-400">Name</span><span className="font-semibold">{submittedData.guest_name}</span></div>
                                         <div className="flex justify-between"><span className="text-gray-400">Status</span><span className={`font-bold capitalize ${submittedData.status === 'hadir' ? 'text-green-600' : 'text-red-500'}`}>{submittedData.status}</span></div>
@@ -327,7 +327,7 @@ export default function IosGlassTheme({ groom, bride, date, guestName, data, onR
                                         <label className="text-xs font-bold text-gray-400 uppercase ml-2">Name</label>
                                         <input value={guestName} disabled className="w-full glass-input p-4 rounded-xl text-gray-500 font-medium cursor-not-allowed" />
                                     </div>
-                                    
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-gray-400 uppercase ml-2">Attendance</label>
@@ -355,7 +355,19 @@ export default function IosGlassTheme({ groom, bride, date, guestName, data, onR
 
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-gray-400 uppercase ml-2">Message</label>
-                                        <textarea required value={rsvpMessage} onChange={(e) => setRsvpMessage(e.target.value)} className="w-full glass-input p-4 rounded-xl h-28 text-gray-800" placeholder="Best wishes for the couple..." />
+                                        <textarea
+                                            required
+                                            maxLength={100} // <-- Batas karakter
+                                            value={rsvpMessage}
+                                            onChange={(e) => setRsvpMessage(e.target.value)}
+                                            className="w-full glass-input p-4 rounded-xl h-28 text-gray-800"
+                                            placeholder="Best wishes for the couple..."
+                                        />
+
+                                        {/* Indikator sisa karakter */}
+                                        <div className="text-right text-xs text-gray-400 mr-2">
+                                            {rsvpMessage.length}/100
+                                        </div>
                                     </div>
 
                                     <button disabled={isSending} className="w-full bg-[#007AFF] text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] transition disabled:opacity-50">
@@ -382,14 +394,14 @@ export default function IosGlassTheme({ groom, bride, date, guestName, data, onR
                                                     <span className="text-[10px] text-gray-400">{new Date(item.created_at).toLocaleDateString()}</span>
                                                 </div>
                                                 <p className="text-sm text-gray-700 leading-relaxed">{item.message}</p>
-                                                
+
                                                 {/* REPLY THREAD */}
                                                 {item.reply && (
                                                     <div className="flex gap-2 mt-2 ml-1">
                                                         <div className="w-4 border-l-2 border-b-2 border-gray-300 rounded-bl-lg"></div>
                                                         <div className="flex-1 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
                                                             <p className="text-[10px] font-bold text-[#007AFF] mb-0.5 flex items-center gap-1">
-                                                                {groom} & {bride} <CheckCircle2 size={10}/>
+                                                                {groom} & {bride} <CheckCircle2 size={10} />
                                                             </p>
                                                             <p className="text-xs text-gray-600">{item.reply}</p>
                                                         </div>

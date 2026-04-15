@@ -20,7 +20,7 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
 
   // --- DATA ---
   const photos = {
-    cover: data?.cover_photo || "https://images.unsplash.com/photo-1516961642265-531546e84af2?w=800&fit=crop", 
+    cover: data?.cover_photo || "https://images.unsplash.com/photo-1516961642265-531546e84af2?w=800&fit=crop",
     groom: data?.groom_photo || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&fit=crop",
     bride: data?.bride_photo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop",
   };
@@ -176,14 +176,14 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
 
         {/* 3. QUOTE (STICKY NOTE) */}
         <section className="mb-24 px-4">
-            <div className="bg-[#FEF9C3] p-8 shadow-md transform -rotate-1 max-w-md mx-auto relative border border-yellow-200">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-8 bg-yellow-100/50 tape rotate-2"></div>
-                <Quote className="text-yellow-600 w-8 h-8 mb-4 opacity-50"/>
-                <p className="font-doodle text-2xl text-[#854D0E] text-center leading-relaxed">
-                    "{quote}"
-                </p>
-                <p className="font-body text-sm text-[#A16207] text-right mt-4">— {quoteSrc}</p>
-            </div>
+          <div className="bg-[#FEF9C3] p-8 shadow-md transform -rotate-1 max-w-md mx-auto relative border border-yellow-200">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-8 bg-yellow-100/50 tape rotate-2"></div>
+            <Quote className="text-yellow-600 w-8 h-8 mb-4 opacity-50" />
+            <p className="font-doodle text-2xl text-[#854D0E] text-center leading-relaxed">
+              "{quote}"
+            </p>
+            <p className="font-body text-sm text-[#A16207] text-right mt-4">— {quoteSrc}</p>
+          </div>
         </section>
 
         {/* 4. COUPLE (SCRAPBOOK ENTRIES) */}
@@ -281,85 +281,98 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
 
         {/* 9. RSVP (POSTCARD STYLE) */}
         <section className="mb-24 px-4 max-w-xl mx-auto">
-            <div className="bg-white p-6 shadow-lg border border-gray-300 relative transform rotate-1">
-                {/* Stamp */}
-                <div className="absolute top-4 right-4 w-16 h-20 border-2 border-dashed border-gray-400 flex items-center justify-center rotate-3 opacity-50">
-                    <Heart className="text-gray-400"/>
-                </div>
-                
-                <h2 className="font-title text-3xl mb-6 flex items-center gap-2">
-                    <Mail size={28}/> RSVP & Notes
-                </h2>
-
-                {submittedData ? (
-                    <div className="text-center py-8">
-                        <CheckCircle2 size={48} className="text-[#8B5E3C] mx-auto mb-4" />
-                        <h3 className="font-title text-2xl text-[#2B2B2B]">Thank You!</h3>
-                        <p className="font-body text-gray-600 mt-2">"Your message has been written in our diary."</p>
-                        <div className="mt-6 p-4 bg-[#FAF7F2] border border-[#D4C4B7] text-left italic font-doodle text-gray-700 transform -rotate-1 shadow-sm">
-                            "{submittedData.message}"
-                        </div>
-                    </div>
-                ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="font-body font-bold text-gray-500 block mb-1">Name</label>
-                            <input value={guestName} disabled className="w-full bg-[#FAF7F2] border-b-2 border-gray-300 p-2 font-doodle text-lg focus:outline-none text-gray-500" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="font-body font-bold text-gray-500 block mb-1">Attendance</label>
-                                <select value={rsvpStatus} onChange={(e) => setRsvpStatus(e.target.value)} className="w-full bg-white border-2 border-[#2B2B2B] rounded-lg p-2 font-body text-lg focus:outline-none">
-                                    <option value="hadir">Will Attend</option>
-                                    <option value="tidak_hadir">Sorry, Can't</option>
-                                    <option value="ragu">Maybe</option>
-                                </select>
-                            </div>
-                            {rsvpStatus === 'hadir' && (
-                                <div>
-                                    <label className="font-body font-bold text-gray-500 block mb-1">Pax</label>
-                                    <select value={rsvpPax} onChange={(e) => setRsvpPax(e.target.value)} className="w-full bg-white border-2 border-[#2B2B2B] rounded-lg p-2 font-body text-lg focus:outline-none">
-                                        {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} Person</option>)}
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                        <div>
-                            <label className="font-body font-bold text-gray-500 block mb-1">Leave a Note</label>
-                            <textarea required value={rsvpMessage} onChange={(e) => setRsvpMessage(e.target.value)} className="w-full bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] bg-white border border-gray-300 p-4 font-doodle text-xl h-32 focus:outline-none focus:border-[#8B5E3C] leading-loose" placeholder="Write something sweet..."></textarea>
-                        </div>
-                        <button disabled={isSending} className="w-full bg-[#2B2B2B] text-white font-title text-xl py-3 rounded hover:bg-[#4B4B4B] transition flex items-center justify-center gap-2">
-                            {isSending ? 'Sending...' : <><Send size={18}/> Send Note</>}
-                        </button>
-                    </form>
-                )}
-
-                {/* DIARY ENTRIES (COMMENTS) */}
-                <div className="mt-10 border-t-2 border-dashed border-gray-300 pt-6">
-                    <p className="font-title text-2xl mb-4 text-[#8B5E3C]">Friends' Notes:</p>
-                    <div className="space-y-6 max-h-[300px] overflow-y-auto diary-scroll pr-2">
-                        {(data?.rsvps || []).length === 0 ? (
-                            <p className="text-center font-doodle text-gray-400">Page is empty...</p>
-                        ) : (
-                            (data?.rsvps || []).map((item, idx) => (
-                                <div key={idx} className="relative pl-6 border-l-2 border-[#D4C4B7]">
-                                    <div className="absolute -left-[5px] top-0 w-2 h-2 bg-[#8B5E3C] rounded-full"></div>
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <span className="font-title text-xl font-bold text-[#2B2B2B]">{item.guest_name}</span>
-                                        <span className={`text-xs font-body uppercase tracking-wider ${item.status === 'hadir' ? 'text-green-600' : 'text-red-500'}`}>{item.status}</span>
-                                    </div>
-                                    <p className="font-doodle text-lg text-gray-600">"{item.message}"</p>
-                                    {item.reply && (
-                                        <div className="mt-2 bg-[#FAF7F2] p-2 border-l-2 border-[#8B5E3C] text-sm font-body text-[#8B5E3C]">
-                                            <strong>Reply:</strong> {item.reply}
-                                        </div>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+          <div className="bg-white p-6 shadow-lg border border-gray-300 relative transform rotate-1">
+            {/* Stamp */}
+            <div className="absolute top-4 right-4 w-16 h-20 border-2 border-dashed border-gray-400 flex items-center justify-center rotate-3 opacity-50">
+              <Heart className="text-gray-400" />
             </div>
+
+            <h2 className="font-title text-3xl mb-6 flex items-center gap-2">
+              <Mail size={28} /> RSVP & Notes
+            </h2>
+
+            {submittedData ? (
+              <div className="text-center py-8">
+                <CheckCircle2 size={48} className="text-[#8B5E3C] mx-auto mb-4" />
+                <h3 className="font-title text-2xl text-[#2B2B2B]">Thank You!</h3>
+                <p className="font-body text-gray-600 mt-2">"Your message has been written in our diary."</p>
+                <div className="mt-6 p-4 bg-[#FAF7F2] border border-[#D4C4B7] text-left italic font-doodle text-gray-700 transform -rotate-1 shadow-sm">
+                  "{submittedData.message}"
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="font-body font-bold text-gray-500 block mb-1">Name</label>
+                  <input value={guestName} disabled className="w-full bg-[#FAF7F2] border-b-2 border-gray-300 p-2 font-doodle text-lg focus:outline-none text-gray-500" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-body font-bold text-gray-500 block mb-1">Attendance</label>
+                    <select value={rsvpStatus} onChange={(e) => setRsvpStatus(e.target.value)} className="w-full bg-white border-2 border-[#2B2B2B] rounded-lg p-2 font-body text-lg focus:outline-none">
+                      <option value="hadir">Will Attend</option>
+                      <option value="tidak_hadir">Sorry, Can't</option>
+                      <option value="ragu">Maybe</option>
+                    </select>
+                  </div>
+                  {rsvpStatus === 'hadir' && (
+                    <div>
+                      <label className="font-body font-bold text-gray-500 block mb-1">Pax</label>
+                      <select value={rsvpPax} onChange={(e) => setRsvpPax(e.target.value)} className="w-full bg-white border-2 border-[#2B2B2B] rounded-lg p-2 font-body text-lg focus:outline-none">
+                        {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} Person</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="font-body font-bold text-gray-500 block mb-1">Leave a Note</label>
+
+                  <textarea
+                    required
+                    maxLength={100} // <-- Batas karakter
+                    value={rsvpMessage}
+                    onChange={(e) => setRsvpMessage(e.target.value)}
+                    className="w-full bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] bg-white border border-gray-300 p-4 font-doodle text-xl h-32 focus:outline-none focus:border-[#8B5E3C] leading-loose"
+                    placeholder="Write something sweet..."
+                  ></textarea>
+
+                  {/* Indikator karakter dengan gaya font-doodle agar serasi */}
+                  <div className="text-right text-sm text-gray-400 font-doodle mt-1">
+                    {rsvpMessage.length}/100
+                  </div>
+                </div>
+                <button disabled={isSending} className="w-full bg-[#2B2B2B] text-white font-title text-xl py-3 rounded hover:bg-[#4B4B4B] transition flex items-center justify-center gap-2">
+                  {isSending ? 'Sending...' : <><Send size={18} /> Send Note</>}
+                </button>
+              </form>
+            )}
+
+            {/* DIARY ENTRIES (COMMENTS) */}
+            <div className="mt-10 border-t-2 border-dashed border-gray-300 pt-6">
+              <p className="font-title text-2xl mb-4 text-[#8B5E3C]">Friends' Notes:</p>
+              <div className="space-y-6 max-h-[300px] overflow-y-auto diary-scroll pr-2">
+                {(data?.rsvps || []).length === 0 ? (
+                  <p className="text-center font-doodle text-gray-400">Page is empty...</p>
+                ) : (
+                  (data?.rsvps || []).map((item, idx) => (
+                    <div key={idx} className="relative pl-6 border-l-2 border-[#D4C4B7]">
+                      <div className="absolute -left-[5px] top-0 w-2 h-2 bg-[#8B5E3C] rounded-full"></div>
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="font-title text-xl font-bold text-[#2B2B2B]">{item.guest_name}</span>
+                        <span className={`text-xs font-body uppercase tracking-wider ${item.status === 'hadir' ? 'text-green-600' : 'text-red-500'}`}>{item.status}</span>
+                      </div>
+                      <p className="font-doodle text-lg text-gray-600">"{item.message}"</p>
+                      {item.reply && (
+                        <div className="mt-2 bg-[#FAF7F2] p-2 border-l-2 border-[#8B5E3C] text-sm font-body text-[#8B5E3C]">
+                          <strong>Reply:</strong> {item.reply}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* 10. CLOSING */}

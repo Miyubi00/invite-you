@@ -80,42 +80,44 @@ export default function InvitationRender() {
     fetchData();
   }, [slug]);
 
-  // Logic Submit RSVP (Sama seperti sebelumnya)
   const handleRsvpSubmit = async (rsvpData) => {
-    if (!orderData) return false;
-    if (myRsvp) { alert("Anda sudah mengisi kehadiran."); return false; }
+    if (!orderData) return false;
+    if (myRsvp) { alert("Anda sudah mengisi kehadiran."); return false; }
 
-    try {
-        let sessionId = localStorage.getItem('rsvp_session_id');
-        if (!sessionId) {
-            sessionId = crypto.randomUUID();
-            localStorage.setItem('rsvp_session_id', sessionId);
-        }
+    try {
+        let sessionId = localStorage.getItem('rsvp_session_id');
+        if (!sessionId) {
+            sessionId = crypto.randomUUID();
+            localStorage.setItem('rsvp_session_id', sessionId);
+        }
 
-        const { data, error } = await supabase
-            .from('rsvps')
-            .insert({
-                order_id: orderData.id,
-                session_id: sessionId,
-                guest_name: guestName,
-                status: rsvpData.status,
-                pax: rsvpData.pax,
-                message: rsvpData.message
-            })
-            .select()
-            .single();
+        // 1. Insert ke Supabase
+        const { data, error } = await supabase // <--- Hasil disimpan di 'data'
+            .from('rsvps')
+            .insert({
+                order_id: orderData.id,
+                session_id: sessionId,
+                guest_name: guestName,
+                status: rsvpData.status,
+                pax: rsvpData.pax,
+                message: rsvpData.message
+            })
+            .select()
+            .single();
 
-        if (error) throw error;
+        if (error) throw error;
 
-        setRsvps(prev => [newEntry, ...prev]);
-        setMyRsvp(data);
-        return true; 
-    } catch (err) {
-        console.error("RSVP Error:", err);
-        alert("Gagal mengirim ucapan.");
-        return false;
-    }
-  };
+        // 2. Update State Lokal (Gunakan 'data')
+        setRsvps(prev => [data, ...prev]); // <--- PERBAIKAN DI SINI
+        setMyRsvp(data);
+        return true; 
+
+    } catch (err) {
+        console.error("RSVP Error:", err);
+        alert("Gagal mengirim ucapan.");
+        return false;
+    }
+  };
 
   // --- RENDER UI BERDASARKAN STATUS ---
 

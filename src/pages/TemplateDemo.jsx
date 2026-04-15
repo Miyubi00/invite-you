@@ -6,28 +6,36 @@ import { ArrowLeft } from 'lucide-react';
 export default function TemplateDemo() {
   const { slug } = useParams(); 
 
-  // Ambil komponen template dari Registry
+  // Ambil komponen template dari Registry berdasarkan slug URL
   const TemplateComponent = getTemplateComponent(slug);
 
   if (!TemplateComponent) {
-    return <div className="p-10 text-center">Template "{slug}" tidak ditemukan.</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-500">
+        <p className="text-xl mb-4">Template <span className="font-bold text-gray-800">"{slug}"</span> tidak ditemukan.</p>
+        <Link to="/" className="text-blue-500 underline">Kembali ke Beranda</Link>
+      </div>
+    );
   }
 
-  // Data Dummy untuk Preview (LENGKAP dengan Audio, Quote, & RSVP Chat)
+  // --- DATA DUMMY PREVIEW (Sesuai Request) ---
   const dummyData = {
     groom: "Romeo",
     bride: "Juliet",
+    // Set tanggal 6 bulan dari sekarang
     date: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString(),
     guestName: "Tamu Spesial",
     
     // Data JSON event_details lengkap
     event_details: {
-      // --- FOTO ---
+      // --- VIDEO & FOTO ---
+      // (PENTING: Saya tambahkan video_url agar template Cinematic jalan)
+      video_url: "https://video-previews.elements.envatousercontent.com/8a64ff3b-7e94-47b7-8e2e-30dae1f5c957/watermarked_preview/watermarked_preview.mp4",
       cover_photo: "https://images.unsplash.com/photo-1520854221256-17451cc331bf?q=80&w=1470&auto=format&fit=crop",
       groom_photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop",
       bride_photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop",
 
-      // --- DETAIL ---
+      // --- DETAIL ACARA ---
       venue_name: "Grand Ballroom Hotel Indonesia",
       venue_address: "Jl. Jendral Sudirman No. 1, Jakarta Pusat, DKI Jakarta",
       maps_link: "https://goo.gl/maps/example",
@@ -41,7 +49,7 @@ export default function TemplateDemo() {
         "https://images.unsplash.com/photo-1519741497674-611481863552?w=500&fit=crop",
         "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=500&fit=crop",
         "https://images.unsplash.com/photo-1621600411688-4be93cd68504?w=500&fit=crop",
-        "https://images.unsplash.com/photo-1522673607200-1645062cd958?w=500&fit=crop"
+        "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=1469&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
       ],
 
       // --- BANK ---
@@ -62,7 +70,7 @@ export default function TemplateDemo() {
             guest_name: "Budi Santoso",
             status: "hadir",
             message: "Selamat menempuh hidup baru bro Romeo! Semoga samawa yaaa 🥳",
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 jam lalu
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
             reply: "Aamiin, makasih banyak bro Budi! Ditunggu kehadirannya!"
         },
         {
@@ -104,7 +112,7 @@ export default function TemplateDemo() {
         date={dummyData.date}
         guestName={dummyData.guestName}
         
-        // Pass 'demo' ID agar RSVP tidak error saat diklik
+        // Pass 'demo' ID agar RSVP bisa dirender tapi tidak kirim ke DB beneran
         orderId="demo" 
         
         data={dummyData.event_details}

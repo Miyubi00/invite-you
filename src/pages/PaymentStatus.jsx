@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { CheckCircle, XCircle, Clock, ArrowRight, RefreshCcw, Home, CreditCard } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowRight, RefreshCcw, Home, CreditCard, MessageSquare } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa';
 
 export default function PaymentStatus() {
     const [searchParams] = useSearchParams();
@@ -9,42 +10,37 @@ export default function PaymentStatus() {
     const [loading, setLoading] = useState(true);
     const [order, setOrder] = useState(null);
 
-    // Ambil ID dari URL (Midtrans mengirim 'order_id' which is our 'midtrans_order_id')
+    // Ambil ID dari URL (Jika null, berarti ini pesanan via WhatsApp Manual)
     const orderId = searchParams.get('order_id');
+    const isManualWhatsApp = !orderId; // Flag untuk menentukan jenis pesanan
 
     useEffect(() => {
-        if (!orderId) {
+        // Jika ini pesanan WhatsApp, hentikan loading dan langsung render UI WA
+        if (isManualWhatsApp) {
             setLoading(false);
             return;
         }
-        fetchOrderStatus();
-    }, [orderId]);
-
-    useEffect(() => {
-        if (!orderId) return;
 
         fetchOrderStatus();
         const interval = setInterval(fetchOrderStatus, 5000);
 
         return () => clearInterval(interval);
-    }, [orderId]);
+    }, [orderId, isManualWhatsApp]);
 
 
     const fetchOrderStatus = async () => {
         setLoading(true);
-        // Cari order berdasarkan midtrans_order_id
         const { data, error } = await supabase
             .from('orders')
             .select('*')
             .eq('midtrans_order_id', orderId)
             .single();
 
-        if (error) console.error(error);
+        if (error && error.code !== 'PGRST116') console.error(error); // Abaikan error not found standard
         if (data) setOrder(data);
         setLoading(false);
     };
 
-    // Fungsi Munculin Popup Bayar Lagi
     const handlePayAgain = () => {
         if (order && order.snap_token) {
             window.snap.pay(order.snap_token, {
@@ -60,26 +56,74 @@ export default function PaymentStatus() {
 
     // --- RENDER LOADING ---
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-[#FFD5AF]/20">
             <div className="animate-pulse flex flex-col items-center">
-                <div className="w-12 h-12 bg-gray-300 rounded-full mb-4"></div>
-                <div className="h-4 w-48 bg-gray-300 rounded"></div>
+                <div className="w-16 h-16 bg-[#E59A59]/40 rounded-full mb-4"></div>
+                <div className="h-4 w-48 bg-[#E59A59]/30 rounded-full"></div>
             </div>
         </div>
     );
 
-    // --- RENDER JIKA ORDER TIDAK KETEMU ---
+    // ====================================================================
+    // RENDER 1: UI KHUSUS MANUAL WHATSAPP (Jika tidak ada order_id)
+    // ====================================================================
+    if (isManualWhatsApp) {
+        return (
+            <div className="min-h-screen bg-[#FFD5AF]/20 flex items-center justify-center p-4 font-sans">
+                <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-[#25D366]"></div>
+                    
+                    <div className="animate-fade-in-up">
+                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-[#25D366] shadow-lg shadow-green-100">
+                            <MessageSquare className="w-12 h-12" />
+                        </div>
+                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">Pesanan Diterima!</h1>
+                        <p className="text-[#888870] mb-6 leading-relaxed">
+                            Terima kasih telah memesan. Silakan lanjutkan konfirmasi dan pembayaran Anda melalui <b>WhatsApp</b>.
+                        </p>
+
+                        <div className="bg-orange-50 p-4 rounded-xl mb-8 border border-dashed border-orange-200">
+                            <p className="text-sm text-orange-800 font-medium">
+                                Admin kami akan segera memverifikasi pembayaran Anda. Setelah disetujui, Anda dapat masuk ke Dashboard menggunakan PIN yang Anda buat.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <a 
+                                href="https://wa.me/6285179880092" // GANTI DENGAN NOMOR WA ADMIN
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="w-full py-4 bg-[#25D366] text-white rounded-xl font-bold hover:bg-[#20bd5a] transition shadow-lg flex items-center justify-center gap-2"
+                            >
+                                <FaWhatsapp className="w-6 h-6" /> Hubungi Admin via WA
+                            </a>
+                            <button onClick={() => navigate('/')} className="w-full py-4 bg-white border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 transition flex items-center justify-center gap-2">
+                                <Home className="w-5 h-5" /> Kembali ke Beranda
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- RENDER JIKA ORDER MIDTRANS TIDAK KETEMU ---
     if (!order) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6 text-center">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-800">Pesanan Tidak Ditemukan</h1>
-                <p className="text-gray-500 mt-2">Pastikan link yang Anda akses benar.</p>
-                <button onClick={() => navigate('/')} className="mt-6 bg-black text-white px-6 py-3 rounded-xl font-bold">Ke Beranda</button>
+        <div className="min-h-screen flex items-center justify-center bg-[#FFD5AF]/20 p-6 text-center">
+            <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <XCircle className="w-8 h-8" />
+                </div>
+                <h1 className="text-2xl font-bold text-[#712E1E]">Pesanan Tidak Ditemukan</h1>
+                <p className="text-gray-500 mt-2 text-sm">Pastikan link yang Anda akses benar atau ID transaksi valid.</p>
+                <button onClick={() => navigate('/')} className="mt-6 w-full bg-[#E59A59] text-white px-6 py-3 rounded-xl font-bold shadow-md">Kembali ke Beranda</button>
             </div>
         </div>
     );
 
-    // --- LOGIC UI BERDASARKAN STATUS ---
+    // ====================================================================
+    // RENDER 2: UI MIDTRANS (Berdasarkan Status Database)
+    // ====================================================================
     const isSuccess = order.payment_status === 'success';
     const isPending = order.payment_status === 'pending';
     const isFailed = order.payment_status === 'failed' || order.payment_status === 'deny' || order.payment_status === 'expire';
@@ -87,11 +131,9 @@ export default function PaymentStatus() {
     return (
         <div className="min-h-screen bg-[#FFD5AF]/20 flex items-center justify-center p-4 font-sans">
             <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
-
-                {/* Background Decor */}
                 <div className={`absolute top-0 left-0 w-full h-2 ${isSuccess ? 'bg-green-500' : isPending ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
 
-                {/* --- 1. SUKSES --- */}
+                {/* --- SUKSES --- */}
                 {isSuccess && (
                     <div className="animate-fade-in-up">
                         <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 shadow-lg shadow-green-100">
@@ -119,7 +161,7 @@ export default function PaymentStatus() {
                     </div>
                 )}
 
-                {/* --- 2. PENDING (Bayar Lagi) --- */}
+                {/* --- PENDING --- */}
                 {isPending && (
                     <div className="animate-fade-in-up">
                         <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6 text-yellow-600 shadow-lg shadow-yellow-100 animate-pulse">
@@ -142,7 +184,7 @@ export default function PaymentStatus() {
                     </div>
                 )}
 
-                {/* --- 3. FAILED --- */}
+                {/* --- FAILED --- */}
                 {isFailed && (
                     <div className="animate-fade-in-up">
                         <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 shadow-lg shadow-red-100">
@@ -164,7 +206,6 @@ export default function PaymentStatus() {
                         </div>
                     </div>
                 )}
-
             </div>
         </div>
     );
