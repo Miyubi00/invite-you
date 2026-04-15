@@ -60,13 +60,16 @@ export default function InvitationRender() {
         // 3. Cek RSVP Session User
         const sessionId = localStorage.getItem('rsvp_session_id');
         if (sessionId) {
-            const { data: existingData } = await supabase
+            const { data: existingData, error: rsvpError } = await supabase
                 .from('rsvps')
                 .select('*')
                 .match({ order_id: order.id, session_id: sessionId })
-                .single();
+                .maybeSingle(); // <--- UBAH JADI INI
             
-            if (existingData) setMyRsvp(existingData);
+            // Abaikan saja kalau tidak ketemu, hanya set state kalau datanya benar-benar ada
+            if (existingData) {
+                setMyRsvp(existingData);
+            }
         }
 
       } catch (err) {
