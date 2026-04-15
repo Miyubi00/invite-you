@@ -6,17 +6,17 @@ export default function Contact() {
   // Data Kontak (Ganti dengan nomor aslimu)
   const contacts = {
     instagram: {
-      username: '@LoVerse.id',
-      link: 'https://instagram.com/LoVerse.id'
+      username: '@loverse.id',
+      link: 'https://instagram.com/loverse.id'
     },
     whatsappMain: {
       name: 'Admin Utama (Sales)',
-      number: '6281234567890', // Format: 628...
+      number: '6287777016398', // Format: 628...
       label: 'Konsultasi & Order'
     },
     whatsappAdmins: [
-      { name: 'Admin Support 1', number: '628987654321', label: 'Bantuan Teknis' },
-      { name: 'Admin Support 2', number: '628555555555', label: 'Revisi Desain' },
+      { name: 'Admin Support 1', number: '6289639543075', label: 'Bantuan Teknis' },
+      { name: 'Admin Support 2', number: '6285179880092', label: 'Revisi Desain' },
     ]
   };
 
