@@ -198,7 +198,10 @@ export default function InvitationRender() {
       submittedData={myRsvp} 
       data={{
           ...orderData.event_details,
-          rsvps: rsvps 
+          // JARING PENGAMAN: Jika undefined, paksa menjadi array kosong []
+          gallery: orderData.event_details?.gallery || [], 
+          banks: orderData.event_details?.banks || [],
+          rsvps: rsvps || [] 
       }}
     />
   );
