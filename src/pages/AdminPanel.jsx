@@ -93,16 +93,24 @@ export default function AdminPanel() {
     setLoading(false);
   };
 
-  // 3. LOGIC AKTIFKAN PENDING ORDER (Sudah Pakai ConfirmDialog)
+  // 3. LOGIC AKTIFKAN PENDING ORDER (FIX DUPLICATE SLUG - ONLY NUMBERS)
   const handleApprovePending = (pendingOrder) => {
     confirmAction(
       "Aktifkan Pesanan?",
       `Pesanan atas nama ${pendingOrder.groom_name} & ${pendingOrder.bride_name} akan dimasukkan ke data utama.`,
-      false, // isDanger = false (karena ini aksi positif)
+      false, 
       async () => {
-        closeDialog(); // Tutup dialog
+        closeDialog(); 
         
-        const generatedSlug = `${pendingOrder.groom_name}-${pendingOrder.bride_name}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        // 1. Bersihkan nama dari spasi dan karakter aneh, ubah jadi huruf kecil
+        const cleanGroom = pendingOrder.groom_name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const cleanBride = pendingOrder.bride_name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        
+        // 2. Buat 4 digit angka acak (misal: 4829)
+        const randomNumber = Math.floor(1000 + Math.random() * 9000);
+        
+        // 3. Gabungkan menjadi slug unik
+        const generatedSlug = `${cleanGroom}-${cleanBride}-${randomNumber}`;
 
         const { error: insertError } = await supabase.from('orders').insert([{
             groom_name: pendingOrder.groom_name,
@@ -111,7 +119,7 @@ export default function AdminPanel() {
             whatsapp: pendingOrder.whatsapp,
             pin_code: pendingOrder.pin_code,
             template_slug: pendingOrder.template_slug,
-            slug: generatedSlug,
+            slug: generatedSlug, 
             payment_status: 'success',
             event_details: {}
         }]);
@@ -121,8 +129,10 @@ export default function AdminPanel() {
             return;
         }
 
+        // Hapus dari tabel pending_orders HANYA JIKA insert berhasil
         await supabase.from('pending_orders').delete().eq('id', pendingOrder.id);
-        toast.success("Pesanan diaktifkan! Data masuk ke tabel utama.");
+        
+        toast.success("Pesanan diaktifkan! Slug unik berhasil dibuat.");
         fetchData(); 
       }
     );
