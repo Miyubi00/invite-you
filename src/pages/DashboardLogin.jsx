@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/GlobalToast'; 
-import { User, Calendar, Lock, LogIn, HeartHandshake, Eye, EyeOff } from 'lucide-react';
+import { Lock, LogIn, HeartHandshake, Eye, EyeOff, Phone } from 'lucide-react'; // Mengganti User & Calendar dengan Phone
 
 export default function DashboardLogin() {
   const navigate = useNavigate();
@@ -24,21 +24,18 @@ export default function DashboardLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const groom = e.target.groom.value.trim();
-    const bride = e.target.bride.value.trim();
-    const date = e.target.date.value;
+    const whatsapp = e.target.whatsapp.value.trim();
 
     try {
-      // --- PERBAIKAN DI SINI ---
-      // Menggunakan RPC (Function) agar bisa bypass RLS dengan aman
+      // --- CATATAN PENTING ---
+      // Pastikan Anda juga membuat/mengubah fungsi RPC di Supabase 
+      // menjadi 'login_client_by_wa' yang menerima p_whatsapp dan p_pin
       const { data, error } = await supabase
-        .rpc('login_client', { // Panggil fungsi SQL yang kita buat
-            p_groom: groom,
-            p_bride: bride,
-            p_date: date,
+        .rpc('login_client_by_wa', { 
+            p_whatsapp: whatsapp,
             p_pin: pinValue
         })
-        .single(); // Ambil 1 hasil saja
+        .single(); 
 
       if (error) {
           console.error("Login Error:", error);
@@ -46,7 +43,7 @@ export default function DashboardLogin() {
       }
 
       if (!data) {
-        throw new Error('Data tidak ditemukan. Cek Nama, Tanggal, atau PIN.');
+        throw new Error('Data tidak ditemukan. Cek kembali No WhatsApp atau PIN Anda.');
       }
 
       if (data.payment_status !== 'success' && data.payment_status !== 'paid') {
@@ -56,7 +53,7 @@ export default function DashboardLogin() {
       // Login Sukses
       toast.success('Login Berhasil! Mengalihkan...'); 
       
-      // Simpan Session ID (PENTING untuk Dashboard.jsx)
+      // Simpan Session ID
       sessionStorage.setItem('active_order_id', data.id);
       sessionStorage.setItem('order_pin', pinValue);
       
@@ -87,38 +84,17 @@ export default function DashboardLogin() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           
-          {/* Input Nama Pria */}
+          {/* Input No. WhatsApp */}
           <div>
-            <label className="block text-sm font-bold text-[#712E1E] mb-1">Mempelai Pria</label>
+            <label className="block text-sm font-bold text-[#712E1E] mb-1">No. WhatsApp</label>
             <div className="relative">
-                <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input 
-                  name="groom" required placeholder="Contoh: Romeo" 
+                  type="tel" // Menggunakan type tel agar muncul numpad di HP
+                  name="whatsapp" 
+                  required 
+                  placeholder="Contoh: 081234567890" 
                   className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition" 
-                />
-            </div>
-          </div>
-
-          {/* Input Nama Wanita */}
-          <div>
-            <label className="block text-sm font-bold text-[#712E1E] mb-1">Mempelai Wanita</label>
-            <div className="relative">
-                <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input 
-                  name="bride" required placeholder="Contoh: Juliet" 
-                  className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition" 
-                />
-            </div>
-          </div>
-
-          {/* Input Tanggal */}
-          <div>
-            <label className="block text-sm font-bold text-[#712E1E] mb-1">Tanggal Pernikahan</label>
-            <div className="relative">
-                <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input 
-                  type="date" name="date" required 
-                  className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition text-gray-600" 
                 />
             </div>
           </div>
