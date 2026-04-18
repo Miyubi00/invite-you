@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/GlobalToast'; 
-import { User, Calendar, Lock, LogIn, HeartHandshake, Eye, EyeOff } from 'lucide-react';
+import { Lock, LogIn, HeartHandshake, Eye, EyeOff, Phone } from 'lucide-react';
 
 export default function DashboardLogin() {
   const navigate = useNavigate();
@@ -24,29 +24,40 @@ export default function DashboardLogin() {
     e.preventDefault();
     setLoading(true);
 
-    const groom = e.target.groom.value.trim();
-    const bride = e.target.bride.value.trim();
-    const date = e.target.date.value;
+    let whatsapp = e.target.whatsapp.value.trim();
+
+    // --- FITUR AUTO-FORMAT NOMOR WHATSAPP ---
+    // 1. Bersihkan spasi atau tanda strip (jika klien iseng mengetik 0812-3456-7890)
+    whatsapp = whatsapp.replace(/[^0-9+]/g, '');
+
+    // 2. Format awalan angka
+    if (whatsapp.startsWith('0')) {
+        // Jika berawalan 0 (0812...), ubah 0 menjadi +62
+        whatsapp = '+62' + whatsapp.substring(1);
+    } else if (whatsapp.startsWith('62')) {
+        // Jika berawalan 62 (62812...), tambahkan + di depannya
+        whatsapp = '+' + whatsapp;
+    } else if (!whatsapp.startsWith('+')) {
+        // Jika langsung berawalan 8 (812...), tambahkan +62 di depannya
+        whatsapp = '+62' + whatsapp;
+    }
+    // ----------------------------------------
 
     try {
-      // --- PERBAIKAN DI SINI ---
-      // Menggunakan RPC (Function) agar bisa bypass RLS dengan aman
       const { data, error } = await supabase
-        .rpc('login_client', { // Panggil fungsi SQL yang kita buat
-            p_groom: groom,
-            p_bride: bride,
-            p_date: date,
+        .rpc('login_client', { 
+            p_whatsapp: whatsapp, // Sekarang mengirim format +62
             p_pin: pinValue
         })
-        .single(); // Ambil 1 hasil saja
+        .single(); 
 
       if (error) {
           console.error("Login Error:", error);
-          throw new Error('Terjadi kesalahan sistem.');
+          throw new Error('Terjadi kesalahan sistem. Pastikan data benar.');
       }
 
       if (!data) {
-        throw new Error('Data tidak ditemukan. Cek Nama, Tanggal, atau PIN.');
+        throw new Error('Data tidak ditemukan. Cek kembali No. WhatsApp atau PIN Anda.');
       }
 
       if (data.payment_status !== 'success' && data.payment_status !== 'paid') {
@@ -56,12 +67,11 @@ export default function DashboardLogin() {
       // Login Sukses
       toast.success('Login Berhasil! Mengalihkan...'); 
       
-      // Simpan Session ID (PENTING untuk Dashboard.jsx)
+      // Simpan Session ID
       sessionStorage.setItem('active_order_id', data.id);
       sessionStorage.setItem('order_pin', pinValue);
       
       setTimeout(() => {
-          // Redirect ke Dashboard dengan ID Order
           navigate(`/dashboard/${data.id}`);
       }, 1000);
 
@@ -87,43 +97,22 @@ export default function DashboardLogin() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           
-          {/* Input Nama Pria */}
+          {/* Input No WhatsApp */}
           <div>
-            <label className="block text-sm font-bold text-[#712E1E] mb-1">Mempelai Pria</label>
+            <label className="block text-sm font-bold text-[#712E1E] mb-1">No. WhatsApp</label>
             <div className="relative">
-                <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input 
-                  name="groom" required placeholder="Contoh: Romeo" 
+                  type="tel" 
+                  name="whatsapp" 
+                  required 
+                  placeholder="Contoh: 081234567890" 
                   className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition" 
                 />
             </div>
           </div>
 
-          {/* Input Nama Wanita */}
-          <div>
-            <label className="block text-sm font-bold text-[#712E1E] mb-1">Mempelai Wanita</label>
-            <div className="relative">
-                <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input 
-                  name="bride" required placeholder="Contoh: Juliet" 
-                  className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition" 
-                />
-            </div>
-          </div>
-
-          {/* Input Tanggal */}
-          <div>
-            <label className="block text-sm font-bold text-[#712E1E] mb-1">Tanggal Pernikahan</label>
-            <div className="relative">
-                <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input 
-                  type="date" name="date" required 
-                  className="pl-10 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition text-gray-600" 
-                />
-            </div>
-          </div>
-
-          {/* --- INPUT PIN --- */}
+          {/* Input PIN */}
           <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
               <label className="block text-sm font-bold text-[#712E1E] mb-1">PIN Keamanan</label>
               <div className="relative">
@@ -149,7 +138,7 @@ export default function DashboardLogin() {
                   {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">PIN yang Anda buat saat pemesanan.</p>
+              <p className="text-xs text-gray-500 mt-2">PIN yang Anda terima saat pemesanan.</p>
           </div>
 
           <button 

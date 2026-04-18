@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useToast } from '../components/GlobalToast'; 
-import ConfirmDialog from '../components/ConfirmDialog'; 
-import { TEMPLATE_OPTIONS } from '../lib/constants'; 
+import { useToast } from '../components/GlobalToast';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { TEMPLATE_OPTIONS } from '../lib/constants';
 import { User, Calendar, Lock, CreditCard, ShieldCheck, Palette, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 
 export default function OrderForm() {
   const navigate = useNavigate();
-  const toast = useToast(); 
+  const toast = useToast();
   const [searchParams] = useSearchParams();
 
   const [loadingWA, setLoadingWA] = useState(false);
   const [loadingMidtrans, setLoadingMidtrans] = useState(false);
   const [showPin, setShowPin] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false); 
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const urlSlug = searchParams.get('template');
   const defaultTemplate = TEMPLATE_OPTIONS.find(t => t.slug === urlSlug) || TEMPLATE_OPTIONS[0];
@@ -54,7 +54,19 @@ export default function OrderForm() {
 
   const handlePinChange = (e) => {
     const val = e.target.value;
+
     if (/^\d*$/.test(val) && val.length <= 6) {
+      // --- TAMBAHKAN PENGECEKAN PIN LEMAH DI SINI ---
+      if (val === '123456' || val === '654321') {
+        // Jika Anda sudah meng-import toast di file ini, gunakan:
+        toast.error("PIN terlalu mudah ditebak! Silakan gunakan kombinasi lain.");
+
+        // Atau gunakan alert bawaan browser:
+        //alert("PIN terlalu mudah ditebak! Silakan gunakan kombinasi angka lain.");
+        return; // Menghentikan proses agar angka ke-6 tidak tersimpan
+      }
+      // ----------------------------------------------
+
       setFormData({ ...formData, pin_code: val });
     }
   };
@@ -114,7 +126,7 @@ export default function OrderForm() {
       if (error) throw error;
 
       const NOMOR_WA_ADMIN = "6281234567890"; // GANTI DENGAN NOMOR WA ADMIN
-      
+
       const message = `Halo Admin, saya ingin memesan Undangan Digital:%0A
 *Data Mempelai:*
 Pria: ${formData.groom_name}
@@ -127,9 +139,9 @@ Total Harga: Rp ${selectedTemplate.price.toLocaleString('id-ID')}
 
       const waUrl = `https://wa.me/${6285179880092}?text=${message}`;
       toast.success("Berhasil! Mengarahkan ke WhatsApp...");
-      
+
       window.open(waUrl, '_blank');
-      navigate(`/payment-status`); 
+      navigate(`/payment-status`);
 
     } catch (err) {
       console.error(err);
@@ -213,7 +225,7 @@ Total Harga: Rp ${selectedTemplate.price.toLocaleString('id-ID')}
         <div className="space-y-5">
 
           {/* ... (KODE INPUT TEMPLATE, MEMPELAI, TANGGAL, WA, PIN SAMA SEPERTI SEBELUMNYA) ... */}
-          
+
           {/* Pilih Template */}
           <div>
             <label className="block text-sm font-semibold text-[#712E1E] mb-1">Pilih Desain Template</label>
@@ -266,13 +278,27 @@ Total Harga: Rp ${selectedTemplate.price.toLocaleString('id-ID')}
 
           {/* PIN */}
           <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-            <label className="block text-sm font-bold text-[#712E1E] mb-1 flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-orange-500" />Buat PIN Keamanan (6 Digit)</label>
+            <label className="block text-sm font-bold text-[#712E1E] mb-1 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-orange-500" />Buat PIN Keamanan (6 Digit)
+            </label>
             <div className="relative">
               <Lock className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" />
-              <input required name="pin_code" type={showPin ? "text" : "password"} inputMode="numeric" maxLength={6} placeholder="123456" value={formData.pin_code} onChange={handlePinChange} className="pl-10 pr-12 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition tracking-widest font-mono" />
-              <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-3 top-3 text-gray-400 hover:text-[#E59A59] transition">{showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
+              <input
+                required
+                name="pin_code"
+                type={showPin ? "text" : "password"}
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="123456"
+                value={formData.pin_code}
+                onChange={handlePinChange}
+                className="pl-10 pr-12 w-full p-3 rounded-xl border border-gray-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition tracking-widest font-mono"
+              />
+              <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-3 top-3 text-gray-400 hover:text-[#E59A59] transition">
+                {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">PIN ini wajib diingat untuk Login setelah Admin menyetujui.</p>
+            <p className="text-xs text-gray-500 mt-2">PIN ini wajib diingat untuk Login setelah Admin menyetujui. <span className="text-red-500 font-medium">Hindari PIN berurutan seperti 123456.</span></p>
           </div>
 
           {/* TOTAL HARGA */}
