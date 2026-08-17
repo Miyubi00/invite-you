@@ -5,7 +5,7 @@ import {
     Plus, Minus, RotateCcw, Quote, MessageSquare, Send, CheckCircle2, Sparkles
 } from 'lucide-react';
 
-export default function SkyWorldMapTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }) {
+export default function SkyWorldMapTheme({ groom, bride, date, data, onRsvpSubmit, submittedData }) {
     // --- STATE ---
     const [isOpen, setIsOpen] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);

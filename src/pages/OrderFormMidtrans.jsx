@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/GlobalToast'; // 1. Import Toast
@@ -30,17 +30,7 @@ export default function OrderForm() {
   };
 
   const [formData, setFormData] = useState(initialFormState);
-  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate);
-
-  // Auto-select template jika URL berubah
-  useEffect(() => {
-    const currentSlug = searchParams.get('template');
-    const newTemplate = TEMPLATE_OPTIONS.find(t => t.slug === currentSlug);
-    if (newTemplate) {
-      setSelectedTemplate(newTemplate);
-      setFormData(prev => ({ ...prev, template_slug: newTemplate.slug }));
-    }
-  }, [searchParams]);
+  const selectedTemplate = TEMPLATE_OPTIONS.find(t => t.slug === formData.template_slug) || defaultTemplate;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -62,8 +52,6 @@ export default function OrderForm() {
 
   const handleTemplateChange = (e) => {
     const slug = e.target.value;
-    const template = TEMPLATE_OPTIONS.find(t => t.slug === slug);
-    setSelectedTemplate(template);
     setFormData({ ...formData, template_slug: slug });
   };
 
@@ -74,65 +62,150 @@ export default function OrderForm() {
     toast.success("Formulir dikosongkan.");
   };
 
+  // ⚠️ PRODUCTION: Comprehensive validation and error handling for automated payment
   const handleCheckout = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Validasi Manual dengan Toast
-    if (formData.pin_code.length !== 6) {
+    // --- STEP 1: VALIDATE FORM DATA ---
+    if (!formData.groom_name?.trim()) {
+      toast.error('Nama mempelai pria harus diisi!');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.bride_name?.trim()) {
+      toast.error('Nama mempelai wanita harus diisi!');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.wedding_date) {
+      toast.error('Tanggal pernikahan harus dipilih!');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.pin_code.length !== 6 || !/^\d{6}$/.test(formData.pin_code)) {
       toast.error('PIN harus pas 6 digit angka!');
       setLoading(false);
       return;
     }
 
+    // Validate weak PINs (too simple patterns)
+    const weakPins = ['000000', '111111', '222222', '333333', '444444', '555555', '666666', '777777', '888888', '999999', '123456', '654321'];
+    if (weakPins.includes(formData.pin_code)) {
+      toast.error("PIN terlalu mudah! Gunakan kombinasi yang lebih kompleks.");
+      setLoading(false);
+      return;
+    }
+
     if (!formData.whatsapp || formData.whatsapp.length < 9) {
-      toast.error('Nomor WhatsApp tidak valid!');
+      toast.error('Nomor WhatsApp tidak valid! Min 9 digit.');
+      setLoading(false);
+      return;
+    }
+
+    // --- STEP 2: CHECK MIDTRANS AVAILABILITY ---
+    if (typeof window.snap === 'undefined' || !window.snap?.pay) {
+      toast.error('❌ Sistem pembayaran tidak tersedia. Gunakan metode manual (WhatsApp).');
       setLoading(false);
       return;
     }
 
     try {
+      // --- STEP 3: PREPARE DATA FOR SERVER ---
       const finalWhatsapp = `+62${formData.whatsapp}`;
 
+      toast.warning('Memproses pesanan Anda...');
+
+      // --- STEP 4: CALL SUPABASE FUNCTION (Server-side)
+      // This function:
+      // - Generates Midtrans snap token server-side
+      // - Never exposes MIDTRANS_SERVER_KEY to client
+      // - Creates order in database
+      // - Returns order details and snap token
       const { data, error } = await supabase.functions.invoke('create-order', {
         body: {
-          groom_name: formData.groom_name,
-          bride_name: formData.bride_name,
+          groom_name: formData.groom_name.trim(),
+          bride_name: formData.bride_name.trim(),
           wedding_date: formData.wedding_date,
           whatsapp: finalWhatsapp,
-          pin_code: formData.pin_code,
-          template_slug: formData.template_slug
+          pin_code: formData.pin_code,  // Hashed server-side
+          template_slug: formData.template_slug,
+          // For production monitoring
+          source: 'automated_payment', // vs 'manual_whatsapp'
+          timestamp: new Date().toISOString()
         }
       });
 
-      if (error) throw error;
-      if (!data?.snap_token) throw new Error("Gagal mendapatkan Token Pembayaran");
+      // --- STEP 5: VALIDATE SERVER RESPONSE ---
+      if (error) {
+        console.error('[OrderFormMidtrans] Supabase function error:', error);
+        
+        // Parse error message for user-friendly message
+        const errorMsg = error?.message || 'Gagal membuat pesanan';
+        if (errorMsg.includes('rate limit')) {
+          throw new Error('Terlalu banyak permintaan. Silakan tunggu beberapa saat.');
+        } else if (errorMsg.includes('network')) {
+          throw new Error('Koneksi internet bermasalah. Cek koneksi Anda.');
+        } else {
+          throw new Error(errorMsg);
+        }
+      }
 
-      // Buka Snap Midtrans
+      if (!data) {
+        throw new Error('Server tidak mengembalikan data. Silakan coba lagi.');
+      }
+
+      if (!data.snap_token) {
+        throw new Error('Gagal mendapatkan token pembayaran dari server.');
+      }
+
+      if (!data.order_id) {
+        throw new Error('Gagal membuat ID pesanan.');
+      }
+
+      // --- STEP 6: OPEN MIDTRANS SNAP PAYMENT UI ---
+      // Snap payment popup handles:
+      // - Multiple payment methods (transfer, e-wallet, etc)
+      // - Payment status tracking
+      // - Error handling from Midtrans
       window.snap.pay(data.snap_token, {
         onSuccess: function (result) {
-          toast.success("Pesanan Dibuat! Cek status pembayaran.");
-          // REDIRECT KE HALAMAN STATUS (Menggunakan ID Transaksi dari Midtrans)
+          console.log('[OrderFormMidtrans] Payment success:', result);
+          toast.success("✅ Pembayaran berhasil! Pesanan Anda telah dibuat.");
+          // Redirect to payment status page with order ID from Midtrans
           navigate(`/payment-status?order_id=${result.order_id}`);
         },
         onPending: function (result) {
-          toast.warning("Menunggu pembayaran...");
+          console.log('[OrderFormMidtrans] Payment pending:', result);
+          toast.warning("⏳ Pembayaran sedang diproses...");
           navigate(`/payment-status?order_id=${result.order_id}`);
         },
         onError: function (result) {
-          toast.error("Pembayaran gagal!");
+          console.error('[OrderFormMidtrans] Payment error:', result);
+          toast.error("❌ Pembayaran gagal atau ditolak. Silakan coba lagi.");
           navigate(`/payment-status?order_id=${result.order_id}`);
         },
         onClose: function () {
-          toast.warning('Kamu menutup popup sebelum bayar.');
-          // Opsional: Tetap redirect agar user bisa bayar nanti
-          // navigate(`/payment-status?order_id=${data.order_id}`); // order_id dari DB, bukan result midtrans (karena popup ditutup resultnya beda)
+          console.log('[OrderFormMidtrans] Payment UI closed by user');
+          toast.warning('Anda menutup jendela pembayaran. Pesanan tersimpan - Anda bisa bayar kapan saja.');
+          // OPTION: Tetap redirect sehingga user bisa melihat status/bayar lagi
+          if (data?.order_id) {
+            navigate(`/payment-status?order_id=${data.order_id}`);
+          }
         }
       });
 
     } catch (err) {
-      console.error(err);
-      toast.error('Terjadi kesalahan: ' + err.message);
+      console.error('[OrderFormMidtrans] Checkout error:', err);
+      
+      // User-friendly error messages
+      const errorMsg = err?.message || 'Terjadi kesalahan saat memproses pesanan';
+      toast.error(`❌ ${errorMsg}`);
+      
+      // Don't reset form on error - user can fix and retry
     } finally {
       setLoading(false);
     }

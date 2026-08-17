@@ -76,6 +76,21 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
         }, 800);
     };
 
+    const petals = [
+        { left: '5%', width: '12px', height: '12px', animationDuration: '8s', animationDelay: '0s' },
+        { left: '15%', width: '10px', height: '10px', animationDuration: '10s', animationDelay: '1s' },
+        { left: '28%', width: '14px', height: '14px', animationDuration: '9s', animationDelay: '2s' },
+        { left: '42%', width: '11px', height: '11px', animationDuration: '12s', animationDelay: '0.5s' },
+        { left: '58%', width: '15px', height: '15px', animationDuration: '8.5s', animationDelay: '1.5s' },
+        { left: '72%', width: '10px', height: '10px', animationDuration: '11s', animationDelay: '2.5s' },
+        { left: '85%', width: '12px', height: '12px', animationDuration: '7.5s', animationDelay: '1s' },
+        { left: '90%', width: '13px', height: '13px', animationDuration: '9.5s', animationDelay: '0.8s' },
+        { left: '35%', width: '9px', height: '9px', animationDuration: '10.5s', animationDelay: '2.8s' },
+        { left: '64%', width: '10px', height: '10px', animationDuration: '8.8s', animationDelay: '3s' },
+        { left: '48%', width: '11px', height: '11px', animationDuration: '7.8s', animationDelay: '1.2s' },
+        { left: '20%', width: '12px', height: '12px', animationDuration: '9.8s', animationDelay: '2.3s' }
+    ];
+
     return (
         // MAIN CONTAINER: Soft Pink
         <div className="bg-[#fff0f3] text-[#4a4a4a] min-h-screen relative overflow-x-hidden selection:bg-[#db2777] selection:text-white">
@@ -106,14 +121,8 @@ export default function SakuraTheme({ groom, bride, date, guestName, data }) {
 
             {/* --- SAKURA PETALS BACKGROUND --- */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                {[...Array(12)].map((_, i) => (
-                    <div key={i} className="petal" style={{
-                        left: `${Math.random() * 100}%`,
-                        width: `${Math.random() * 10 + 10}px`,
-                        height: `${Math.random() * 10 + 10}px`,
-                        animationDuration: `${Math.random() * 5 + 8}s`,
-                        animationDelay: `${Math.random() * 5}s`
-                    }}></div>
+                {petals.map((petal, i) => (
+                    <div key={i} className="petal" style={petal}></div>
                 ))}
             </div>
 

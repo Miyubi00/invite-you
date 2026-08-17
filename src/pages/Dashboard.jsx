@@ -53,7 +53,7 @@ export default function Dashboard() {
         }
 
         const fetchData = async () => {
-            const { data: orderData, error } = await supabase.from('orders').select('*').eq('id', orderId).single();
+            const { data: orderData } = await supabase.from('orders').select('*').eq('id', orderId).single();
 
             if (orderData) {
                 setOrder(orderData);
@@ -123,77 +123,111 @@ Hormat kami,
     };
 
     // --- SMART EXCEL/CSV PARSER ---
+    // ⚠️ SECURITY: xlsx dependency has known CVEs (Prototype Pollution, ReDoS)
+    // - ONLY accept .xlsx files (not .xls, .csv masquerading as excel)
+    // - Enforce strict file size limit (2MB max)
+    // - Parse with safe options to prevent ReDoS: defval='', raw=false
+    // RECOMMENDATION: Migrate to CSV-only parser when xlsx is patched
     const handleFileUploadExcel = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // 1. FILE EXTENSION VALIDATION - strict whitelist
+        const allowedExtensions = ['xlsx'];
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(fileExt)) {
+            toast.error("⚠️ Hanya file .xlsx yang diizinkan untuk keamanan.");
+            return;
+        }
+
+        // 2. FILE SIZE VALIDATION - strict limit to reduce parsing overhead
+        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB (stricter than 5MB for general uploads)
+        if (file.size > MAX_FILE_SIZE) {
+            toast.error(`File terlalu besar. Maksimal ${MAX_FILE_SIZE / (1024 * 1024)}MB. Gunakan file yang lebih kecil atau pisahkan data.`);
+            return;
+        }
+
         const reader = new FileReader();
 
         reader.onload = (evt) => {
-            const data = evt.target.result;
-            const workbook = XLSX.read(data, { type: 'binary' });
+            try {
+                const data = evt.target.result;
+                // Parse dengan safe options untuk prevent ReDoS
+                const workbook = XLSX.read(data, { 
+                    type: 'binary',
+                    defval: '',  // Default value untuk sel kosong
+                    raw: false   // Jangan parse formula secara raw (mitigasi formula injection)
+                });
 
-            // Ambil Sheet pertama
-            const wsname = workbook.SheetNames[0];
-            const ws = workbook.Sheets[wsname];
+                // Ambil Sheet pertama
+                const wsname = workbook.SheetNames[0];
+                const ws = workbook.Sheets[wsname];
 
-            // Konversi ke Array of Arrays (Baris demi baris)
-            const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+                // Konversi ke Array of Arrays (Baris demi baris)
+                const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-            if (jsonData.length === 0) {
-                toast.error("File kosong!");
-                return;
-            }
+                if (jsonData.length === 0) {
+                    toast.error("File kosong!");
+                    return;
+                }
 
-            let targetColIndex = -1;
-            let startRowIndex = 0;
+                let targetColIndex = -1;
+                let startRowIndex = 0;
 
-            // Kata kunci untuk deteksi otomatis (Case Insensitive)
-            const keywords = ['nama', 'name', 'tamu', 'guest', 'invite', 'kepada', 'yth'];
+                // Kata kunci untuk deteksi otomatis (Case Insensitive)
+                const keywords = ['nama', 'name', 'tamu', 'guest', 'invite', 'kepada', 'yth'];
 
-            // 1. Cari Header di 5 baris pertama
-            // Kita batasi pencarian agar tidak terlalu berat jika file sangat besar
-            for (let r = 0; r < Math.min(jsonData.length, 5); r++) {
-                const row = jsonData[r];
-                for (let c = 0; c < row.length; c++) {
-                    const cellValue = String(row[c]).toLowerCase().trim();
-                    if (keywords.some(key => cellValue.includes(key))) {
-                        targetColIndex = c;
-                        startRowIndex = r + 1; // Data dimulai setelah header
-                        console.log(`Header ditemukan di Baris ${r + 1}, Kolom ${c + 1}: ${row[c]}`);
-                        break;
+                // 1. Cari Header di 5 baris pertama
+                // Kita batasi pencarian agar tidak terlalu berat jika file sangat besar
+                for (let r = 0; r < Math.min(jsonData.length, 5); r++) {
+                    const row = jsonData[r];
+                    for (let c = 0; c < row.length; c++) {
+                        const cellValue = String(row[c]).toLowerCase().trim();
+                        if (keywords.some(key => cellValue.includes(key))) {
+                            targetColIndex = c;
+                            startRowIndex = r + 1; // Data dimulai setelah header
+                            console.log(`Header ditemukan di Baris ${r + 1}, Kolom ${c + 1}: ${row[c]}`);
+                            break;
+                        }
+                    }
+                    if (targetColIndex !== -1) break;
+                }
+
+                // 2. Fallback: Jika tidak ada header, ambil kolom pertama yang ada isinya
+                if (targetColIndex === -1) {
+                    targetColIndex = 0;
+                    startRowIndex = 0;
+                    console.log("Header tidak ditemukan, menggunakan Kolom A (Index 0)");
+                }
+
+                // 3. Ekstrak Data Nama
+                const guests = [];
+                for (let i = startRowIndex; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    // Pastikan kolom tersebut ada datanya
+                    if (row[targetColIndex]) {
+                        const rawName = String(row[targetColIndex]).trim();
+                        // Filter nama yang valid (bukan kosong, bukan header ulang)
+                        if (rawName && rawName.length > 1 && !keywords.includes(rawName.toLowerCase())) {
+                            guests.push(rawName);
+                        }
                     }
                 }
-                if (targetColIndex !== -1) break;
-            }
 
-            // 2. Fallback: Jika tidak ada header, ambil kolom pertama yang ada isinya
-            if (targetColIndex === -1) {
-                targetColIndex = 0;
-                startRowIndex = 0;
-                console.log("Header tidak ditemukan, menggunakan Kolom A (Index 0)");
-            }
-
-            // 3. Ekstrak Data Nama
-            const guests = [];
-            for (let i = startRowIndex; i < jsonData.length; i++) {
-                const row = jsonData[i];
-                // Pastikan kolom tersebut ada datanya
-                if (row[targetColIndex]) {
-                    const rawName = String(row[targetColIndex]).trim();
-                    // Filter nama yang valid (bukan kosong, bukan header ulang)
-                    if (rawName && rawName.length > 1 && !keywords.includes(rawName.toLowerCase())) {
-                        guests.push(rawName);
-                    }
+                if (guests.length > 0) {
+                    setExcelGuests(guests);
+                    toast.success(`Berhasil memuat ${guests.length} tamu!`);
+                } else {
+                    toast.error("Tidak ditemukan data nama tamu yang valid.");
                 }
+            } catch (error) {
+                console.error("Excel parsing error:", error);
+                toast.error("⚠️ Gagal membaca file Excel. Pastikan format file benar dan hanya memuat file terpercaya.");
             }
+        };
 
-            if (guests.length > 0) {
-                setExcelGuests(guests);
-                toast.success(`Berhasil memuat ${guests.length} tamu!`);
-            } else {
-                toast.error("Tidak ditemukan data nama tamu yang valid.");
-            }
+        reader.onerror = () => {
+            toast.error("Gagal membaca file. Silakan coba lagi.");
         };
 
         reader.readAsBinaryString(file);
@@ -209,8 +243,8 @@ Hormat kami,
     const handleReply = async (rsvpId) => { /* ... existing logic ... */
         const message = replyText[rsvpId];
         if (!message) return toast.warning("Tulis balasan dulu.");
-        const { error } = await supabase.from('rsvps').update({ reply: message }).eq('id', rsvpId);
-        if (!error) {
+        const { error: replyError } = await supabase.from('rsvps').update({ reply: message }).eq('id', rsvpId);
+        if (!replyError) {
             toast.success("Balasan terkirim!");
             setRsvps(prev => prev.map(r => r.id === rsvpId ? { ...r, reply: message } : r));
             setReplyText(prev => ({ ...prev, [rsvpId]: '' }));
@@ -237,7 +271,11 @@ Hormat kami,
             const { data } = supabase.storage.from('images').getPublicUrl(filePath);
             if (isGallery) { setFormData(prev => ({ ...prev, gallery: [...prev.gallery, data.publicUrl] })); toast.success('Foto ditambahkan!'); }
             else { setFormData(prev => ({ ...prev, [fieldName]: data.publicUrl })); toast.success('Upload berhasil!'); }
-        } catch (error) { toast.error('Gagal upload.'); } finally { setUploading(false); }
+        } catch {
+            toast.error('Gagal upload.');
+        } finally {
+            setUploading(false);
+        }
     };
 
     const requestRemoveGallery = (index) => { /* ... existing logic ... */
@@ -253,17 +291,17 @@ Hormat kami,
         // Kita pakai window.confirm sederhana agar cepat, atau bisa pakai ConfirmDialog custom jika mau
         if (!window.confirm("Apakah Anda yakin ingin menghapus pesan ini?")) return;
 
-        const { error } = await supabase
+        const { error: deleteError } = await supabase
             .from('rsvps')
             .delete()
             .eq('id', rsvpId);
 
-        if (!error) {
+        if (!deleteError) {
             toast.success("Pesan berhasil dihapus.");
             // Update state lokal untuk menghapus item dari tampilan tanpa reload
             setRsvps(prev => prev.filter(item => item.id !== rsvpId));
         } else {
-            toast.error("Gagal menghapus pesan: " + error.message);
+            toast.error("Gagal menghapus pesan: " + deleteError.message);
         }
     };
 

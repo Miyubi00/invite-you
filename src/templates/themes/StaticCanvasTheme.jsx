@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
     MessageCircle, X, MapPin, Calendar,
     Gift, Music, Play, Pause, Send, Heart, User, CheckCircle2, MessageSquare
 } from 'lucide-react';
 
-export default function ChatBubbleTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }) {
+export default function ChatBubbleTheme({ groom, bride, date, data, onRsvpSubmit, submittedData }) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeChat, setActiveChat] = useState(null);
     const [isTyping, setIsTyping] = useState(false);

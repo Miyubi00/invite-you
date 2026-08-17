@@ -34,37 +34,49 @@ export default function AdminPanel() {
     setDialog({ isOpen: true, title, message, isDanger, onConfirm: onConfirmFunc });
   };
 
-  // 1. CEK SESSION & FETCH DATA
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchData(); else setLoading(false);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchData();
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => { 
-    await supabase.auth.signOut(); 
-    setOrders([]); setPendingOrders([]); setTemplates([]); 
-    toast.success("Berhasil Logout"); 
-  };
-
   const fetchData = async () => {
     setLoading(true);
     const [resOrders, resPending, resTemplates] = await Promise.all([
-        supabase.from('orders').select('*').order('created_at', { ascending: false }),
-        supabase.from('pending_orders').select('*').order('created_at', { ascending: false }),
-        supabase.from('templates').select('*').order('name', { ascending: true })
+      supabase.from('orders').select('*').order('created_at', { ascending: false }),
+      supabase.from('pending_orders').select('*').order('created_at', { ascending: false }),
+      supabase.from('templates').select('*').order('name', { ascending: true }),
     ]);
 
     if (!resOrders.error) setOrders(resOrders.data);
     if (!resPending.error) setPendingOrders(resPending.data);
     if (!resTemplates.error) setTemplates(resTemplates.data);
     setLoading(false);
+  };
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      if (currentSession) {
+        await fetchData();
+      } else {
+        setLoading(false);
+      }
+    };
+
+    loadSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+      setSession(currentSession);
+      if (currentSession) {
+        await fetchData();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setOrders([]);
+    setPendingOrders([]);
+    setTemplates([]);
+    toast.success('Berhasil Logout');
   };
 
   // --- RENDER ---

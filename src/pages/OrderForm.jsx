@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/GlobalToast';
@@ -30,16 +30,7 @@ export default function OrderForm() {
   };
 
   const [formData, setFormData] = useState(initialFormState);
-  const [selectedTemplate, setSelectedTemplate] = useState(defaultTemplate);
-
-  useEffect(() => {
-    const currentSlug = searchParams.get('template');
-    const newTemplate = TEMPLATE_OPTIONS.find(t => t.slug === currentSlug);
-    if (newTemplate) {
-      setSelectedTemplate(newTemplate);
-      setFormData(prev => ({ ...prev, template_slug: newTemplate.slug }));
-    }
-  }, [searchParams]);
+  const selectedTemplate = TEMPLATE_OPTIONS.find(t => t.slug === formData.template_slug) || defaultTemplate;
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -73,8 +64,6 @@ export default function OrderForm() {
 
   const handleTemplateChange = (e) => {
     const slug = e.target.value;
-    const template = TEMPLATE_OPTIONS.find(t => t.slug === slug);
-    setSelectedTemplate(template);
     setFormData({ ...formData, template_slug: slug });
   };
 
@@ -99,6 +88,77 @@ export default function OrderForm() {
       return false;
     }
     return true;
+  };
+
+  // ==========================================
+  // LOGIKA 1: CHECKOUT VIA WHATSAPP (TABLE BARU)
+  // ==========================================
+  // ==========================================
+  // LOGIKA 2: CHECKOUT VIA MIDTRANS (PRODUCTION)
+  // ==========================================
+  const handleMidtransCheckout = async () => {
+    if (!validateForm()) return;
+
+    setLoadingMidtrans(true);
+
+    try {
+      if (typeof window.snap === 'undefined' || !window.snap?.pay) {
+        toast.error('❌ Sistem pembayaran Midtrans tidak tersedia sementara. Gunakan metode WhatsApp untuk konfirmasi manual.');
+        return;
+      }
+
+      const finalWhatsapp = `+62${formData.whatsapp}`;
+
+      toast.warning('Membuat pesanan dan menyiapkan metode pembayaran...');
+
+      const { data, error } = await supabase.functions.invoke('create-order', {
+        body: {
+          groom_name: formData.groom_name.trim(),
+          bride_name: formData.bride_name.trim(),
+          wedding_date: formData.wedding_date,
+          whatsapp: finalWhatsapp,
+          pin_code: formData.pin_code,
+          template_slug: formData.template_slug,
+          source: 'automated_payment',
+          timestamp: new Date().toISOString()
+        }
+      });
+
+      if (error) {
+        throw new Error(error?.message || 'Gagal membuat pesanan pembayaran.');
+      }
+
+      if (!data?.snap_token || !data?.order_id) {
+        throw new Error('Token pembayaran tidak diterima dari server.');
+      }
+
+      window.snap.pay(data.snap_token, {
+        onSuccess: function (result) {
+          console.log('[OrderForm] Payment success:', result);
+          toast.success('✅ Pembayaran berhasil!');
+          navigate(`/payment-status?order_id=${result.order_id || data.order_id}`);
+        },
+        onPending: function (result) {
+          console.log('[OrderForm] Payment pending:', result);
+          toast.warning('⏳ Pembayaran sedang menunggu konfirmasi.');
+          navigate(`/payment-status?order_id=${result.order_id || data.order_id}`);
+        },
+        onError: function (result) {
+          console.error('[OrderForm] Payment error:', result);
+          toast.error('❌ Pembayaran gagal atau dibatalkan. Silakan coba lagi.');
+        },
+        onClose: function () {
+          console.log('[OrderForm] Payment popup closed by user');
+          toast.warning('Anda menutup popup pembayaran. Pesanan tetap bisa dilanjutkan dari status pembayaran.');
+          navigate(`/payment-status?order_id=${data.order_id}`);
+        }
+      });
+    } catch (err) {
+      console.error('[OrderForm] Midtrans checkout error:', err);
+      toast.error(`❌ ${err?.message || 'Terjadi kesalahan saat memproses pembayaran.'}`);
+    } finally {
+      setLoadingMidtrans(false);
+    }
   };
 
   // ==========================================
@@ -148,56 +208,6 @@ Total Harga: Rp ${selectedTemplate.price.toLocaleString('id-ID')}
       toast.error('Terjadi kesalahan database: ' + err.message);
     } finally {
       setLoadingWA(false);
-    }
-  };
-
-  // ==========================================
-  // LOGIKA 2: CHECKOUT VIA MIDTRANS (EDGE FUNCTION)
-  // ==========================================
-  const handleMidtransCheckout = async () => {
-    if (!validateForm()) return;
-    setLoadingMidtrans(true);
-
-    try {
-      const finalWhatsapp = `+62${formData.whatsapp}`;
-
-      const { data, error } = await supabase.functions.invoke('create-order', {
-        body: {
-          groom_name: formData.groom_name,
-          bride_name: formData.bride_name,
-          wedding_date: formData.wedding_date,
-          whatsapp: finalWhatsapp,
-          pin_code: formData.pin_code,
-          template_slug: formData.template_slug
-        }
-      });
-
-      if (error) throw error;
-      if (!data?.snap_token) throw new Error("Gagal mendapatkan Token Pembayaran");
-
-      window.snap.pay(data.snap_token, {
-        onSuccess: function (result) {
-          toast.success("Pesanan Dibuat! Cek status pembayaran.");
-          navigate(`/payment-status?order_id=${result.order_id}`);
-        },
-        onPending: function (result) {
-          toast.warning("Menunggu pembayaran...");
-          navigate(`/payment-status?order_id=${result.order_id}`);
-        },
-        onError: function (result) {
-          toast.error("Pembayaran gagal!");
-          navigate(`/payment-status?order_id=${result.order_id}`);
-        },
-        onClose: function () {
-          toast.warning('Kamu menutup popup sebelum bayar.');
-        }
-      });
-
-    } catch (err) {
-      console.error(err);
-      toast.error('Midtrans Error: ' + err.message);
-    } finally {
-      setLoadingMidtrans(false);
     }
   };
 
@@ -325,14 +335,19 @@ Total Harga: Rp ${selectedTemplate.price.toLocaleString('id-ID')}
               {loadingWA ? 'Memproses...' : <><FaWhatsapp className="w-6 h-6" /> Pesan via WhatsApp</>}
             </button>
 
-            {/* Tombol Midtrans (Maintenance) */}
+            {/* Tombol Midtrans (ENABLED - Production Ready) */}
             <button
               type="button"
-              disabled
-              className="w-full py-3.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed shadow-none"
-              title="Fitur pembayaran otomatis sedang dalam tahap verifikasi."
+              onClick={handleMidtransCheckout}
+              disabled={loadingMidtrans}
+              className={`w-full py-3.5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-md transition ${
+                loadingMidtrans
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-[#1A1FDF] to-[#0E4CA3] text-white hover:from-[#0E14C4] hover:to-[#0A3A82]'
+              }`}
+              title="Bayar menggunakan Midtrans - Berbagai metode pembayaran tersedia"
             >
-              Bayar Otomatis (Sedang Maintenance)
+              {loadingMidtrans ? 'Menyiapkan pembayaran...' : '💳 Bayar Otomatis (Production Ready)'}
             </button>
           </div>
 

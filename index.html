@@ -5,10 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/Anu.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>undangandigital</title>
-    <script 
-  src="https://app.sandbox.midtrans.com/snap/snap.js" 
-  data-client-key="Mid-client-LdTG9UI0E25vv-CF">
-</script>
+    
+    <!-- 
+      Midtrans Snap Widget
+      SECURITY NOTE:
+      - This script provides the payment UI widget
+      - The actual client key is loaded dynamically via src/lib/midtransConfig.js
+      - Payment tokens are generated server-side (never exposed to frontend)
+      - Server key is stored securely in Supabase as environment secret
+    -->
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js"></script>
   </head>
   <body>
     <div id="root"></div>

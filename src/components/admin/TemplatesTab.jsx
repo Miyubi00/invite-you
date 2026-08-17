@@ -1,18 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, Filter, Zap, ToggleRight, ToggleLeft, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 
 export default function TemplatesTab({ templates, searchTerm, setSearchTerm, confirmAction, fetchData, toast, loading }) {
   const [templateCategoryFilter, setTemplateCategoryFilter] = useState('All');
-  const [editPrices, setEditPrices] = useState({}); 
-  const [bulkPrice, setBulkPrice] = useState(''); 
-
-  // Sinkronisasi state harga lokal saat data templates masuk/berubah
-  useEffect(() => {
-    const initialPrices = {};
-    templates.forEach(t => initialPrices[t.slug] = t.price);
-    setEditPrices(initialPrices);
-  }, [templates]);
+  const [editPrices, setEditPrices] = useState({});
+  const [bulkPrice, setBulkPrice] = useState('');
 
   // Filter
   const filteredTemplates = templates.filter(t => {
@@ -128,7 +121,7 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                                         <div className="relative">
                                             <span className="absolute left-3 top-2 text-gray-400 text-sm">Rp</span>
                                             <input 
-                                                type="number" value={editPrices[template.slug] || ''} onChange={(e) => setEditPrices({...editPrices, [template.slug]: e.target.value})}
+                                                type="number" value={editPrices[template.slug] ?? template.price} onChange={(e) => setEditPrices((prev) => ({ ...prev, [template.slug]: e.target.value }))}
                                                 className="border p-2 pl-8 rounded-lg w-32 outline-none focus:ring-2 focus:ring-[#E59A59] font-bold text-gray-700"
                                             />
                                         </div>

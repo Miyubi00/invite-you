@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 
-export default function AdminLogin({ setSession, setLoading, toast }) {
+export default function AdminLogin({ toast }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);

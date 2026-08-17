@@ -1,10 +1,41 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
     Heart, MessageCircle, Send, Bookmark, MoreHorizontal,
     Home, Search, PlusSquare, User, MapPin, Calendar,
     ChevronLeft, ChevronRight, Grid, Music, Clock, Copy, CreditCard,
     Quote 
 } from 'lucide-react';
+
+const PostHeader = ({ locationText, username, photos }) => (
+    <div className="flex items-center justify-between p-3">
+        <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500">
+                <img src={photos.profile} className="w-full h-full rounded-full object-cover border border-white" alt="Profile" />
+            </div>
+            <div>
+                <p className="text-sm font-semibold text-black leading-none">{username}</p>
+                {locationText && <p className="text-xs text-gray-500 mt-0.5">{locationText}</p>}
+            </div>
+        </div>
+        <MoreHorizontal size={20} className="text-gray-600" />
+    </div>
+);
+
+const ActionBar = ({ id, liked, handleLike }) => (
+    <div className="px-3 pt-3 pb-2">
+        <div className="flex justify-between items-center mb-2">
+            <div className="flex gap-4">
+                <button onClick={() => handleLike(id)} className="transition-transform active:scale-90" type="button">
+                    <Heart size={24} className={liked ? "fill-red-500 text-red-500" : "text-black"} />
+                </button>
+                <MessageCircle size={24} className="text-black -rotate-90" />
+                <Send size={24} className="text-black" />
+            </div>
+            <Bookmark size={24} className="text-black" />
+        </div>
+        <p className="text-sm font-semibold text-black">{liked ? '1,235 likes' : '1,234 likes'}</p>
+    </div>
+);
 
 export default function InstaTheme({ groom, bride, date, guestName, data }) {
     // --- STATE ---
@@ -71,39 +102,6 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
         else { audioRef.current.play(); setIsPlaying(true); }
     };
 
-    // --- COMPONENT: POST HEADER ---
-    const PostHeader = ({ locationText }) => (
-        <div className="flex items-center justify-between p-3">
-            <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500">
-                    <img src={photos.profile} className="w-full h-full rounded-full object-cover border border-white" />
-                </div>
-                <div>
-                    <p className="text-sm font-semibold text-black leading-none">{username}</p>
-                    {locationText && <p className="text-xs text-gray-500 mt-0.5">{locationText}</p>}
-                </div>
-            </div>
-            <MoreHorizontal size={20} className="text-gray-600" />
-        </div>
-    );
-
-    // --- COMPONENT: ACTION BAR ---
-    const ActionBar = ({ id, liked }) => (
-        <div className="px-3 pt-3 pb-2">
-            <div className="flex justify-between items-center mb-2">
-                <div className="flex gap-4">
-                    <button onClick={() => handleLike(id)} className="transition-transform active:scale-90">
-                        <Heart size={24} className={liked ? "fill-red-500 text-red-500" : "text-black"} />
-                    </button>
-                    <MessageCircle size={24} className="text-black -rotate-90" />
-                    <Send size={24} className="text-black" />
-                </div>
-                <Bookmark size={24} className="text-black" />
-            </div>
-            <p className="text-sm font-semibold text-black">{liked ? '1,235 likes' : '1,234 likes'}</p>
-        </div>
-    );
-
     return (
         <div className="bg-gray-50 min-h-screen flex justify-center">
             {/* MOBILE CONTAINER LIMIT */}
@@ -155,7 +153,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
 
                 {/* POST 1: OPENING */}
                 <div ref={homeRef} className="border-b border-gray-100 pb-2">
-                    <PostHeader locationText="Save The Date" />
+                    <PostHeader locationText="Save The Date" username={username} photos={photos} />
                     <div
                         className="relative aspect-[4/5] bg-gray-100 overflow-hidden cursor-pointer"
                         onDoubleClick={() => handleDoubleTap('post1')}
@@ -165,7 +163,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             <Heart size={100} className="text-white fill-white animate-ping" />
                         </div>
                     </div>
-                    <ActionBar id="post1" liked={likes['post1']} />
+                    <ActionBar id="post1" liked={likes['post1']} handleLike={handleLike} />
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
                             <span className="font-semibold mr-2">{username}</span>
@@ -177,7 +175,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
 
                 {/* POST 2: QUOTE (NEW) */}
                 <div ref={quoteRef} className="border-b border-gray-100 pb-2">
-                    <PostHeader locationText="Inspiration" />
+                    <PostHeader locationText="Inspiration" username={username} photos={photos} />
                     <div className="relative aspect-square bg-[#FAFAFA] flex flex-col items-center justify-center p-8 text-center" onDoubleClick={() => handleDoubleTap('post_quote')}>
                         <Quote size={40} className="text-gray-300 mb-4 fill-gray-100"/>
                         <p className="font-serif text-xl italic text-gray-800 leading-relaxed mb-6">
@@ -192,7 +190,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             <Heart size={80} className="text-red-500 fill-red-500 animate-bounce" />
                         </div>
                     </div>
-                    <ActionBar id="post_quote" liked={likes['post_quote']} />
+                    <ActionBar id="post_quote" liked={likes['post_quote']} handleLike={handleLike} />
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
                             <span className="font-semibold mr-2">{username}</span>
@@ -203,7 +201,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
 
                 {/* POST 3: THE COUPLE */}
                 <div ref={coupleRef} className="border-b border-gray-100 pb-2">
-                    <PostHeader locationText="The Happy Couple" />
+                    <PostHeader locationText="The Happy Couple" username={username} photos={photos} />
                     <div className="relative aspect-square bg-gray-100 overflow-hidden group" onDoubleClick={() => handleDoubleTap('post_couple')}>
                         <div className="absolute inset-0 transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${coupleSlide * 100}%)` }}>
                             <div className="absolute top-0 left-0 w-full h-full">
@@ -237,7 +235,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                         </div>
                     </div>
 
-                    <ActionBar id="post_couple" liked={likes['post_couple']} />
+                    <ActionBar id="post_couple" liked={likes['post_couple']} handleLike={handleLike} />
 
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black mb-2">
@@ -259,7 +257,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
 
                 {/* POST 4: EVENT INFO */}
                 <div ref={eventRef} className="border-b border-gray-100 pb-2">
-                    <PostHeader locationText={location} />
+                    <PostHeader locationText={location} username={username} photos={photos} />
                     <div className="relative aspect-square bg-[#F8F8F8] flex flex-col items-center justify-center text-center p-8 border-y border-gray-100" onDoubleClick={() => handleDoubleTap('post2')}>
                         <div className="border border-black p-6 w-full h-full flex flex-col items-center justify-center bg-white shadow-sm">
                             <p className="text-xs tracking-[0.3em] uppercase text-gray-500 mb-4">The Wedding</p>
@@ -298,7 +296,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             <Heart size={80} className="text-red-500 fill-red-500 animate-bounce" />
                         </div>
                     </div>
-                    <ActionBar id="post2" liked={likes['post2']} />
+                    <ActionBar id="post2" liked={likes['post2']} handleLike={handleLike} />
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
                             <span className="font-semibold mr-2">{username}</span>
@@ -309,7 +307,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
 
                 {/* POST 5: GALLERY */}
                 <div ref={galleryRef} className="border-b border-gray-100 pb-2">
-                    <PostHeader locationText="Captured Moments" />
+                    <PostHeader locationText="Captured Moments" username={username} photos={photos} />
                     <div className="grid grid-cols-3 gap-0.5" onDoubleClick={() => handleDoubleTap('post3')}>
                         {photos.gallery.slice(0, 6).map((url, i) => (
                             <div key={i} className="aspect-square relative group">
@@ -320,7 +318,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             <Heart size={100} className="text-white fill-white shadow-lg animate-ping" />
                         </div>
                     </div>
-                    <ActionBar id="post3" liked={likes['post3']} />
+                    <ActionBar id="post3" liked={likes['post3']} handleLike={handleLike} />
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
                             <span className="font-semibold mr-2">{username}</span>
@@ -331,7 +329,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
 
                 {/* POST 6: GIFT */}
                 <div ref={giftRef} className="border-b border-gray-100 pb-20">
-                    <PostHeader locationText="Wedding Gift" />
+                    <PostHeader locationText="Wedding Gift" username={username} photos={photos} />
                     <div className="relative aspect-square bg-gray-50 flex items-center justify-center p-6" onDoubleClick={() => handleDoubleTap('post4')}>
                         <img src={photos.gift_bg} className="absolute inset-0 w-full h-full object-cover opacity-20" />
                         <div className="relative z-10 bg-white p-6 rounded-xl shadow-lg w-full max-w-xs border border-gray-200">
@@ -362,7 +360,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }) {
                             <Heart size={100} className="text-red-500 fill-red-500 animate-bounce" />
                         </div>
                     </div>
-                    <ActionBar id="post4" liked={likes['post4']} />
+                    <ActionBar id="post4" liked={likes['post4']} handleLike={handleLike} />
                     <div className="px-3 pb-3">
                         <p className="text-sm text-black">
                             <span className="font-semibold mr-2">{username}</span>

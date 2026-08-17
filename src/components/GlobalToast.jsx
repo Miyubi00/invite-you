@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useRef, useState } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, X } from 'lucide-react';
 
 const ToastContext = createContext();
@@ -7,13 +8,13 @@ export const useToast = () => useContext(ToastContext);
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+  const nextToastId = useRef(1);
 
-  // Fungsi memunculkan alert
   const addToast = (message, type = 'success') => {
-    const id = Date.now();
+    const id = nextToastId.current;
+    nextToastId.current += 1;
     setToasts((prev) => [...prev, { id, message, type }]);
 
-    // Hilang otomatis setelah 3 detik
     setTimeout(() => {
       removeToast(id);
     }, 3000);

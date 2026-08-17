@@ -27,7 +27,7 @@ import BinderBookTheme from './themes/BinderTheme';
 import ArtGalleryTheme from './themes/ArtTheme';
 import ArtBlockTheme from './themes/ArtBlockTheme';
 
-const templates = {
+export const TEMPLATE_COMPONENTS = {
   'rustic-floral': RusticTheme,
   'rustic-boho': RusticBohoTheme,
   'modern-dark': ModernDarkTheme,
@@ -41,26 +41,23 @@ const templates = {
   'comic': ComicTheme,
   'diary': DiaryTheme,
 
-  // 🔽 NEW THEMES (LOCAL / PREMIUM)
   'japanese': JapaneseTheme,
   'javanese': JavaneseTheme,
   'lilac': LilacTheme,
   'playful-pop': PlayfulPopTheme,
   'static-canvas': StaticCanvasTheme,
 
-  // 🔽 NEW EXPERIMENTAL / VIRAL THEMES
   'cloud-sky': CloudySkyTheme,
   'cyberpunk': CyberpunkTheme,
   'cinamon': CinamonTheme,
   'insta': InstaTheme,
   'hello-kitty': HelloKityTheme,
-  'mobile' : MobileTheme,
-  'binder-book' : BinderBookTheme,
-  'art-gallery' : ArtGalleryTheme,
-  'art-block' : ArtBlockTheme,
+  'mobile': MobileTheme,
+  'binder-book': BinderBookTheme,
+  'art-gallery': ArtGalleryTheme,
+  'art-block': ArtBlockTheme,
 };
 
-
 export const getTemplateComponent = (slug) => {
-  return templates[slug] || RusticTheme;
+  return TEMPLATE_COMPONENTS[slug] || RusticTheme;
 };

@@ -32,7 +32,9 @@ const NavigationBar = ({ lightMode = false, onBack, onHome }) => (
     </div>
 );
 
-const AppIcon = ({ icon: Icon, label, color, onClick }) => (
+const AppIcon = ({ icon: IconComponent, label, color, onClick }) => {
+    const Icon = IconComponent;
+    return (
     <div
         onClick={onClick}
         className="flex flex-col items-center gap-2 cursor-pointer active:scale-90 transition-transform duration-200 group"
@@ -42,7 +44,8 @@ const AppIcon = ({ icon: Icon, label, color, onClick }) => (
         </div>
         <span className="text-white text-xs font-medium drop-shadow-md tracking-wide">{label}</span>
     </div>
-);
+    );
+};
 
 // --- APP SECTIONS ---
 

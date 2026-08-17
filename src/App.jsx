@@ -8,6 +8,7 @@ import { ToastProvider } from './components/GlobalToast';
 /* --- IMPORT PAGES --- */
 import Landing from './pages/Landing';
 import OrderForm from './pages/OrderForm';
+import OrderFormMidtrans from './pages/OrderFormMidtrans';
 import DashboardLogin from './pages/DashboardLogin';
 import Dashboard from './pages/Dashboard';
 import InvitationRender from './pages/InvitationRender';
@@ -50,6 +51,7 @@ function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Landing />} />
           <Route path="/order" element={<OrderForm />} />
+          <Route path="/order-form-midtrans" element={<OrderFormMidtrans />} />
           <Route path="/login" element={<DashboardLogin />} />
           <Route path="/dashboard/:orderId" element={<Dashboard />} />
           <Route path="/admin" element={<AdminPanel />} />

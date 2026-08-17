@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { CheckCircle, XCircle, Clock, ArrowRight, RefreshCcw, Home, CreditCard, MessageSquare } from 'lucide-react';
@@ -10,25 +10,10 @@ export default function PaymentStatus() {
     const [loading, setLoading] = useState(true);
     const [order, setOrder] = useState(null);
 
-    // Ambil ID dari URL (Jika null, berarti ini pesanan via WhatsApp Manual)
     const orderId = searchParams.get('order_id');
-    const isManualWhatsApp = !orderId; // Flag untuk menentukan jenis pesanan
+    const isManualWhatsApp = !orderId;
 
-    useEffect(() => {
-        // Jika ini pesanan WhatsApp, hentikan loading dan langsung render UI WA
-        if (isManualWhatsApp) {
-            setLoading(false);
-            return;
-        }
-
-        fetchOrderStatus();
-        const interval = setInterval(fetchOrderStatus, 5000);
-
-        return () => clearInterval(interval);
-    }, [orderId, isManualWhatsApp]);
-
-
-    const fetchOrderStatus = async () => {
+    const fetchOrderStatus = useCallback(async () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('orders')
@@ -36,22 +21,52 @@ export default function PaymentStatus() {
             .eq('midtrans_order_id', orderId)
             .single();
 
-        if (error && error.code !== 'PGRST116') console.error(error); // Abaikan error not found standard
+        if (error && error.code !== 'PGRST116') console.error(error);
         if (data) setOrder(data);
         setLoading(false);
-    };
+    }, [orderId]);
+
+    useEffect(() => {
+        if (isManualWhatsApp) return;
+
+        const timer = setTimeout(() => {
+            void fetchOrderStatus();
+        }, 0);
+
+        const interval = setInterval(() => {
+            void fetchOrderStatus();
+        }, 5000);
+
+        return () => {
+            clearTimeout(timer);
+            clearInterval(interval);
+        };
+    }, [fetchOrderStatus, isManualWhatsApp]);
 
     const handlePayAgain = () => {
-        if (order && order.snap_token) {
-            window.snap.pay(order.snap_token, {
-                onSuccess: function (result) { fetchOrderStatus(); },
-                onPending: function (result) { fetchOrderStatus(); },
-                onError: function (result) { fetchOrderStatus(); },
-                onClose: function () { alert('Popup ditutup'); }
-            });
-        } else {
-            alert("Token pembayaran kadaluarsa. Silakan buat pesanan baru.");
+        if (!order || !order.snap_token) {
+            navigate('/order');
+            return;
         }
+
+        window.snap.pay(order.snap_token, {
+            onSuccess: function (result) {
+                const nextOrderId = result?.order_id || order.midtrans_order_id || orderId;
+                navigate(`/payment-status?order_id=${nextOrderId}`);
+                fetchOrderStatus();
+            },
+            onPending: function (result) {
+                const nextOrderId = result?.order_id || order.midtrans_order_id || orderId;
+                navigate(`/payment-status?order_id=${nextOrderId}`);
+                fetchOrderStatus();
+            },
+            onError: function () {
+                fetchOrderStatus();
+            },
+            onClose: function () {
+                navigate(`/payment-status?order_id=${order.midtrans_order_id || orderId}`);
+            }
+        });
     };
 
     // --- RENDER LOADING ---
@@ -174,7 +189,11 @@ export default function PaymentStatus() {
                         </p>
 
                         <div className="flex flex-col gap-3">
-                            <button onClick={handlePayAgain} className="w-full py-4 bg-yellow-500 text-white rounded-xl font-bold hover:bg-yellow-600 transition shadow-lg flex items-center justify-center gap-2 transform hover:-translate-y-1">
+                            <button
+                                type="button"
+                                onClick={handlePayAgain}
+                                className="w-full py-4 rounded-xl font-bold text-lg shadow-xl transition transform hover:-translate-y-1 bg-[#E59A59] text-white hover:bg-[#d48b4b] flex items-center justify-center gap-2"
+                            >
                                 <CreditCard className="w-5 h-5" /> Bayar Sekarang
                             </button>
                             <button onClick={fetchOrderStatus} className="w-full py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition flex items-center justify-center gap-2">
