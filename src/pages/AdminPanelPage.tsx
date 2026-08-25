@@ -1,14 +1,3 @@
-// ============================================================
-// src/pages/AdminPanelPage.tsx
-// ------------------------------------------------------------
-// Halaman /admin: gerbang login admin, lalu shell panel (navbar + sidebar) dengan tab Orders dan Templates.
-// Dipakai di  : App.tsx
-// Keterikatan : components/admin/*, hooks/useUrlTab, lib/supabaseClient, lib/customerClient
-// ============================================================
-
-// Shell layout (sidebar + area konten) mirip CustomerDashboardPage.tsx.
-// Logika data, halaman edit full (bukan modal), dan dialog konfirmasi tidak berubah.
-
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
@@ -24,6 +13,7 @@ import OrdersTab from "../components/admin/OrdersTab";
 import TemplatesTab from "../components/admin/TemplatesTab";
 import EditOrderModal from "../components/admin/EditOrderModal";
 import { ClipboardList, Clock, Palette, LogOut, Loader2, Menu } from "lucide-react";
+import { useTranslation } from "../i18n";
 
 interface DialogState {
   isOpen: boolean;
@@ -45,10 +35,9 @@ function CapNotice({ total, shown, label }: { total: number | null; shown: numbe
 }
 
 export default function AdminPanel() {
+  const { t } = useTranslation();
   const toast = useToast();
 
-  // Logika sesi & data katalog diekstrak ke src/hooks/useAdminData.ts —
-  // page ini tinggal shell UI + orkestrasi tab / deep-link edit.
   const {
     pendingOrders, pendingTotal,
     templates,
@@ -58,10 +47,8 @@ export default function AdminPanel() {
     setPendingOrders, setTemplates,
   } = useAdminCatalog();
 
-  // Orders server-side: filter + pagination dieksekusi database.
   const ordersFilter = useOrdersPaged();
 
-  // Refresh gabungan untuk aksi admin (aktifkan/hapus pesanan, simpan edit).
   const { refresh: refreshOrders } = ordersFilter;
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchData(), refreshOrders()]);
@@ -72,7 +59,6 @@ export default function AdminPanel() {
     void ordersFilter.refresh();
   });
 
-  // Tab aktif disinkronkan dengan URL (?tab=...) agar refresh tidak reset.
   const [activeTab, setActiveTab] = useUrlTab(["orders", "whatsapp", "templates", "edit"], "orders");
   const [searchParams, setSearchParams] = useSearchParams();
   const urlOrderId = searchParams.get("order") ?? "";
@@ -87,14 +73,13 @@ export default function AdminPanel() {
     setDialog({ isOpen: true, title, message, isDanger, onConfirm: onConfirmFunc });
   };
 
-  // Logout: buka dialog dulu; aksi sesungguhnya di performLogout.
   const performLogout = async () => {
     await supabase.auth.signOut();
     ordersFilter.resetFilters();
     setPendingOrders([]);
     setTemplates([]);
     setSession(null);
-    toast.success("Berhasil Logout");
+    toast.success(t('admin.toastLogout'));
   };
 
   const handleLogout = () => setShowLogoutDialog(true);
@@ -107,8 +92,6 @@ export default function AdminPanel() {
     setSidebarOpen(false);
   };
 
-  // Buka halaman edit full data (bukan modal) dari OrdersTab.
-  // RSVP dimuat server-side oleh useRsvpServer di dalam EditOrderModal.
   const handleEditOrder = (order: OrderRow) => {
     setEditingOrder(order);
     setEditFormData({
@@ -126,24 +109,19 @@ export default function AdminPanel() {
       quote_src: order.event_details?.quote_src || "",
     } as OrderEditForm);
 
-    // Aktifkan tab edit (state + ?tab=edit via hook)…
     setActiveTab("edit");
 
-    // …lalu lengkapi deep-link dengan order id agar refresh tetap di sini.
     const next = new URLSearchParams(searchParams);
     next.set("tab", "edit");
     next.set("order", order.id);
     setSearchParams(next, { replace: true });
   };
 
-  // Deep-link ?tab=edit&order=<id>: rebuild sesi edit dari data ter-fetch.
   useEffect(() => {
     if (!session || loading) return;
     if (activeTab !== "edit" || !urlOrderId || editingOrder) return;
 
     const timer = setTimeout(async () => {
-      // Cari di halaman aktif dulu; bila tidak ada (order lama di halaman
-      // lain), ambil langsung by id agar deep-link edit tetap bekerja.
       const local = ordersFilter.rows.find((o) => o.id === urlOrderId);
       if (local) {
         handleEditOrder(local);
@@ -157,7 +135,6 @@ export default function AdminPanel() {
       if (data) {
         handleEditOrder(data);
       } else {
-        // Order sudah tidak ada → kembali ke daftar (sekaligus bersihkan param)
         setActiveTab("orders");
       }
     }, 0);
@@ -165,30 +142,26 @@ export default function AdminPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, loading, activeTab, urlOrderId, editingOrder, ordersFilter.rows]);
 
-  // Kembali ke Data Pesanan dari halaman edit full.
   const handleBackToOrders = () => {
     setEditingOrder(null);
     setActiveTab("orders");
   };
 
-  // Setelah simpan berhasil, kembali ke Data Pesanan.
   const handleSaved = () => setActiveTab("orders");
 
   const userEmail = session?.user?.email ?? "";
 
-  // MENU SIDEBAR: edit tidak ada di menu — dibuka via tombol Edit di OrdersTab.
   const menuItems: MenuItem[] = [
-    { id: "orders", label: "Data Pesanan", icon: ClipboardList, badge: ordersFilter.total > 0 ? ordersFilter.total : null },
-    { id: "whatsapp", label: "Data Masuk (WhatsApp)", icon: Clock, badge: pendingOrders.length },
-    { id: "templates", label: "Kelola Template", icon: Palette, badge: null },
+    { id: "orders", label: t('admin.menuOrders'), icon: ClipboardList, badge: ordersFilter.total > 0 ? ordersFilter.total : null },
+    { id: "whatsapp", label: t('admin.menuWhatsapp'), icon: Clock, badge: pendingOrders.length },
+    { id: "templates", label: t('admin.menuTemplates'), icon: Palette, badge: null },
   ];
 
-  // --- AUTH / DATA LOADING GUARD ---
   if (sessionLoading) {
     return (
       <div className="flex h-dvh w-full text-gray-500 font-sans bg-[#F1E8DC] items-center justify-center">
         <Loader2 className="w-8 h-8 mr-2 animate-spin" />
-        Memuat data...
+        {t('common.loading')}
       </div>
     );
   }
@@ -197,20 +170,15 @@ export default function AdminPanel() {
     return <AdminLogin toast={toast} />;
   }
 
-
-  // --- SHELL LAYOUT (mirip Dashboard.tsx) ---
   return (
     <div className="flex flex-col overflow-hidden h-dvh w-full font-sans bg-[#F1E8DC] relative">
-      {/* Desktop Navbar */}
       <AdminNavbar userEmail={userEmail} />
 
       <div className="flex flex-1 overflow-hidden min-h-0 w-full relative">
-        {/* Mobile Backdrop */}
         {sidebarOpen && (
           <div onClick={() => setSidebarOpen(false)} className="z-40 bg-black/40 fixed inset-0 lg:hidden" />
         )}
 
-        {/* Sidebar (desktop tetap, mobile drawer) */}
         <AdminSidebar
           menuItems={menuItems}
           activeTab={activeTab}
@@ -221,7 +189,6 @@ export default function AdminPanel() {
           userEmail={userEmail}
         />
 
-        {/* Dialog Konfirmasi Umum */}
         <ConfirmDialog
           isOpen={dialog.isOpen}
           title={dialog.title}
@@ -232,9 +199,8 @@ export default function AdminPanel() {
         />
 
         <div className="flex flex-1 flex-col overflow-hidden h-full min-h-0 min-w-0 relative">
-          {/* Mobile Header */}
           <header className="flex px-4 py-3 bg-[#712E1E] border-b border-black/20 shrink-0 items-center gap-2 lg:hidden">
-            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-white/10">
+            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:bg-white/10">
               <Menu size={20} className="text-[#FFD5AF]" />
             </button>
             <div className="flex-1">
@@ -242,12 +208,11 @@ export default function AdminPanel() {
                 {menuItems.find((m) => m.id === activeTab)?.label ?? "Edit Undangan"}
               </h2>
             </div>
-            <button onClick={handleLogout} className="p-2 rounded-lg hover:bg-white/10" title="Keluar">
+            <button onClick={handleLogout} className="p-2 rounded-xl hover:bg-white/10" title={t('nav.logout')}>
               <LogOut size={18} className="text-red-300" />
             </button>
           </header>
 
-          {/* Scrollable Main Body (satu-satunya area yang scroll) */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
             {activeTab === "edit" && editingOrder ? (
               <EditOrderModal
@@ -311,11 +276,10 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Dialog Konfirmasi Keluar */}
       <ConfirmDialog
         isOpen={showLogoutDialog}
-        title="Konfirmasi Keluar"
-        message="Yakin ingin keluar dari Admin Panel?"
+        title={t('nav.logoutConfirmTitle')}
+        message={t('nav.logoutConfirm')}
         isDanger={true}
         onCancel={() => setShowLogoutDialog(false)}
         onConfirm={performLogout}

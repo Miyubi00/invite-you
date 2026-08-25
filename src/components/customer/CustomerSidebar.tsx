@@ -1,16 +1,7 @@
-// ============================================================
-// src/components/customer/CustomerSidebar.tsx
-// ------------------------------------------------------------
-// Sidebar navigasi dashboard mempelai (drawer di mobile, kolom tetap di desktop): profil order + menu tab. Mengekspor tipe MenuItem.
-// Dipakai di  : pages/CustomerDashboardPage.tsx
-// Keterikatan : types/database (OrderRow), lucide-react
-// ============================================================
-
-// Sidebar navigasi Dashboard (drawer di mobile, kolom tetap di desktop).
-// Tema coklat senada navbar; aksi global (Lihat/Keluar) ada di navbar.
-
 import { LogOut, X, type LucideIcon } from "lucide-react";
 import type { OrderRow } from "../../types/database";
+import { useTranslation } from "../../i18n";
+import LanguageSwitcher from "../shared/LanguageSwitcher";
 
 export interface MenuItem {
   id: string;
@@ -40,6 +31,8 @@ export default function CustomerSidebar({
   onLogout,
   isBasic,
 }: CustomerSidebarProps) {
+  const { t } = useTranslation();
+
   return (
     <aside
       className={`
@@ -60,7 +53,7 @@ export default function CustomerSidebar({
           shrink-0
         "
       >
-        {/* Profil order — satu-satunya tempat nama mempelai ditampilkan */}
+        {/* Profil order */}
         <div
           className="
             flex
@@ -78,7 +71,7 @@ export default function CustomerSidebar({
                 uppercase
               "
             >
-              Dashboard Undangan
+              {t("customer.title")}
             </p>
             <h1
               className="
@@ -94,7 +87,7 @@ export default function CustomerSidebar({
             onClick={onClose}
             className="
               p-1
-              rounded-lg
+              rounded-xl
               hover:bg-white/10
               lg:hidden
             "
@@ -109,7 +102,7 @@ export default function CustomerSidebar({
         </div>
       </div>
 
-      {/* Menu Navigasi (scroll internal jika menu panjang) */}
+      {/* Menu Navigasi */}
       <nav
         className="
           flex-1 overflow-y-auto
@@ -171,6 +164,11 @@ export default function CustomerSidebar({
           shrink-0
         "
       >
+        {/* Mobile Language Switcher */}
+        <div className="lg:hidden flex justify-center mb-1">
+          <LanguageSwitcher variant="header" />
+        </div>
+
         {isBasic && (
           <div
             className="
@@ -179,7 +177,7 @@ export default function CustomerSidebar({
               uppercase
             "
           >
-            Paket Basic
+            {t("customer.basicPackage")}
           </div>
         )}
         <button
@@ -195,7 +193,7 @@ export default function CustomerSidebar({
           "
         >
           <LogOut size={18} />
-          <span>Keluar</span>
+          <span>{t("nav.logout")}</span>
         </button>
       </div>
     </aside>

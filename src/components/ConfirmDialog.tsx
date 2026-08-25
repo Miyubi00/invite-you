@@ -1,13 +1,6 @@
-// ============================================================
-// src/components/ConfirmDialog.tsx
-// ------------------------------------------------------------
-// Dialog konfirmasi generik (judul, pesan, tombol ya/batal) berbasis modal - dipakai semua aksi destruktif.
-// Dipakai di  : AdminPanelPage, CustomerDashboardPage, OrderPage, EditOrderModal, EditTab
-// Keterikatan : lucide-react
-// ============================================================
-
 import { useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { useTranslation } from '../i18n';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -28,6 +21,7 @@ export default function ConfirmDialog({
   onCancel,
   isDanger = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
 
   if (!isOpen) return null;
@@ -42,8 +36,6 @@ export default function ConfirmDialog({
     try {
       await onConfirm();
     } catch (error) {
-      // Aksi sudah menampilkan toast error-nya sendiri; pastikan dialog
-      // tetap tertutup dan tidak ada unhandled rejection.
       console.error('[ConfirmDialog] onConfirm error:', error);
     } finally {
       setBusy(false);
@@ -53,7 +45,7 @@ export default function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 transform scale-100 transition-all">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 transform scale-100 transition-all">
 
         <div className="flex flex-col items-center text-center">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4
@@ -70,7 +62,7 @@ export default function ConfirmDialog({
               disabled={busy}
               className="flex-1 py-3 px-6 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Batal
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleConfirm}
@@ -80,10 +72,10 @@ export default function ConfirmDialog({
             >
               {busy ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                  <Loader2 className="w-4 h-4 animate-spin" /> {t('common.loading')}
                 </>
               ) : (
-                'Ya, Lanjutkan'
+                t('common.confirm')
               )}
             </button>
           </div>

@@ -1,11 +1,3 @@
-// ============================================================
-// src/components/admin/TemplatesTab.tsx
-// ------------------------------------------------------------
-// Tab "Templates" Admin Panel: kelola katalog template (aktif/nonaktif, simpan perubahan) dengan pencarian & filter.
-// Dipakai di  : pages/AdminPanelPage.tsx
-// Keterikatan : lib/supabaseClient, components/shared/Pagination, types/database
-// ============================================================
-
 import { useState } from 'react';
 import { Search, Filter, Zap, ToggleRight, ToggleLeft, Save, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
@@ -14,6 +6,7 @@ import type { TemplateRow } from '../../types/database';
 import type { ToastApi } from '../GlobalToast';
 import Pagination from '../shared/Pagination';
 import { usePagination } from '../../hooks/usePagination';
+import { useTranslation } from '../../i18n';
 
 interface TemplatesTabProps {
   templates: TemplateRow[];
@@ -32,13 +25,11 @@ const LABEL_CLASS =
   'mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#712E1E]';
 
 export default function TemplatesTab({ templates, searchTerm, setSearchTerm, confirmAction, fetchData, toast, loading }: TemplatesTabProps) {
-  // --- Draft Filter (baru diterapkan setelah tombol Cari / Enter) ---
+  const { t } = useTranslation();
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [categoryInput, setCategoryInput] = useState('All');
 
-  // --- Applied Filter (sumber kebenaran tabel & pagination) ---
   const [appliedCategory, setAppliedCategory] = useState('All');
-  // Applied search disimpan di state parent (searchTerm)
 
   const [editPrices, setEditPrices] = useState<Record<string, string>>({});
   const [bulkPrice, setBulkPrice] = useState('');
@@ -57,7 +48,6 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
     setAppliedCategory('All');
   };
 
-  // Filter
   const filteredTemplates = templates.filter(t => {
     const matchSearch = t.name?.toLowerCase().includes(searchTerm.toLowerCase()) || t.slug?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCategory = appliedCategory === 'All' || t.category === appliedCategory;
@@ -66,42 +56,41 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
 
   const tplPg = usePagination(filteredTemplates, `${searchTerm}|${appliedCategory}`);
 
-  // Action Functions
   const handleToggleTemplateActive = async (slug: string, currentStatus: boolean) => {
     const { count, error } = await supabase
       .from('templates')
       .update({ is_active: !currentStatus }, { count: 'exact' })
       .eq('slug', slug);
     if (!error && (count ?? 0) > 0) {
-      toast.success(`Template ${!currentStatus ? 'Diaktifkan' : 'Dinonaktifkan'}!`);
+      toast.success(t('toast.templateStatusChanged', { status: !currentStatus ? t('common.active') : t('common.inactive') }));
       fetchData();
     } else if (!error) {
-      toast.error("Gagal mengubah status: tidak ada data yang berubah.");
+      toast.error(t('toast.changeStatusNoChange'));
     } else {
-      toast.error("Gagal mengubah status.");
+      toast.error(t('toast.changeStatusFailed'));
     }
   };
 
   const handleUpdateTemplatePrice = async (slug: string) => {
     const newPrice = editPrices[slug];
-    if (!newPrice || isNaN(Number(newPrice))) return toast.error("Harga tidak valid");
+    if (!newPrice || isNaN(Number(newPrice))) return toast.error(t('toast.invalidPrice'));
     const { count, error } = await supabase
       .from('templates')
       .update({ price: parseInt(newPrice) }, { count: 'exact' })
       .eq('slug', slug);
     if (!error && (count ?? 0) > 0) {
-      toast.success("Harga berhasil diperbarui!");
+      toast.success(t('toast.priceUpdatedSuccess'));
       fetchData();
     } else if (!error) {
-      toast.error("Gagal update harga: tidak ada data yang berubah.");
+      toast.error(t('toast.priceUpdateNoChange'));
     } else {
-      toast.error("Gagal update harga.");
+      toast.error(t('toast.priceUpdateFailed'));
     }
   };
 
   const handleBulkPriceUpdate = async () => {
-    if (!bulkPrice || isNaN(Number(bulkPrice))) return toast.warning("Masukkan nominal harga yang valid.");
-    if (filteredTemplates.length === 0) return toast.warning("Tidak ada template yang difilter.");
+    if (!bulkPrice || isNaN(Number(bulkPrice))) return toast.warning(t('toast.invalidPrice'));
+    if (filteredTemplates.length === 0) return toast.warning(t('admin.templateNotFound'));
 
     confirmAction(
       "Ubah Harga Massal?",
@@ -116,16 +105,16 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
           .in('slug', slugsToUpdate);
 
         if (!error && (count ?? 0) === expected) {
-          toast.success("Harga massal berhasil diterapkan!");
+          toast.success(t('toast.bulkPriceApplied'));
           setBulkPrice('');
           fetchData();
         } else if (!error && (count ?? 0) > 0) {
           toast.warning(`Sebagian berhasil: ${count} dari ${expected} template terupdate.`);
           fetchData();
         } else if (!error) {
-          toast.error("Harga massal gagal: tidak ada data yang berubah.");
+          toast.error(t('toast.bulkPriceNoChange'));
         } else {
-          toast.error("Gagal update massal.");
+          toast.error(t('toast.bulkPriceFailed'));
         }
       }
     );
@@ -136,13 +125,13 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
 
         {/* Header Halaman */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-stone-800">Kelola Template</h2>
+          <h2 className="text-2xl font-bold text-stone-800">{t('admin.templatesTitle')}</h2>
           <p className="mt-1 text-sm text-stone-500">
-            Atur template undangan, kelola harga, dan status aktif atau nonaktif.
+            {t('admin.templatesSubtitle')}
           </p>
         </div>
 
-        {/* TOOLBAR — filter baru aktif setelah tekan Cari / Enter */}
+        {/* TOOLBAR */}
         <form
           onSubmit={(e) => { e.preventDefault(); handleApplyFilters(); }}
           className="bg-white p-4 rounded-2xl shadow-sm border border-[#EBDFCE] mb-6 flex flex-col md:flex-row gap-4 md:items-end justify-between"
@@ -152,13 +141,13 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                 <div className="min-w-[240px] flex-1">
                     <label className={LABEL_CLASS}>
                         <Search size={13} className="text-[#E59A59]" />
-                        <span>Cari Template</span>
+                        <span>{t('admin.tplSearchLabel')}</span>
                     </label>
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                         <input
                             type="text"
-                            placeholder="Nama atau slug..."
+                            placeholder={t('admin.tplSearchPlaceholder')}
                             value={searchInput}
                             onChange={e => setSearchInput(e.target.value)}
                             className={`${INPUT_CLASS} pl-9`}
@@ -170,14 +159,14 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                 <div className="min-w-[170px]">
                     <label className={LABEL_CLASS}>
                         <Filter size={13} className="text-[#E59A59]" />
-                        <span>Kategori</span>
+                        <span>{t('admin.tplCategoryLabel')}</span>
                     </label>
                     <select
                         value={categoryInput}
                         onChange={(e) => setCategoryInput(e.target.value)}
                         className={INPUT_CLASS}
                     >
-                        <option value="All">Semua Kategori</option>
+                        <option value="All">{t('admin.tplCategoryAll')}</option>
                         <option value="Basic">Basic</option>
                         <option value="RSVP">RSVP</option>
                     </select>
@@ -192,7 +181,7 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                             className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-600 transition hover:bg-rose-100 active:scale-95 whitespace-nowrap"
                         >
                             <Trash2 size={13} />
-                            <span>Reset Filter</span>
+                            <span>{t('admin.btnResetFilter')}</span>
                         </button>
                     )}
                     <button
@@ -200,7 +189,7 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                         className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#E59A59] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#d48b4b] active:scale-95 whitespace-nowrap"
                     >
                         <Search size={13} />
-                        <span>Cari</span>
+                        <span>{t('admin.btnSearch')}</span>
                     </button>
                 </div>
             </div>
@@ -208,17 +197,17 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
             {/* Fitur Ubah Harga Massal */}
             <div className="rounded-xl border border-[#EBDFCE] bg-[#F7EEE3] p-3 flex items-end gap-3 w-full md:w-auto">
                 <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider mb-0 flex items-center gap-1 text-[#B4693F]"><Zap size={13}/> Ubah Harga Massal</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider mb-0 flex items-center gap-1 text-[#B4693F]"><Zap size={13}/> {t('admin.bulkPriceLabel')}</label>
                     <div className="relative mt-1.5">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-400 text-sm font-medium">Rp</span>
                         <input
-                            type="number" placeholder="Harga baru" value={bulkPrice} onChange={(e) => setBulkPrice(e.target.value)}
-                            className="h-10 border border-[#EBDFCE] bg-white p-2 pl-8 rounded-lg w-32 outline-none focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 transition text-sm font-bold text-stone-700"
+                            type="number" placeholder={t('admin.bulkPricePlaceholder')} value={bulkPrice} onChange={(e) => setBulkPrice(e.target.value)}
+                            className="h-10 border border-[#EBDFCE] bg-white p-2 pl-8 rounded-xl w-32 outline-none focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 transition text-sm font-bold text-stone-700"
                         />
                     </div>
                 </div>
-                <button type="button" onClick={handleBulkPriceUpdate} className="h-10 bg-[#712E1E] text-white px-4 rounded-lg text-sm font-bold shadow-md hover:bg-[#8a4030] transition active:scale-95">
-                    Terapkan
+                <button type="button" onClick={handleBulkPriceUpdate} className="h-10 bg-[#712E1E] text-white px-4 rounded-xl text-sm font-bold shadow-md hover:bg-[#8a4030] transition active:scale-95">
+                    {t('admin.btnApplyBulk')}
                 </button>
             </div>
         </form>
@@ -229,15 +218,15 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                 <table className="w-full text-left text-sm text-stone-600">
                     <thead className="bg-[#FAF6EE] text-[#712E1E] uppercase font-bold text-xs tracking-wider border-b border-[#EBDFCE]">
                         <tr>
-                            <th className="p-4">Nama Template</th>
-                            <th className="p-4">Kategori</th>
-                            <th className="p-4">Harga (Rp)</th>
-                            <th className="p-4 text-center">Status</th>
+                            <th className="p-4">{t('admin.thTemplateName')}</th>
+                            <th className="p-4">{t('admin.thCategory')}</th>
+                            <th className="p-4">{t('admin.thPrice')}</th>
+                            <th className="p-4 text-center">{t('admin.thStatus')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F3EBDF]">
-                        {loading ? (<tr><td colSpan={4} className="p-10 text-center text-stone-400">Sedang memuat data template...</td></tr>) :
-                        filteredTemplates.length === 0 ? (<tr><td colSpan={4} className="p-10 text-center text-stone-400">Template tidak ditemukan</td></tr>) :
+                        {loading ? (<tr><td colSpan={4} className="p-10 text-center text-stone-400">{t('admin.loadingTemplates')}</td></tr>) :
+                        filteredTemplates.length === 0 ? (<tr><td colSpan={4} className="p-10 text-center text-stone-400">{t('admin.templateNotFound')}</td></tr>) :
                         tplPg.pageItems.map((template) => (
                             <tr key={template.slug} className={`transition group ${template.is_active ? 'hover:bg-[#FAF6EE]/60' : 'bg-[#FAF6EE]/50 opacity-70'}`}>
                                 <td className="p-4">
@@ -245,7 +234,7 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                                     <div className="text-xs text-stone-400 font-mono mt-1">Slug: {template.slug}</div>
                                 </td>
                                 <td className="p-4">
-                                    <span className={`px-2 py-1 rounded text-xs border font-bold ${template.category === 'RSVP' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs border font-bold ${template.category === 'RSVP' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
                                         {template.category}
                                     </span>
                                 </td>
@@ -255,11 +244,11 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">Rp</span>
                                             <input
                                                 type="number" value={editPrices[template.slug] ?? template.price} onChange={(e) => setEditPrices((prev) => ({ ...prev, [template.slug]: e.target.value }))}
-                                                className="border border-[#EBDFCE] p-2 pl-8 rounded-lg w-32 outline-none focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 transition font-bold text-stone-700"
+                                                className="border border-[#EBDFCE] p-2 pl-8 rounded-xl w-32 outline-none focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 transition font-bold text-stone-700"
                                             />
                                         </div>
                                         {Number(editPrices[template.slug]) != template.price && (
-                                            <button onClick={() => handleUpdateTemplatePrice(template.slug)} className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition shadow-md" title="Simpan Harga Baru">
+                                            <button onClick={() => handleUpdateTemplatePrice(template.slug)} className="bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition shadow-md" title="Simpan Harga Baru">
                                                 <Save className="w-4 h-4" />
                                             </button>
                                         )}
@@ -271,7 +260,7 @@ export default function TemplatesTab({ templates, searchTerm, setSearchTerm, con
                                         className={`flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl transition font-bold text-xs border ${template.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'}`}
                                     >
                                         {template.is_active ? <ToggleRight className="w-5 h-5 text-emerald-600" /> : <ToggleLeft className="w-5 h-5 text-red-600" />}
-                                        {template.is_active ? 'AKTIF' : 'NONAKTIF'}
+                                        {template.is_active ? t('admin.statusActive') : t('admin.statusInactive')}
                                     </button>
                                 </td>
                             </tr>

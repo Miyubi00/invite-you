@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { resolveDbClient } from '../lib/customerClient';
 import { useToast } from '../components/GlobalToast';
 import type { RsvpRow } from '../types/database';
+import { useTranslation } from '../i18n';
 
 export type RsvpStatusFilter = 'all' | 'hadir' | 'tidak_hadir' | 'ragu';
 
@@ -32,6 +33,7 @@ export function escapeIlike(value: string): string {
 
 export function useRsvpServer(orderId: string | undefined, initialPageSize = PAGE_SIZE_DEFAULT) {
   const toast = useToast();
+  const { t } = useTranslation();
 
   // --- Draft filter (baru aktif setelah tombol Cari / Enter) ---
   const [searchInput, setSearchInput] = useState('');
@@ -126,11 +128,11 @@ export function useRsvpServer(orderId: string | undefined, initialPageSize = PAG
       setStats({ hadir: counts[0], tidakHadir: counts[1], ragu: counts[2] });
     } catch (e) {
       console.error('[useRsvpServer] Gagal memuat RSVP:', e);
-      toast.error('Gagal memuat buku tamu. Coba muat ulang halaman.');
+      toast.error(t('toast.rsvpLoadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [buildQuery, page, pageSize, orderId, toast]);
+  }, [buildQuery, page, pageSize, orderId, toast, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -182,10 +184,10 @@ export function useRsvpServer(orderId: string | undefined, initialPageSize = PAG
       offset += EXPORT_BATCH_SIZE;
     }
     if (offset >= EXPORT_MAX_ROWS) {
-      toast.warning(`Export dibatasi ${EXPORT_MAX_ROWS.toLocaleString('id-ID')} baris pertama.`);
+      toast.warning(t('toast.exportLimit', { count: EXPORT_MAX_ROWS.toLocaleString('id-ID') }));
     }
     return all;
-  }, [buildQuery, orderId, toast]);
+  }, [buildQuery, orderId, toast, t]);
 
   return {
     // draft

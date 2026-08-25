@@ -1,18 +1,7 @@
-// ============================================================
-// src/components/shared/form/FormKit.tsx
-// ------------------------------------------------------------
-// Primitif form bersama: CardHeader, SubTabButton, TextField, DateField, BankInput, PhotoPicker, LightboxPreview.
-// Dipakai di  : EditOrderModal (admin), EditTab (customer), SectionCards
-// Keterikatan : ./ui (design token), lucide-react
-// ============================================================
-
-// Primitif form bersama untuk Dashboard mempelai dan Admin Panel:
-// CardHeader, SubTabButton, TextField, DateField, BankInput, PhotoPicker,
-// dan LightboxPreview. Dipakai oleh EditTab & EditOrderModal.
-
 import type { ChangeEvent, ReactNode } from "react";
 import { Camera, Eye, Loader2, Trash2, X } from "lucide-react";
 import { CARD_TITLE, FIELD_LABEL, ICON_CHIP, INPUT } from "./ui";
+import { useTranslation } from "../../../i18n";
 
 const INPUT_CLASS = `${INPUT} mt-1`;
 
@@ -155,6 +144,8 @@ export function PhotoPicker({
   onPreview: () => void;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#EBDFCE] bg-[#FAF6EE]/50 p-3.5 transition hover:bg-[#FAF6EE]">
       <div className="group relative block aspect-square w-full max-w-[150px] overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-200">
@@ -169,7 +160,7 @@ export function PhotoPicker({
               <button
                 type="button"
                 onClick={onPreview}
-                title="Lihat Foto"
+                title={t('common.view')}
                 className="grid h-8 w-8 place-items-center rounded-xl bg-white/25 text-white backdrop-blur-sm transition hover:bg-white/40 hover:scale-110 active:scale-95"
               >
                 <Eye size={15} />
@@ -177,7 +168,7 @@ export function PhotoPicker({
               <button
                 type="button"
                 onClick={onRemove}
-                title="Hapus Foto"
+                title={t('common.delete')}
                 className="grid h-8 w-8 place-items-center rounded-xl bg-rose-500/80 text-white backdrop-blur-sm transition hover:bg-rose-600 hover:scale-110 active:scale-95"
               >
                 <Trash2 size={15} />
@@ -187,7 +178,7 @@ export function PhotoPicker({
         ) : (
           <label className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-1.5 text-stone-400 transition hover:bg-stone-50">
             <Camera size={26} />
-            <span className="text-[11px] font-semibold">Pilih Foto</span>
+            <span className="text-[11px] font-semibold">{t('customer.edit.pickPhoto')}</span>
             <input
               type="file"
               accept="image/*"
@@ -208,7 +199,7 @@ export function PhotoPicker({
       <div className="text-center">
         <p className="text-xs font-bold text-stone-800">{label}</p>
         <label className="mt-0.5 inline-block cursor-pointer text-[11px] font-semibold text-[#E59A59] transition hover:text-[#d48b4b] hover:underline">
-          {src ? "Ganti Foto" : "Upload Foto"}
+          {src ? t('customer.edit.changePhoto') : t('customer.edit.uploadPhoto')}
           <input
             type="file"
             accept="image/*"
@@ -244,7 +235,7 @@ export function LightboxPreview({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+            className="rounded-xl p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700"
           >
             <X size={18} />
           </button>

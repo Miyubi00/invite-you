@@ -1,15 +1,10 @@
-// ============================================================
-// src/pages/NotFoundPage.tsx
-// ------------------------------------------------------------
-// Halaman 404 dengan dekorasi blob dan tombol kembali ke home.
-// Dipakai di  : App.tsx
-// Keterikatan : react-router-dom (Link), lucide-react
-// ============================================================
-
 import { Link } from 'react-router-dom';
 import { HeartCrack, ArrowLeft, Home } from 'lucide-react';
+import { useTranslation } from '../i18n';
 
 export default function NotFound() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-6 relative overflow-hidden font-sans text-[#712E1E]">
       
@@ -32,13 +27,13 @@ export default function NotFound() {
 
         {/* TEXT CONTENT */}
         <h1 className="text-6xl md:text-8xl font-extrabold text-[#712E1E] mb-2 tracking-tighter">
-          404
+          {t('notFound.code')}
         </h1>
         <h2 className="text-xl md:text-2xl font-bold mb-4 text-stone-500">
-          Halaman Tidak Ditemukan
+          {t('notFound.title')}
         </h2>
         <p className="text-stone-400 mb-8 leading-relaxed">
-          Maaf, halaman yang Anda cari mungkin telah dipindahkan, dihapus, atau link yang Anda tuju salah.
+          {t('notFound.desc')}
         </p>
 
         {/* ACTION BUTTONS */}
@@ -48,7 +43,7 @@ export default function NotFound() {
             className="w-full bg-[#712E1E] text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-[#5a2316] transition transform hover:-translate-y-1 flex items-center justify-center gap-2"
           >
             <Home size={18} />
-            Kembali ke Beranda
+            {t('notFound.btnHome')}
           </Link>
           
           <button 
@@ -56,13 +51,13 @@ export default function NotFound() {
             className="w-full bg-white border-2 border-[#E59A59] text-[#E59A59] py-3.5 rounded-xl font-bold hover:bg-[#FAF6EE] transition flex items-center justify-center gap-2"
           >
             <ArrowLeft size={18} />
-            Kembali ke Halaman Sebelumnya
+            {t('notFound.btnBack')}
           </button>
         </div>
 
         {/* FOOTER TEXT */}
         <p className="mt-12 text-xs text-stone-400">
-          &copy; {new Date().getFullYear()} LoVerse Platform.
+          {t('notFound.footer', { year: new Date().getFullYear() })}
         </p>
       </div>
     </div>

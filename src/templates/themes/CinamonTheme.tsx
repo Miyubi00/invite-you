@@ -10,12 +10,14 @@ import { formatDate, resolveBanks, resolveGallery, resolvePhotos, resolveVenue, 
 import { useOpenInvitation } from '../shared/useOpenInvitation';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import { useToast } from '../../components/GlobalToast';
+import { useTranslation } from '../../i18n';
 
 // Props 'submittedData' diterima dari InvitationRender
 export default function SoftBlueTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }: TemplateProps) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const copyRek = useCopyToClipboard();
     const toast = useToast();
+    const { t } = useTranslation();
 
     // Form State
     const [rsvpStatus, setRsvpStatus] = useState<'hadir' | 'tidak_hadir' | 'ragu'>('hadir');
@@ -23,7 +25,7 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
     const [rsvpMessage, setRsvpMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
 
-    const photos = resolvePhotos(data);;
+    const photos = resolvePhotos(data);
     const gallery = resolveGallery(data);
     const banks = resolveBanks(data);
     const quote = data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya...";
@@ -39,7 +41,7 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!onRsvpSubmit) {
-            toast.warning("Mode Demo: RSVP tidak disimpan.");
+            toast.warning(t('toast.demoRsvpWarning'));
             return;
         }
         setIsSending(true);

@@ -20,6 +20,7 @@ import { buildApiHeaders, functionsUrl } from "../lib/apiHeaders";
 import { resolveDbClient } from "../lib/customerClient";
 import { enqueuePersist } from "../lib/persistQueue";
 import type { BankAccount, EventDetails } from "../types/database";
+import { useTranslation } from "../i18n";
 
 export interface ConfirmState {
   show: boolean;
@@ -71,11 +72,12 @@ export function useEditActions<T extends EditableData>(
   options?: { orderId?: string; getData?: () => T | undefined },
 ) {
   const toast = useToast();
+  const { t } = useTranslation();
   const { confirmData, ask, close } = useConfirmAction();
 
   const requireOrderId = (): string | null => {
     if (!options?.orderId) {
-      toast.error("Sesi pesanan tidak ditemukan. Muat ulang halaman.");
+      toast.error(t('toast.sessionNotFound'));
       return null;
     }
     return options.orderId;
@@ -105,7 +107,7 @@ export function useEditActions<T extends EditableData>(
 
           setData((prev) => ({ ...prev, [field]: "" }) as T);
           close();
-          toast.success(`${label} berhasil dihapus.`);
+          toast.success(t('toast.itemDeleted', { label }));
 
           if (typeof previousUrl === 'string' && previousUrl && previousUrl.includes(`/${orderId}/`)) {
             void deleteR2Objects(orderId, [previousUrl]);
@@ -114,8 +116,9 @@ export function useEditActions<T extends EditableData>(
           console.error('[EditActions] Gagal menghapus foto:', err);
           close();
           toast.error(
-            `Gagal menghapus ${label.toLowerCase()}: ` +
-            (err instanceof Error ? err.message : 'kesalahan tidak diketahui.'),
+            t('toast.deleteFailed', {
+              error: err instanceof Error ? err.message : 'Unknown error',
+            }),
           );
         }
       })();
@@ -132,7 +135,7 @@ export function useEditActions<T extends EditableData>(
       const removedUrl = options?.getData?.()?.gallery?.[index];
       if (!removedUrl) {
         close();
-        toast.error("Foto tidak dapat ditentukan. Muat ulang halaman lalu coba lagi.");
+        toast.error(t('toast.photoUndefined'));
         return;
       }
 
@@ -154,7 +157,7 @@ export function useEditActions<T extends EditableData>(
             gallery: (prev.gallery || []).filter((_, i) => i !== index),
           }));
           close();
-          toast.success("Foto galeri berhasil dihapus.");
+          toast.success(t('toast.galleryPhotoDeleted'));
 
           // Bersihkan objek dari bucket (best-effort, setelah persist sukses).
           if (removedUrl.includes(`/${orderId}/`)) {
@@ -164,8 +167,9 @@ export function useEditActions<T extends EditableData>(
           console.error('[EditActions] Gagal menghapus foto galeri:', err);
           close();
           toast.error(
-            "Gagal menghapus foto galeri: " +
-            (err instanceof Error ? err.message : 'kesalahan tidak diketahui.'),
+            t('toast.deleteFailed', {
+              error: err instanceof Error ? err.message : 'Unknown error',
+            }),
           );
         }
       })();
@@ -178,7 +182,7 @@ export function useEditActions<T extends EditableData>(
         banks: (prev.banks || []).filter((_, i) => i !== index),
       }));
       close();
-      toast.success("Rekening berhasil dihapus.");
+      toast.success(t('toast.bankDeleted'));
     });
 
   const addBank = () =>

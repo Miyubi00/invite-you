@@ -10,11 +10,13 @@ import { formatDate, resolveBanks, resolveGallery, resolvePhotos, resolveVenue, 
 import { useOpenInvitation } from '../shared/useOpenInvitation';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import { useToast } from '../../components/GlobalToast';
+import { useTranslation } from '../../i18n';
 
 export default function ComicTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }: TemplateProps) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const copyRek = useCopyToClipboard();
     const toast = useToast();
+    const { t } = useTranslation();
 
     // --- RSVP STATE ---
     const [rsvpStatus, setRsvpStatus] = useState<'hadir' | 'tidak_hadir' | 'ragu'>('hadir');
@@ -24,7 +26,7 @@ export default function ComicTheme({ groom, bride, date, guestName, data, onRsvp
 
 
     // --- DATA ---
-    const photos = resolvePhotos(data);;
+    const photos = resolvePhotos(data);
 
     const gallery = resolveGallery(data);
 
@@ -51,7 +53,7 @@ export default function ComicTheme({ groom, bride, date, guestName, data, onRsvp
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!onRsvpSubmit) {
-            toast.warning("Mode Demo: RSVP tidak disimpan.");
+            toast.warning(t('toast.demoRsvpWarning'));
             return;
         }
         setIsSending(true);

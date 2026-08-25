@@ -1,16 +1,5 @@
-// ============================================================
-// src/components/shared/Pagination.tsx
-// ------------------------------------------------------------
-// Bar pagination bersama (Admin Panel & dashboard mempelai): info rentang data, selector ukuran halaman, navigasi nomor.
-// Dipakai di  : OrdersTab, TemplatesTab, RsvpTab
-// Keterikatan : lucide-react
-// ============================================================
-
-// Bar pagination bersama (Admin Panel & Dashboard mempelai): info rentang
-// data, selector ukuran halaman, dan navigasi nomor halaman. Tema mengikuti
-// design system terracotta/cream (#712E1E, #E59A59, #EBDFCE, #FAF6EE).
-
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "../../i18n";
 
 interface PaginationProps {
   page: number;
@@ -45,28 +34,38 @@ export default function Pagination({
   onPageChange,
   onPageSizeChange,
 }: PaginationProps) {
+  const { t, language } = useTranslation();
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
 
   const navButton =
-    "grid h-8 min-w-8 place-items-center rounded-lg px-2 text-xs font-bold transition active:scale-95";
+    "grid h-8 min-w-8 place-items-center rounded-xl px-2 text-xs font-bold transition active:scale-95";
   const idleButton = `${navButton} border border-[#EBDFCE] bg-white text-stone-600 hover:bg-[#FAF6EE] hover:text-[#712E1E]`;
 
   return (
     <div className="flex flex-col gap-3 border-t border-[#EBDFCE] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-xs text-stone-500">
-          Menampilkan <span className="font-bold text-stone-700">{start}–{end}</span> dari{" "}
-          <span className="font-bold text-stone-700">{total}</span> entri
+          {language === 'en' ? (
+            <>
+              Showing <span className="font-bold text-stone-700">{start}–{end}</span> of{" "}
+              <span className="font-bold text-stone-700">{total}</span> entries
+            </>
+          ) : (
+            <>
+              Menampilkan <span className="font-bold text-stone-700">{start}–{end}</span> dari{" "}
+              <span className="font-bold text-stone-700">{total}</span> entri
+            </>
+          )}
         </p>
         <select
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          className="h-8 rounded-lg border border-[#EBDFCE] bg-[#FAF6EE] px-2 text-xs font-medium text-stone-800 outline-none transition focus:border-[#E59A59] focus:bg-white focus:ring-2 focus:ring-[#E59A59]/20"
+          className="h-8 rounded-xl border border-[#EBDFCE] bg-[#FAF6EE] px-2 text-xs font-medium text-stone-800 outline-none transition focus:border-[#E59A59] focus:bg-white focus:ring-2 focus:ring-[#E59A59]/20"
         >
           {PAGE_SIZES.map((size) => (
             <option key={size} value={size}>
-              {size} / halaman
+              {size} {language === 'en' ? '/ page' : '/ halaman'}
             </option>
           ))}
         </select>
@@ -78,7 +77,7 @@ export default function Pagination({
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           className={`${idleButton} ${page <= 1 ? "cursor-not-allowed opacity-40" : ""}`}
-          title="Halaman Sebelumnya"
+          title={t('common.prev')}
         >
           <ChevronLeft size={14} />
         </button>
@@ -109,7 +108,7 @@ export default function Pagination({
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           className={`${idleButton} ${page >= totalPages ? "cursor-not-allowed opacity-40" : ""}`}
-          title="Halaman Berikutnya"
+          title={t('common.next')}
         >
           <ChevronRight size={14} />
         </button>

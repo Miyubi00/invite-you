@@ -35,6 +35,7 @@ import ShareTab from "../components/customer/ShareTab";
 import EditTab from "../components/customer/EditTab";
 import RsvpTab from "../components/customer/RsvpTab";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useTranslation } from "../i18n";
 
 export default function Dashboard() {
   const { orderId } = useParams();
@@ -87,6 +88,8 @@ export default function Dashboard() {
     return <DashboardSkeleton />;
   }
 
+  const { t } = useTranslation();
+
   if (!order) {
     return (
       <div
@@ -104,13 +107,13 @@ export default function Dashboard() {
   }
 
   const menuItems: MenuItem[] = [
-    { id: "share", label: "Sebar Undangan", icon: Share2, badge: null },
-    { id: "edit", label: "Edit Konten", icon: Save, badge: null },
+    { id: "share", label: t("customer.menuShare"), icon: Share2, badge: null },
+    { id: "edit", label: t("customer.menuEdit"), icon: Save, badge: null },
     ...(!isBasic
       ? [
           {
             id: "rsvp",
-            label: "Buku Tamu",
+            label: t("customer.menuRsvp"),
             icon: MessageSquare,
             badge: rsvpTotal && rsvpTotal > 0 ? rsvpTotal : null,
           },
@@ -127,12 +130,11 @@ export default function Dashboard() {
   // jangan sessionStorage.clear() agar session fitur lain aman.
   const performLogout = () => {
     sessionStorage.removeItem("active_order_id");
-    sessionStorage.removeItem("order_pin"); // cleanup legacy
+    sessionStorage.removeItem("order_pin");
     localStorage.removeItem("active_order_id");
-    clearCustomerToken(); // hapus JWT ber-scope pesanan
+    clearCustomerToken();
     navigate("/");
   };
-  // 3. Tombol keluar cukup membuka dialog
   const handleLogout = () => {
     setShowLogoutDialog(true);
   };
@@ -185,8 +187,8 @@ export default function Dashboard() {
 
         <ConfirmDialog
           isOpen={showLogoutDialog}
-          title="Konfirmasi Keluar"
-          message="Yakin ingin keluar dari Dashboard?"
+          title={t("nav.logoutConfirmTitle")}
+          message={t("nav.logoutConfirm")}
           isDanger={true}
           onCancel={() => setShowLogoutDialog(false)}
           onConfirm={performLogout}
@@ -214,7 +216,7 @@ export default function Dashboard() {
               onClick={() => setSidebarOpen(true)}
               className="
                 p-2
-                rounded-lg
+                rounded-xl
                 hover:bg-white/10
               "
             >
@@ -244,7 +246,7 @@ export default function Dashboard() {
               rel="noreferrer"
               className="
                 p-2
-                rounded-lg
+                rounded-xl
                 hover:bg-white/10
               "
             >
@@ -259,7 +261,7 @@ export default function Dashboard() {
               onClick={handleLogout}
               className="
                 p-2
-                rounded-lg
+                rounded-xl
                 hover:bg-white/10
               "
             >

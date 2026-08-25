@@ -15,6 +15,7 @@ import { clearCustomerToken, getCustomerToken, resolveDbClient } from '../lib/cu
 import { enqueuePersist } from '../lib/persistQueue';
 import { useToast } from '../components/GlobalToast';
 import type { OrderRow, BankAccount, EventDetails } from '../types/database';
+import { useTranslation } from '../i18n';
 
 export type DashboardForm = EventDetails & { gallery: string[]; banks: BankAccount[] };
 
@@ -31,6 +32,7 @@ const EMPTY_FORM: DashboardForm = {
 export function useDashboardData(orderId: string | undefined) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useTranslation();
 
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,35 +45,33 @@ export function useDashboardData(orderId: string | undefined) {
   useEffect(() => {
     let cancelled = false;
 
-    const sessionID = sessionStorage.getItem('active_order_id');
-    if (!sessionID || sessionID !== orderId) {
-      toast.warning("Sesi berakhir. Silakan login kembali.");
-      navigate('/login');
-      return;
-    }
-
     const fetchData = async () => {
-      // resolveDbClient(): JWT pelanggan bila ada, sesi admin/anon jika tidak.
-      const db = resolveDbClient();
-      const { data: orderData, error: orderError } = await db
-        .from('orders').select('*').eq('id', orderId).single();
+      if (!orderId) {
+        setDataLoading(false);
+        return;
+      }
 
-      // Navigasi cepat antar orderId: buang hasil fetch yang sudah basi agar
-      // tidak menimpa state pesanan aktif.
+      setDataLoading(true);
+      const db = resolveDbClient();
+      const { data: orderData, error } = await db
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .maybeSingle();
+
       if (cancelled) return;
 
-      if (orderError || !orderData) {
-        // Error .single() TIDAK diabaikan lagi: token kedaluwarsa / diblokir
+      if (error || !orderData) {
         // RLS / pesanan terhapus semua bermuara ke sini. Dengan token customer
         // masih ada, sesi jelas tidak layak — sebelumnya form KOSONG tetap
         // dirender dan bisa "disimpan" secara ilusif.
         if (getCustomerToken()) {
           clearCustomerToken();
           sessionStorage.removeItem('active_order_id');
-          toast.warning('Sesi berakhir atau data tidak ditemukan. Silakan login kembali.');
+          toast.warning(t('toast.sessionExpired'));
           navigate('/login');
         } else {
-          toast.error("Data tidak ditemukan.");
+          toast.error(t('toast.dataNotFound'));
         }
         setDataLoading(false);
         return;
@@ -102,7 +102,7 @@ export function useDashboardData(orderId: string | undefined) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, navigate]);
+  }, [orderId, navigate, t]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value } as DashboardForm));
@@ -119,9 +119,9 @@ export function useDashboardData(orderId: string | undefined) {
         .eq('id', orderId),
     );
     setLoading(false);
-    if (error) toast.error('Gagal menyimpan: ' + error.message);
-    else if ((count ?? 0) === 0) toast.error('Tidak ada perubahan tersimpan. Muat ulang halaman lalu coba lagi.');
-    else toast.success('Tersimpan!');
+    if (error) toast.error(t('toast.saveFailed', { error: error.message }));
+    else if ((count ?? 0) === 0) toast.error(t('toast.noChangesSaved'));
+    else toast.success(t('toast.savedSuccess'));
   };
 
   return {

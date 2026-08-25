@@ -25,6 +25,7 @@ import {
 import { useEditActions } from "../../hooks/useEditActions";
 import type { EventDetails } from "../../types/database";
 import type { DashboardForm } from "../../hooks/useDashboardData";
+import { useTranslation } from "../../i18n";
 
 interface EditTabProps {
   formData: DashboardForm;
@@ -69,6 +70,7 @@ export default function EditTab({
   removing,
   onRemoveMusic,
 }: EditTabProps) {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<SubSection>("info");
   const [previewImage, setPreviewImage] = useState<PreviewImage | null>(null);
 
@@ -89,9 +91,9 @@ export default function EditTab({
       <form onSubmit={handleSaveData} className="w-full pb-10">
         {/* Header Tab */}
         <div>
-          <h2 className="text-2xl font-bold text-stone-800">Edit Konten</h2>
+          <h2 className="text-2xl font-bold text-stone-800">{t('customer.edit.title')}</h2>
           <p className="mt-1 text-sm text-stone-500">
-            Perbarui informasi dan media undangan pernikahan Anda.
+            {t('customer.edit.desc')}
           </p>
         </div>
 
@@ -99,17 +101,17 @@ export default function EditTab({
         <div className="mt-5 flex flex-wrap gap-1.5 rounded-2xl border border-[#EBDFCE] bg-[#FAF6EE] p-1.5 w-fit">
           <SubTabButton active={activeSection === "info"} onClick={() => setActiveSection("info")}>
             <MapPin size={15} />
-            <span>Detail Acara & Lokasi</span>
+            <span>{t('customer.edit.tabDetails')}</span>
           </SubTabButton>
 
           <SubTabButton active={activeSection === "media"} onClick={() => setActiveSection("media")}>
             <Camera size={15} />
-            <span>Foto & Galeri</span>
+            <span>{t('customer.edit.tabMedia')}</span>
           </SubTabButton>
 
           <SubTabButton active={activeSection === "extra"} onClick={() => setActiveSection("extra")}>
             <CreditCard size={15} />
-            <span>Musik & Rekening</span>
+            <span>{t('customer.edit.tabExtra')}</span>
           </SubTabButton>
         </div>
 
@@ -170,7 +172,7 @@ export default function EditTab({
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#E59A59] py-3.5 text-base font-bold text-white shadow-md transition hover:bg-[#d48b4b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save size={18} />}
-              {loading ? "Menyimpan Perubahan..." : "Simpan Perubahan"}
+              {loading ? t('customer.edit.btnSaving') : t('customer.edit.btnSave')}
             </button>
           </div>
         </div>
@@ -179,7 +181,7 @@ export default function EditTab({
       {/* Dialog Konfirmasi Hapus */}
       <ConfirmDialog
         isOpen={confirmData.show}
-        title="Konfirmasi Hapus"
+        title={t('customer.edit.confirmDeleteTitle')}
         message={confirmData.message}
         isDanger={true}
         onCancel={closeConfirm}

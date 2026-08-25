@@ -12,7 +12,6 @@
 
     "strict": true,
     "noUncheckedSideEffectImports": true,
-    "ignoreDeprecations": "6.0",
     "types": ["node"]
   },
   "include": ["vite.config.ts"]

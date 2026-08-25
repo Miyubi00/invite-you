@@ -10,14 +10,18 @@
 // Nama mempelai hanya ditampilkan di profil sidebar (tanpa duplikasi);
 // logout ada di footer sidebar.
 
-import { ExternalLink, Eye, HeartHandshake } from "lucide-react";
+import { ExternalLink, HeartHandshake } from "lucide-react";
 import type { OrderRow } from "../../types/database";
+import { useTranslation } from "../../i18n";
+import LanguageSwitcher from "../shared/LanguageSwitcher";
 
 interface CustomerNavbarProps {
   order: OrderRow;
 }
 
 export default function CustomerNavbar({ order }: CustomerNavbarProps) {
+  const { t } = useTranslation();
+
   return (
     <header
       className="
@@ -54,28 +58,32 @@ export default function CustomerNavbar({ order }: CustomerNavbarProps) {
             text-base font-bold text-white
           "
         >
-          Dashboard
+          {t("nav.dashboard")}
         </h1>
       </div>
 
-      {/* Primary global action */}
-      <a
-        href={`/wedding/${order.slug}`}
-        target="_blank"
-        rel="noreferrer"
-        className="
-          flex
-          px-3.5 py-2
-          text-xs font-semibold text-white
-          bg-white/15
-          rounded-xl
-          shadow-sm
-          items-center gap-2 transition hover:bg-white/25
-        "
-      >
-        <span>Lihat Undangan</span>
-        <ExternalLink size={13} />
-      </a>
+      {/* Right controls */}
+      <div className="flex items-center gap-3">
+        <LanguageSwitcher variant="header" />
+
+        <a
+          href={`/wedding/${order.slug}`}
+          target="_blank"
+          rel="noreferrer"
+          className="
+            flex
+            px-3.5 py-2
+            text-xs font-semibold text-white
+            bg-white/15
+            rounded-xl
+            shadow-sm
+            items-center gap-2 transition hover:bg-white/25
+          "
+        >
+          <span>{t("customer.viewInvitation")}</span>
+          <ExternalLink size={13} />
+        </a>
+      </div>
     </header>
   );
 }

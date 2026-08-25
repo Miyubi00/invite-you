@@ -11,9 +11,11 @@
 
 import { useCallback } from 'react';
 import { useToast } from '../components/GlobalToast';
+import { useTranslation } from '../i18n';
 
 export function useCopyToClipboard() {
   const toast = useToast();
+  const { t } = useTranslation();
 
   return useCallback(
     async (text: string, label = 'Nomor rekening') => {
@@ -31,11 +33,11 @@ export function useCopyToClipboard() {
           document.execCommand('copy');
           document.body.removeChild(textarea);
         }
-        toast.success(`${label} berhasil disalin!`);
+        toast.success(t('toast.copied', { label }));
       } catch {
-        toast.error('Gagal menyalin. Silakan salin secara manual.');
+        toast.error(t('toast.copyFailed'));
       }
     },
-    [toast],
+    [toast, t],
   );
 }

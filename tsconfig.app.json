@@ -14,7 +14,6 @@
 
     "strict": true,
     "noFallthroughCasesInSwitch": true,
-    "ignoreDeprecations": "6.0",
     "allowJs": true,
     "checkJs": false
   },

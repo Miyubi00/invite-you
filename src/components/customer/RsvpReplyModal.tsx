@@ -1,16 +1,7 @@
-// ============================================================
-// src/components/customer/RsvpReplyModal.tsx
-// ------------------------------------------------------------
-// Modal popup balas/edit ucapan tamu pada tab Buku Tamu.
-// Dipakai di  : components/customer/RsvpTab.tsx
-// Keterikatan : types/database (RsvpRow), lucide-react
-// ============================================================
-
-// Modal popup balas/edit ucapan tamu pada tab Buku Tamu.
-
 import { MessageSquare, Send, X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { RsvpRow } from "../../types/database";
+import { useTranslation } from "../../i18n";
 
 interface RsvpReplyModalProps {
   rsvp: RsvpRow;
@@ -27,6 +18,8 @@ export default function RsvpReplyModal({
   onClose,
   onSubmit,
 }: RsvpReplyModalProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="z-50 flex p-4 bg-black/50 fixed inset-0 items-center justify-center backdrop-blur-sm">
       <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-xl animate-in fade-in zoom-in-95">
@@ -35,13 +28,13 @@ export default function RsvpReplyModal({
           <div className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-[#E59A59]" />
             <h3 className="font-bold text-stone-800">
-              {rsvp.reply ? "Edit Balasan" : "Balas Ucapan"}
+              {rsvp.reply ? t('customer.rsvp.modalEditTitle') : t('customer.rsvp.modalTitle')}
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-stone-400 rounded-lg hover:bg-stone-100 hover:text-stone-600"
+            className="p-1 text-stone-400 rounded-xl hover:bg-stone-100 hover:text-stone-600"
           >
             <X size={18} />
           </button>
@@ -56,7 +49,7 @@ export default function RsvpReplyModal({
         {/* Textarea Balasan */}
         <div className="mt-4">
           <label className="block mb-1.5 text-xs font-bold text-stone-700">
-            Tulis Balasan Anda
+            {t('customer.rsvp.modalLabel')}
           </label>
           <textarea
             rows={4}
@@ -64,7 +57,7 @@ export default function RsvpReplyModal({
             onChange={(e) =>
               setReplyText((prev) => ({ ...prev, [rsvp.id]: e.target.value }))
             }
-            placeholder="Terima kasih banyak atas doa dan kehadirannya..."
+            placeholder={t('customer.rsvp.modalPlaceholder')}
             className="w-full p-3 text-xs rounded-xl border border-stone-200 resize-none outline-none transition placeholder:text-stone-400 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20"
           />
         </div>
@@ -76,7 +69,7 @@ export default function RsvpReplyModal({
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-stone-500 rounded-xl hover:bg-stone-100"
           >
-            Batal
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -84,7 +77,7 @@ export default function RsvpReplyModal({
             className="flex px-4 py-2 text-xs font-bold text-white bg-[#E59A59] rounded-xl shadow-sm items-center gap-1.5 transition hover:bg-[#d48b4b] active:scale-95"
           >
             <Send size={13} />
-            <span>Kirim Balasan</span>
+            <span>{t('customer.rsvp.modalBtnSend')}</span>
           </button>
         </div>
       </div>

@@ -11,16 +11,19 @@ import { useParams, Link } from 'react-router-dom';
 import { TEMPLATE_COMPONENTS } from '../templates/Registry';
 import type { TemplateData } from '../types/template';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from '../i18n';
+import LanguageSwitcher from '../components/shared/LanguageSwitcher';
 
 export default function TemplateDemo() {
+  const { t } = useTranslation();
   const { slug } = useParams();
   const TemplateRenderer = (slug ? TEMPLATE_COMPONENTS[slug] : undefined) || TEMPLATE_COMPONENTS['rustic-floral'];
 
   if (!TemplateRenderer) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-500">
-        <p className="text-xl mb-4">Template <span className="font-bold text-gray-800">"{slug}"</span> tidak ditemukan.</p>
-        <Link to="/" className="text-blue-500 underline">Kembali ke Beranda</Link>
+        <p className="text-xl mb-4">{t('demo.notFound', { slug: slug || '' })}</p>
+        <Link to="/" className="text-blue-500 underline">{t('common.backHome')}</Link>
       </div>
     );
   }
@@ -86,13 +89,14 @@ export default function TemplateDemo() {
 
   return (
     <div className="relative">
-      <div className="fixed top-4 left-4 z-50">
+      <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
         <Link
           to="/"
-          className="flex items-center gap-2 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full backdrop-blur-sm transition shadow-lg text-sm font-medium border border-white/20"
+          className="flex items-center gap-2 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-xl backdrop-blur-sm transition shadow-lg text-sm font-medium border border-white/20"
         >
-          <ArrowLeft className="w-4 h-4" /> Kembali
+          <ArrowLeft className="w-4 h-4" /> {t('demo.back')}
         </Link>
+        <LanguageSwitcher variant="header" />
       </div>
 
       <Suspense

@@ -11,6 +11,7 @@ import { Routes, Route } from 'react-router-dom';
 
 /* --- IMPORT APP-WIDE PROVIDERS --- */
 import { ToastProvider } from './components/GlobalToast';
+import { LanguageProvider } from './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageSkeleton } from './components/ui/SkeletonLoaders';
 
@@ -38,39 +39,41 @@ function PageLoader() {
 
 function App() {
   return (
-    <ToastProvider>
-      <ErrorBoundary>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            {/* GROUP 1: PUBLIC PAGES (Pakai Navbar Coklat) */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/order" element={<OrderPage />} />
-              <Route path="/order/success" element={<OrderSuccessPage />} />
-              <Route path="/login" element={<CustomerLoginPage />} />
+    <LanguageProvider>
+      <ToastProvider>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* GROUP 1: PUBLIC PAGES (Pakai Navbar Coklat) */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/order" element={<OrderPage />} />
+                <Route path="/order/success" element={<OrderSuccessPage />} />
+                <Route path="/login" element={<CustomerLoginPage />} />
 
-              <Route path="/payment-status" element={<PaymentStatusPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-            </Route>
+                <Route path="/payment-status" element={<PaymentStatusPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+              </Route>
 
-            <Route path="*" element={<NotFoundPage />} />
+              <Route path="*" element={<NotFoundPage />} />
 
-            {/* GROUP 2: TEMPLATE DEMO */}
-            <Route path="/demo/:slug" element={<TemplateDemoPage />} />
+              {/* GROUP 2: TEMPLATE DEMO */}
+              <Route path="/demo/:slug" element={<TemplateDemoPage />} />
 
-            {/* GROUP 3: UNDANGAN TAMU (Fullscreen) */}
-            <Route element={<InvitationLayout />}>
-              <Route path="/wedding/:slug" element={<InvitationPage />} />
-            </Route>
+              {/* GROUP 3: UNDANGAN TAMU (Fullscreen) */}
+              <Route element={<InvitationLayout />}>
+                <Route path="/wedding/:slug" element={<InvitationPage />} />
+              </Route>
 
-            {/* GROUP 4: DASHBOARD (Fullscreen app shell, tanpa Navbar —
-                sidebar punya tombol Keluar sendiri) */}
-            <Route path="/dashboard/:orderId" element={<CustomerDashboardPage />} />
-            <Route path="/admin" element={<AdminPanelPage />} />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-    </ToastProvider>
+              {/* GROUP 4: DASHBOARD (Fullscreen app shell, tanpa Navbar —
+                  sidebar punya tombol Keluar sendiri) */}
+              <Route path="/dashboard/:orderId" element={<CustomerDashboardPage />} />
+              <Route path="/admin" element={<AdminPanelPage />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
+      </ToastProvider>
+    </LanguageProvider>
   );
 }
 

@@ -46,9 +46,9 @@ export function TemplateCardSkeleton({ count = 8 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="bg-white p-2.5 md:p-4 rounded-2xl md:rounded-[2rem] shadow-sm border border-[#EBDFCE] flex flex-col items-start h-full"
+          className="bg-white p-2.5 md:p-4 rounded-2xl shadow-sm border border-[#EBDFCE] flex flex-col items-start h-full"
         >
-          <Skeleton variant="wave" className="w-full aspect-[4/3] rounded-xl md:rounded-2xl mb-3 md:mb-4" />
+          <Skeleton variant="wave" className="w-full aspect-[4/3] rounded-xl mb-3 md:mb-4" />
           <Skeleton className="h-3 w-3/4 rounded" />
           <Skeleton className="h-3 w-1/2 rounded mt-1" />
         </div>

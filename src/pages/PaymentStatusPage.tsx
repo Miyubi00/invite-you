@@ -1,18 +1,12 @@
-// ============================================================
-// src/pages/PaymentStatusPage.tsx
-// ------------------------------------------------------------
-// Halaman /payment-status - cek status pembayaran Midtrans via Edge Function payment-status (akses = tahu midtrans_order_id dari redirect URL).
-// Dipakai di  : App.tsx
-// Keterikatan : lib/supabaseClient, lib/constants, react-router-dom
-// ============================================================
-
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { ADMIN_WHATSAPP } from '../lib/constants';
-import { CheckCircle, XCircle, Clock, ArrowRight, RefreshCcw, Home, CreditCard, MessageSquare, Mail } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowRight, RefreshCcw, Home, CreditCard, MessageSquare, Mail, FileText } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { PaymentStatusSkeleton } from '../components/ui/SkeletonLoaders';
+import { useTranslation } from '../i18n';
+import { downloadClientInvoice } from '../lib/generateInvoicePdf';
 
 /**
  * Respons terbatas dari Edge Function `payment-status`.
@@ -32,6 +26,7 @@ interface PaymentStatusResponse {
 }
 
 export default function PaymentStatus() {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -42,13 +37,10 @@ export default function PaymentStatus() {
 
     const fetchOrderStatus = useCallback(async (showLoader = false) => {
         if (!orderId) return;
-        // Skeleton penuh hanya di muat pertama — refresh berikutnya silent
-        // agar halaman tidak "berkedip" setiap polling.
         if (showLoader) setLoading(true);
         const { data, error } = await supabase.functions
             .invoke('payment-status', { body: { midtrans_order_id: orderId } });
 
-        // 404 = order belum ketemu — biarkan polling lanjut seperti dulu.
         if (!error && data?.found) {
             setOrder(data as PaymentStatusResponse);
         } else if (error) {
@@ -65,17 +57,12 @@ export default function PaymentStatus() {
         return () => clearTimeout(timer);
     }, [fetchOrderStatus]);
 
-    // Polling hanya selama status belum final (pending / belum ketemu).
-    // Setelah success/failed → interval dibersihkan, halaman berhenti refresh.
     const paymentStatus = order?.payment_status;
     const isTerminal = !!paymentStatus && paymentStatus !== 'pending';
 
     useEffect(() => {
         if (isManualWhatsApp || !orderId || isTerminal) return;
 
-        // Exponential backoff: 4s -> 8s -> 16s -> ... cap 60s. Tanpa ini tab
-        // yang ditinggalkan pada status pending menembak Edge Function tiap
-        // 4 detik berjam-jam (boros invocation + query DB).
         const BASE_MS = 4000;
         const CAP_MS = 60000;
         let delay = BASE_MS;
@@ -84,7 +71,6 @@ export default function PaymentStatus() {
 
         const poll = () => {
             if (cancelled) return;
-            // Tab tak terlihat: skip putaran ini, tetap jadwalkan ulang.
             if (document.visibilityState === 'visible') {
                 void fetchOrderStatus();
             }
@@ -124,7 +110,7 @@ export default function PaymentStatus() {
         });
     };
 
-        // --- RENDER LOADING ---
+    // --- RENDER LOADING ---
     if (loading) return <PaymentStatusSkeleton />;
 
     // ====================================================================
@@ -133,22 +119,21 @@ export default function PaymentStatus() {
     if (isManualWhatsApp) {
         return (
             <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-4 font-sans">
-                <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
+                <div className="bg-white p-8 md:p-12 rounded-2xl shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-2 bg-[#25D366]"></div>
                     
                     <div className="animate-fade-in-up">
                         <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-[#25D366] shadow-lg shadow-green-100">
                             <MessageSquare className="w-12 h-12" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">Pesanan Diterima!</h1>
+                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.manualTitle')}</h1>
                         <p className="text-stone-400 mb-6 leading-relaxed">
-                            Terima kasih telah memesan. Silakan lanjutkan konfirmasi dan pembayaran Anda melalui <b>WhatsApp</b>.
+                            {t('paymentStatus.manualDesc')}
                         </p>
 
                         <div className="bg-orange-50 p-4 rounded-xl mb-8 border border-dashed border-orange-200">
                             <p className="text-sm text-orange-800 font-medium">
-                                Admin kami akan segera memverifikasi pembayaran Anda. Setelah disetujui,
-                                <b> PIN 6 digit dibuat otomatis</b> dan dikirim ke <b>email</b> yang Anda daftarkan.
+                                {t('paymentStatus.manualNote')}
                             </p>
                         </div>
 
@@ -159,10 +144,10 @@ export default function PaymentStatus() {
                                 rel="noreferrer"
                                 className="w-full py-4 bg-[#25D366] text-white rounded-xl font-bold hover:bg-[#20bd5a] transition shadow-lg flex items-center justify-center gap-2"
                             >
-                                <FaWhatsapp className="w-6 h-6" /> Hubungi Admin via WA
+                                <FaWhatsapp className="w-6 h-6" /> {t('paymentStatus.btnWhatsapp')}
                             </a>
                             <button onClick={() => navigate('/')} className="w-full py-4 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold hover:bg-stone-50 transition flex items-center justify-center gap-2">
-                                <Home className="w-5 h-5" /> Kembali ke Beranda
+                                <Home className="w-5 h-5" /> {t('paymentStatus.btnHome')}
                             </button>
                         </div>
                     </div>
@@ -174,13 +159,13 @@ export default function PaymentStatus() {
     // --- RENDER JIKA ORDER MIDTRANS TIDAK KETEMU ---
     if (!order) return (
         <div className="min-h-screen flex items-center justify-center bg-[#F1E8DC] p-6 text-center">
-            <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm">
+            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
                     <XCircle className="w-8 h-8" />
                 </div>
-                <h1 className="text-2xl font-bold text-[#712E1E]">Pesanan Tidak Ditemukan</h1>
-                <p className="text-stone-500 mt-2 text-sm">Pastikan link yang Anda akses benar atau ID transaksi valid.</p>
-                <button onClick={() => navigate('/')} className="mt-6 w-full bg-[#E59A59] text-white px-6 py-3 rounded-xl font-bold shadow-md">Kembali ke Beranda</button>
+                <h1 className="text-2xl font-bold text-[#712E1E]">{t('paymentStatus.notFoundTitle')}</h1>
+                <p className="text-stone-500 mt-2 text-sm">{t('paymentStatus.notFoundDesc')}</p>
+                <button onClick={() => navigate('/')} className="mt-6 w-full bg-[#E59A59] text-white px-6 py-3 rounded-xl font-bold shadow-md">{t('paymentStatus.btnHome')}</button>
             </div>
         </div>
     );
@@ -194,7 +179,7 @@ export default function PaymentStatus() {
 
     return (
         <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-4 font-sans">
-            <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
+            <div className="bg-white p-8 md:p-12 rounded-2xl shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-2 ${isSuccess ? 'bg-green-500' : isPending ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
 
                 {/* --- SUKSES --- */}
@@ -203,15 +188,14 @@ export default function PaymentStatus() {
                         <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 shadow-lg shadow-green-100">
                             <CheckCircle className="w-12 h-12" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">Pembayaran Berhasil!</h1>
+                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.successTitle')}</h1>
                         <p className="text-stone-400 mb-8 leading-relaxed">
-                            Terima kasih telah menggunakan jasa kami.<br />
-                            Undangan <b>{order.groom_name} & {order.bride_name}</b> sudah aktif selamanya.
+                            {t('paymentStatus.successDesc', { groom: order.groom_name, bride: order.bride_name })}
                         </p>
 
                         {order.pin_code ? (
                             <div className="bg-stone-50 p-4 rounded-xl mb-4 border border-dashed border-stone-300">
-                                <p className="text-xs text-stone-400 uppercase font-bold tracking-widest mb-1">Kode Login / PIN</p>
+                                <p className="text-xs text-stone-400 uppercase font-bold tracking-widest mb-1">{t('paymentStatus.pinLabel')}</p>
                                 <p className="text-2xl font-mono font-bold text-[#712E1E] tracking-widest">{order.pin_code}</p>
                             </div>
                         ) : null}
@@ -220,17 +204,34 @@ export default function PaymentStatus() {
                             <p className="text-xs text-[#712E1E] leading-relaxed flex items-start gap-2">
                                 <Mail size={14} className="shrink-0 mt-0.5" />
                                 <span>
-                                    PIN ini juga telah dikirim ke <b>{order.email || 'email Anda'}</b>. Simpan email tersebut sebagai cadangan.
+                                    {t('paymentStatus.pinNote', { email: order.email || 'email' })}
                                 </span>
                             </p>
                         </div>
 
                         <div className="flex flex-col gap-3">
                             <button onClick={() => navigate('/login')} className="w-full py-4 bg-[#712E1E] text-white rounded-xl font-bold hover:bg-[#5a2418] transition shadow-lg flex items-center justify-center gap-2">
-                                Masuk Dashboard <ArrowRight className="w-5 h-5" />
+                                {t('paymentStatus.btnDashboard')} <ArrowRight className="w-5 h-5" />
                             </button>
                             <button onClick={() => navigate(`/wedding/${order.slug}`)} className="w-full py-4 bg-white border-2 border-[#712E1E] text-[#712E1E] rounded-xl font-bold hover:bg-stone-50 transition">
-                                Lihat Undangan
+                                {t('paymentStatus.btnViewInvitation')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (order) {
+                                        void downloadClientInvoice({
+                                            orderId: orderId || 'ONLINE',
+                                            groomName: order.groom_name,
+                                            brideName: order.bride_name,
+                                            email: order.email || undefined,
+                                            pin: order.pin_code || undefined,
+                                        });
+                                    }
+                                }}
+                                className="w-full py-3 bg-[#FAF6EE] border border-[#EBDFCE] text-[#712E1E] rounded-xl font-bold hover:bg-[#F3EBDF] transition flex items-center justify-center gap-2 text-sm shadow-xs"
+                            >
+                                <FileText className="w-4 h-4" /> {t('paymentStatus.btnDownloadInvoice')}
                             </button>
                         </div>
                     </div>
@@ -242,11 +243,11 @@ export default function PaymentStatus() {
                         <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6 text-yellow-600 shadow-lg shadow-yellow-100 animate-pulse">
                             <Clock className="w-12 h-12" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">Menunggu Pembayaran</h1>
+                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.pendingTitle')}</h1>
                         <p className="text-stone-400 mb-8">
-                            Selesaikan pembayaran untuk mengaktifkan undangan.<br />
+                            {t('paymentStatus.pendingDesc')}<br />
                             <span className="text-xs mt-2 block">
-                                Setelah lunas, PIN 6 digit dibuat otomatis &amp; dikirim ke email Anda.
+                                {t('paymentStatus.pendingNote')}
                             </span>
                         </p>
 
@@ -256,10 +257,10 @@ export default function PaymentStatus() {
                                 onClick={handlePayAgain}
                                 className="w-full py-4 rounded-xl font-bold text-lg shadow-xl transition transform hover:-translate-y-1 bg-[#E59A59] text-white hover:bg-[#d48b4b] flex items-center justify-center gap-2"
                             >
-                                <CreditCard className="w-5 h-5" /> Bayar Sekarang
+                                <CreditCard className="w-5 h-5" /> {t('paymentStatus.btnPayNow')}
                             </button>
                             <button onClick={() => fetchOrderStatus()} className="w-full py-4 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition flex items-center justify-center gap-2">
-                                <RefreshCcw className="w-4 h-4" /> Cek Status Pembayaran
+                                <RefreshCcw className="w-4 h-4" /> {t('paymentStatus.btnCheckStatus')}
                             </button>
                         </div>
                     </div>
@@ -271,18 +272,17 @@ export default function PaymentStatus() {
                         <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 shadow-lg shadow-red-100">
                             <XCircle className="w-12 h-12" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">Pembayaran Gagal</h1>
+                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.failedTitle')}</h1>
                         <p className="text-stone-400 mb-8">
-                            Maaf, transaksi Anda gagal atau kadaluarsa.<br />
-                            Silakan membuat pesanan ulang.
+                            {t('paymentStatus.failedDesc')}
                         </p>
 
                         <div className="flex flex-col gap-3">
                             <button onClick={() => navigate('/order')} className="w-full py-4 bg-[#712E1E] text-white rounded-xl font-bold hover:bg-[#5a2418] transition shadow-lg">
-                                Buat Pesanan Baru
+                                {t('paymentStatus.btnNewOrder')}
                             </button>
                             <button onClick={() => navigate('/')} className="w-full py-4 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold hover:bg-stone-50 transition flex items-center justify-center gap-2">
-                                <Home className="w-4 h-4" /> Kembali ke Beranda
+                                <Home className="w-4 h-4" /> {t('paymentStatus.btnHome')}
                             </button>
                         </div>
                     </div>

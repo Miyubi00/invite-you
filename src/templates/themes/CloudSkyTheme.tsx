@@ -11,11 +11,13 @@ import { formatDate, resolveBanks, resolveGallery, resolvePhotos, resolveVenue, 
 import { useOpenInvitation } from '../shared/useOpenInvitation';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import { useToast } from '../../components/GlobalToast';
+import { useTranslation } from '../../i18n';
 
 export default function SkyWorldMapTheme({ groom, bride, date, data, onRsvpSubmit, submittedData }: TemplateProps) {
     // --- STATE ---
     const copyRek = useCopyToClipboard();
     const toast = useToast();
+    const { t } = useTranslation();
 
     // TRANSFORM STATE (ZOOM & PAN)
     const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
@@ -162,7 +164,7 @@ export default function SkyWorldMapTheme({ groom, bride, date, data, onRsvpSubmi
     const handleRsvpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!onRsvpSubmit) {
-            toast.warning("Mode Demo: RSVP tidak disimpan.");
+            toast.warning(t('toast.demoRsvpWarning'));
             return;
         }
         setIsSending(true);

@@ -1,16 +1,3 @@
-// ============================================================
-// src/components/admin/EditOrderModal.tsx
-// ------------------------------------------------------------
-// Modal edit satu order secara lengkap oleh admin - memakai section form yang sama dengan dashboard customer.
-// Dipakai di  : pages/AdminPanelPage.tsx
-// Keterikatan : components/shared/form/*, components/ConfirmDialog, lib/supabaseClient, hooks/useEditActions
-// ============================================================
-
-// Halaman edit undangan untuk Admin — UI/UX sama dengan dashboard/EditTab.tsx.
-// Kartu form & primitif bersama ada di src/components/shared/form/*;
-// upload memakai hooks/useFileUpload (dengan validasi ukuran file),
-// aksi hapus/tambah memakai hooks/useEditActions.
-
 import { useState, type ChangeEvent, type Dispatch, type SetStateAction, type SyntheticEvent } from "react";
 import { ArrowLeft, Calendar, Camera, CheckCircle2, CreditCard, Loader2, MapPin, MessageSquare, Save, Search, Trash2, Users } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
@@ -30,6 +17,7 @@ import { useFileUpload } from "../../hooks/useFileUpload";
 import Pagination from "../shared/Pagination";
 import { useRsvpServer, type RsvpStatusFilter } from "../../hooks/useRsvpServer";
 import type { EventDetails, OrderRow, RsvpRow, TemplateRow, OrderEditForm } from "../../types/database";
+import { useTranslation } from "../../i18n";
 
 /* ────────────────────────────────────────────────────────────────────────────
    Props
@@ -64,10 +52,10 @@ export default function EditOrderModal({
   onBack,
   onSaved,
 }: EditOrderModalProps) {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<SubSection>("admin");
   const [previewImage, setPreviewImage] = useState<PreviewImage | null>(null);
 
-  // Buku tamu SERVER-SIDE: filter + pagination + page-size dieksekusi database.
   const rsvpList = useRsvpServer(editingOrder.id);
 
   const {
@@ -106,9 +94,6 @@ export default function EditOrderModal({
   const handleSaveUpdate = async (e: SyntheticEvent) => {
     e.preventDefault();
 
-    // payment_status SENGAJA tidak di-update dari form ini: perubahan status
-    // pembayaran hanya sah lewat alur pembayaran (webhook Midtrans / aktivasi
-    // pesanan WhatsApp oleh admin) — bukan lewat edit konten undangan.
     const { groom_name, bride_name, wedding_date, slug, template_slug, ...eventDetailsJSON } = editFormData;
     const { payment_status: _ignoredPayment, ...cleanEventDetails } = eventDetailsJSON as Record<string, unknown>;
 
@@ -128,13 +113,13 @@ export default function EditOrderModal({
       .eq("id", editingOrder.id);
 
     if (!error && (count ?? 0) > 0) {
-      toast.success("Berhasil disimpan!");
+      toast.success(t('toast.savedSuccess'));
       onSaved?.();
       fetchData();
     } else if (!error) {
-      toast.error("Tidak ada perubahan yang tersimpan. Muat ulang halaman lalu coba lagi.");
+      toast.error(t('toast.noChangesSaved'));
     } else {
-      toast.error("Gagal update: " + error.message);
+      toast.error(t('toast.saveFailed', { error: error.message }));
     }
   };
 
@@ -143,7 +128,7 @@ export default function EditOrderModal({
   const handleChange = (e: FieldChangeEvent | ChangeEvent<HTMLSelectElement>) =>
     setEditFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }) as OrderEditForm);
 
-  /* ── Delete RSVP (admin-only, konfirmasi + hapus di DB) ─────────────────── */
+  /* ── Delete RSVP ───────────────────────────────────────────────────────── */
 
   const handleDeleteRsvp = (rsvpId: string) =>
     ask("Hapus komentar dari tamu ini?", async () => {
@@ -152,13 +137,12 @@ export default function EditOrderModal({
         .delete({ count: "exact" })
         .eq("id", rsvpId);
       if (!error && (count ?? 0) > 0) {
-        toast.success("Komentar dihapus.");
-        // Server-side list: muat ulang halaman aktif agar data pasti sinkron.
+        toast.success(t('toast.commentDeleted'));
         await rsvpList.refresh();
       } else if (!error) {
-        toast.error("Gagal hapus komentar: tidak ada data yang terhapus.");
+        toast.error(t('toast.commentDeleteNoChange'));
       } else {
-        toast.error("Gagal hapus komentar.");
+        toast.error(t('toast.deleteFailedSimple'));
       }
       closeConfirm();
     });
@@ -173,13 +157,13 @@ export default function EditOrderModal({
           <button
             type="button"
             onClick={onBack ?? (() => setEditingOrder(null))}
-            className="rounded-lg p-1.5 text-stone-500 transition hover:bg-stone-100 hover:text-stone-800"
-            title="Kembali"
+            className="rounded-xl p-1.5 text-stone-500 transition hover:bg-stone-100 hover:text-stone-800"
+            title={t('common.back')}
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div>
-            <h2 className="text-2xl font-bold text-stone-800">Edit Undangan</h2>
+            <h2 className="text-2xl font-bold text-stone-800">{t('admin.editInvitationTitle')}</h2>
             <p className="mt-0.5 text-xs font-mono text-stone-400">ID: {editingOrder.id.slice(0, 12)}…</p>
           </div>
         </div>
@@ -188,29 +172,27 @@ export default function EditOrderModal({
         <div className="mt-5 flex flex-wrap gap-1.5 rounded-2xl border border-[#EBDFCE] bg-[#FAF6EE] p-1.5 w-fit">
           <SubTabButton active={activeSection === "admin"} onClick={() => setActiveSection("admin")}>
             <Users size={15} />
-            <span>Info Pesanan & Acara</span>
+            <span>{t('admin.editTabOrderInfo')}</span>
           </SubTabButton>
 
           <SubTabButton active={activeSection === "guests"} onClick={() => setActiveSection("guests")}>
             <MessageSquare size={15} />
-            <span>Buku Tamu</span>
+            <span>{t('customer.rsvp.title')}</span>
           </SubTabButton>
 
           <SubTabButton active={activeSection === "media"} onClick={() => setActiveSection("media")}>
             <Camera size={15} />
-            <span>Foto & Galeri</span>
+            <span>{t('customer.edit.tabMedia')}</span>
           </SubTabButton>
 
           <SubTabButton active={activeSection === "extra"} onClick={() => setActiveSection("extra")}>
             <CreditCard size={15} />
-            <span>Musik & Rekening</span>
+            <span>{t('customer.edit.tabExtra')}</span>
           </SubTabButton>
         </div>
 
         {/* ─── Tab Contents ──────────────────────────────────────────────── */}
         <div className="mt-6">
-          {/* Tab: Info Pesanan + Detail Acara/Lokasi (digabung — satu tempat
-              untuk data order, acara, lokasi, dan data keluarga) */}
           {activeSection === "admin" && (
             <div className="grid gap-6 lg:grid-cols-2">
               <AdminOrderCard editFormData={editFormData} handleChange={handleChange} templates={templates} />
@@ -218,12 +200,10 @@ export default function EditOrderModal({
             </div>
           )}
 
-          {/* Tab: Buku Tamu (full-width + filter + pagination server-side) */}
           {activeSection === "guests" && (
             <GuestbookSection rsvp={rsvpList} onDelete={handleDeleteRsvp} />
           )}
 
-          {/* Tab: Foto & Galeri */}
           {activeSection === "media" && (
             <div className="grid gap-6 lg:grid-cols-2">
               <PhotosCard
@@ -244,7 +224,6 @@ export default function EditOrderModal({
             </div>
           )}
 
-          {/* Tab: Musik & Rekening */}
           {activeSection === "extra" && (
             <div className="grid gap-6 lg:grid-cols-2">
               <MusicQuoteCard
@@ -273,7 +252,7 @@ export default function EditOrderModal({
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#E59A59] py-3.5 text-base font-bold text-white shadow-md transition hover:bg-[#d48b4b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save size={18} />}
-              {uploading ? "Menyimpan Perubahan..." : "Simpan Perubahan"}
+              {uploading ? t('customer.edit.btnSaving') : t('customer.edit.btnSave')}
             </button>
           </div>
         </div>
@@ -282,7 +261,7 @@ export default function EditOrderModal({
       {/* Dialog Konfirmasi Hapus */}
       <ConfirmDialog
         isOpen={confirmData.show}
-        title="Konfirmasi Hapus"
+        title={t('customer.edit.confirmDeleteTitle')}
         message={confirmData.message}
         isDanger={true}
         onCancel={closeConfirm}
@@ -292,15 +271,14 @@ export default function EditOrderModal({
       {/* Modal Preview Gambar (Lightbox) */}
       <LightboxPreview image={previewImage} onClose={() => setPreviewImage(null)} />
 
-      {/* Modal Crop (foto mempelai & cover) */}
+      {/* Modal Crop */}
       {cropModal}
     </div>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   Admin Order Card (mempelai + orang tua, tanggal, template, slug)
-   Status pembayaran TIDAK diedit di sini — hanya via alur pembayaran.
+   Admin Order Card
    ════════════════════════════════════════════════════════════════════════════ */
 
 function AdminOrderCard({
@@ -312,38 +290,39 @@ function AdminOrderCard({
   handleChange: (e: FieldChangeEvent | ChangeEvent<HTMLSelectElement>) => void;
   templates: TemplateRow[];
 }) {
+  const { t } = useTranslation();
+
   return (
     <section className={CARD}>
-      <CardHeader icon={<Users size={16} />} title="Info Pesanan" />
+      <CardHeader icon={<Users size={16} />} title={t('admin.cardOrderInfo')} />
 
       <div className="grid grid-cols-2 gap-3">
-        {/* Nama mempelai + orang tuanya disatukan per mempelai */}
         <div className="space-y-3">
-          <TextField label="Mempelai Pria" name="groom_name" value={editFormData.groom_name} handleChange={handleChange} />
+          <TextField label={t('order.groomName')} name="groom_name" value={editFormData.groom_name} handleChange={handleChange} />
           <TextField
-            label="Orang Tua Pria"
+            label={t('customer.edit.groomParents')}
             name="groom_parents"
             value={editFormData.groom_parents}
             handleChange={handleChange}
-            placeholder="Bpk. Fulan & Ibu Fulanah"
+            placeholder={t('customer.edit.parentsPlaceholder')}
           />
         </div>
         <div className="space-y-3">
-          <TextField label="Mempelai Wanita" name="bride_name" value={editFormData.bride_name} handleChange={handleChange} />
+          <TextField label={t('order.brideName')} name="bride_name" value={editFormData.bride_name} handleChange={handleChange} />
           <TextField
-            label="Orang Tua Wanita"
+            label={t('customer.edit.brideParents')}
             name="bride_parents"
             value={editFormData.bride_parents}
             handleChange={handleChange}
-            placeholder="Bpk. Fulan & Ibu Fulanah"
+            placeholder={t('customer.edit.parentsPlaceholder')}
           />
         </div>
       </div>
 
-      <DateField label="Tanggal Acara" name="wedding_date" value={editFormData.wedding_date} handleChange={handleChange} />
+      <DateField label={t('order.weddingDate')} name="wedding_date" value={editFormData.wedding_date} handleChange={handleChange} />
 
       <div>
-        <label className={FIELD_LABEL}>Tema Undangan</label>
+        <label className={FIELD_LABEL}>{t('admin.cardTemplateTheme')}</label>
         <select
           name="template_slug"
           value={editFormData.template_slug || ""}
@@ -360,7 +339,7 @@ function AdminOrderCard({
 
       <div>
         <label className={FIELD_LABEL}>
-          Custom Link URL (Slug)
+          {t('admin.cardCustomSlug')}
         </label>
         <input
           name="slug"
@@ -370,7 +349,7 @@ function AdminOrderCard({
           placeholder="misal: romeo-juliet"
         />
         <p className="-mt-1 text-[10px] italic text-amber-600">
-          *Hati-hati! Mengubah slug akan membuat link lama tidak bisa diakses.
+          {t('admin.cardSlugWarning')}
         </p>
       </div>
     </section>
@@ -379,8 +358,6 @@ function AdminOrderCard({
 
 /* ════════════════════════════════════════════════════════════════════════════
    Buku Tamu (Admin-only, sub-tab full-width)
-   Filter (cari/tanggal/kehadiran) + pagination + page-size — semuanya
-   dieksekusi database via useRsvpServer.
    ════════════════════════════════════════════════════════════════════════════ */
 
 type RsvpServerState = ReturnType<typeof useRsvpServer>;
@@ -392,6 +369,7 @@ function GuestbookSection({
   rsvp: RsvpServerState;
   onDelete: (id: string) => void;
 }) {
+  const { t, language } = useTranslation();
   const {
     searchInput, setSearchInput,
     dateInput, setDateInput,
@@ -408,17 +386,15 @@ function GuestbookSection({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar filter — div (BUKAN <form>) karena berada di dalam form
-          Simpan Perubahan; nested form = invalid HTML + Enter bisa memicu save. */}
       <div className="flex flex-col gap-3 rounded-2xl border border-[#EBDFCE] bg-white p-4 shadow-sm md:flex-row md:items-end">
         <div className="min-w-[240px] flex-1">
           <label className={labelCls}>
             <Search size={13} className="text-[#E59A59]" />
-            <span>Cari Tamu</span>
+            <span>{t('customer.rsvp.filterSearchLabel')}</span>
           </label>
           <input
             type="text"
-            placeholder="Nama tamu atau isi pesan..."
+            placeholder={t('customer.rsvp.filterSearchPlaceholder')}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => {
@@ -431,7 +407,7 @@ function GuestbookSection({
         <div className="min-w-[170px]">
           <label className={labelCls}>
             <Calendar size={13} className="text-[#E59A59]" />
-            <span>Filter Tanggal</span>
+            <span>{t('customer.rsvp.filterDateLabel')}</span>
           </label>
           <input
             type="date"
@@ -444,17 +420,17 @@ function GuestbookSection({
         <div className="min-w-[170px]">
           <label className={labelCls}>
             <Users size={13} className="text-[#E59A59]" />
-            <span>Kehadiran</span>
+            <span>{t('customer.rsvp.filterStatusLabel')}</span>
           </label>
           <select
             value={statusInput}
             onChange={(e) => setStatusInput(e.target.value as RsvpStatusFilter)}
             className={inputCls}
           >
-            <option value="all">Semua Kehadiran</option>
-            <option value="hadir">Hadir</option>
-            <option value="tidak_hadir">Tidak Hadir</option>
-            <option value="ragu">Ragu</option>
+            <option value="all">{t('customer.rsvp.statusAll')}</option>
+            <option value="hadir">{t('customer.rsvp.statusAttending')}</option>
+            <option value="tidak_hadir">{t('customer.rsvp.statusNotAttending')}</option>
+            <option value="ragu">{t('customer.rsvp.statusUncertain')}</option>
           </select>
         </div>
 
@@ -466,7 +442,7 @@ function GuestbookSection({
               className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-600 transition hover:bg-rose-100 active:scale-95 whitespace-nowrap"
             >
               <Trash2 size={13} />
-              <span>Reset Filter</span>
+              <span>{t('customer.rsvp.btnResetFilter')}</span>
             </button>
           )}
           <button
@@ -475,42 +451,42 @@ function GuestbookSection({
             className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#E59A59] px-5 text-xs font-bold text-white shadow-sm transition hover:bg-[#d48b4b] active:scale-95 whitespace-nowrap"
           >
             <Search size={13} />
-            <span>Cari</span>
+            <span>{t('customer.rsvp.btnSearch')}</span>
           </button>
         </div>
       </div>
 
-      {/* Statistik (dihitung di database, mengikuti filter aktif) */}
+      {/* Statistik */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Tamu" value={total} labelClass="text-stone-400" valueClass="text-stone-800" />
-        <StatCard label="Hadir" value={hadir} labelClass="text-emerald-600" valueClass="text-emerald-600" />
-        <StatCard label="Tidak Hadir" value={tidakHadir} labelClass="text-rose-500" valueClass="text-rose-500" />
-        <StatCard label="Ragu" value={ragu} labelClass="text-amber-600" valueClass="text-amber-600" />
+        <StatCard label={t('customer.rsvp.statTotal')} value={total} labelClass="text-stone-400" valueClass="text-stone-800" />
+        <StatCard label={t('customer.rsvp.statAttending')} value={hadir} labelClass="text-emerald-600" valueClass="text-emerald-600" />
+        <StatCard label={t('customer.rsvp.statNotAttending')} value={tidakHadir} labelClass="text-rose-500" valueClass="text-rose-500" />
+        <StatCard label={t('customer.rsvp.statUncertain')} value={ragu} labelClass="text-amber-600" valueClass="text-amber-600" />
       </div>
 
-      {/* Tabel komentar — tanpa tombol Balas (admin hanya melihat & menghapus) */}
+      {/* Tabel komentar */}
       <div className="overflow-hidden bg-white rounded-2xl border border-[#EBDFCE] shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-stone-600">
             <thead className="text-[10px] font-bold tracking-wider text-stone-500 bg-[#FAF6EE] border-b border-[#EBDFCE] uppercase">
               <tr>
-                <th className="p-4">Nama Tamu</th>
-                <th className="p-4">Kehadiran</th>
-                <th className="p-4">Pesan & Balasan</th>
-                <th className="p-4 text-center">Aksi</th>
+                <th className="p-4">{t('customer.rsvp.thGuest')}</th>
+                <th className="p-4">{t('customer.rsvp.thStatus')}</th>
+                <th className="p-4">{t('customer.rsvp.thMessage')}</th>
+                <th className="p-4 text-center">{t('customer.rsvp.thAction')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F3EBDF]">
               {loading ? (
                 <tr>
                   <td colSpan={4} className="p-12 text-center text-sm text-stone-400 italic">
-                    Memuat…
+                    {t('common.loading')}
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-12 text-center text-sm text-stone-400 italic">
-                    {hasActiveFilter ? "Tidak ada komentar yang cocok dengan filter." : "Belum ada komentar masuk dari tamu."}
+                    {hasActiveFilter ? t('customer.rsvp.emptyFiltered') : t('customer.rsvp.emptyDefault')}
                   </td>
                 </tr>
               ) : (
@@ -520,7 +496,7 @@ function GuestbookSection({
                       <span className="text-sm font-bold text-stone-800">{rsvp.guest_name}</span>
                       <br />
                       <span className="text-[10px] text-stone-400">
-                        {rsvp.created_at ? new Date(rsvp.created_at).toLocaleDateString("id-ID") : "-"}
+                        {rsvp.created_at ? new Date(rsvp.created_at).toLocaleDateString(language === 'en' ? "en-US" : "id-ID") : "-"}
                       </span>
                     </td>
                     <td className="p-4 align-top whitespace-nowrap">
@@ -529,9 +505,9 @@ function GuestbookSection({
                     <td className="max-w-xs p-4 align-top break-words">
                       <p className="text-sm text-stone-700 italic">&ldquo;{rsvp.message}&rdquo;</p>
                       {rsvp.reply && (
-                        <div className="mt-2 rounded-lg border border-[#EBDFCE] bg-[#FAF6EE] p-2.5">
+                        <div className="mt-2 rounded-xl border border-[#EBDFCE] bg-[#FAF6EE] p-2.5">
                           <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#712E1E]">
-                            Balasan
+                            {t('customer.rsvp.yourReply')}
                           </p>
                           <p className="text-xs text-stone-600">{rsvp.reply}</p>
                         </div>
@@ -541,8 +517,8 @@ function GuestbookSection({
                       <button
                         type="button"
                         onClick={() => onDelete(rsvp.id)}
-                        title="Hapus Komentar"
-                        className="grid h-8 w-8 mx-auto text-red-500 rounded-lg place-items-center transition hover:bg-red-50 hover:text-red-700 active:scale-95"
+                        title={t('customer.rsvp.btnDelete')}
+                        className="grid h-8 w-8 mx-auto text-red-500 rounded-xl place-items-center transition hover:bg-red-50 hover:text-red-700 active:scale-95"
                       >
                         <Trash2 size={15} />
                       </button>
@@ -554,7 +530,7 @@ function GuestbookSection({
           </table>
         </div>
 
-        {/* Pagination server-side — selector 10/25/50 per halaman berfungsi */}
+        {/* Pagination server-side */}
         {!loading && rows.length > 0 && (
           <Pagination
             page={page}
@@ -592,23 +568,25 @@ function StatCard({
 }
 
 function StatusBadge({ status, pax }: { status: RsvpRow["status"]; pax: number }) {
+  const { t } = useTranslation();
+
   if (status === "hadir") {
     return (
       <span className="flex w-fit px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-full items-center gap-1">
-        <CheckCircle2 size={11} /> Hadir ({pax})
+        <CheckCircle2 size={11} /> {t('customer.rsvp.statusAttending')} ({pax})
       </span>
     );
   }
   if (status === "tidak_hadir") {
     return (
       <span className="w-fit px-2.5 py-1 text-xs font-bold text-rose-700 bg-rose-50 rounded-full">
-        Absen
+        {t('customer.rsvp.statusNotAttending')}
       </span>
     );
   }
   return (
     <span className="w-fit px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 rounded-full">
-      Ragu
+      {t('customer.rsvp.statusUncertain')}
     </span>
   );
 }

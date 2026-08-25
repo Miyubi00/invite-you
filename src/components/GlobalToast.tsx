@@ -76,40 +76,64 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     <ToastContext.Provider value={toast}>
       {children}
 
-      {/* Container Alert (Pojok Kanan Atas/Tengah) */}
-      <div className="fixed top-5 right-5 z-[9999] space-y-3 flex flex-col items-end pointer-events-none">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`pointer-events-auto transform transition-all duration-300 animate-slide-in flex items-center gap-3 px-5 py-4 rounded-xl shadow-xl border w-full max-w-sm
-            ${t.type === 'success' ? 'bg-white border-green-200 text-green-700' : ''}
-            ${t.type === 'error' ? 'bg-white border-red-200 text-red-700' : ''}
-            ${t.type === 'warning' ? 'bg-white border-yellow-200 text-yellow-700' : ''}
-            `}
-          >
-            {/* ICON */}
-            <div className={`p-2 rounded-full shrink-0
-              ${t.type === 'success' ? 'bg-green-100' : ''}
-              ${t.type === 'error' ? 'bg-red-100' : ''}
-              ${t.type === 'warning' ? 'bg-yellow-100' : ''}
-            `}>
-              {t.type === 'success' && <CheckCircle className="w-5 h-5" />}
-              {t.type === 'error' && <XCircle className="w-5 h-5" />}
-              {t.type === 'warning' && <AlertTriangle className="w-5 h-5" />}
-            </div>
+      {/* Container Alert (Top Center on Mobile, Top Right on Desktop) */}
+      <div 
+        aria-live="polite"
+        className="fixed top-3 inset-x-3 sm:inset-x-auto sm:right-5 sm:top-5 z-[99999] pointer-events-none flex flex-col items-center sm:items-end space-y-2.5 max-w-md sm:w-auto w-full mx-auto"
+      >
+        {toasts.map((t) => {
+          const isSuccess = t.type === 'success';
+          const isError = t.type === 'error';
+          const isWarning = t.type === 'warning';
 
-            {/* MESSAGE */}
-            <div className="flex-1">
-              <h4 className="font-bold text-sm uppercase tracking-wide">{t.type}</h4>
-              <p className="text-sm opacity-90 font-medium">{t.message}</p>
-            </div>
+          return (
+            <div
+              key={t.id}
+              role="alert"
+              className={`pointer-events-auto transform transition-all duration-300 ease-out flex items-center justify-between gap-3.5 px-4 py-3.5 sm:px-5 sm:py-4 rounded-2xl shadow-2xl border backdrop-blur-md w-full sm:min-w-[320px] sm:max-w-md animate-in fade-in slide-in-from-top-3 ${
+                isSuccess
+                  ? 'bg-white/95 border-emerald-200/80 text-stone-800 shadow-emerald-900/10'
+                  : isError
+                  ? 'bg-white/95 border-rose-200/80 text-stone-800 shadow-rose-900/10'
+                  : 'bg-white/95 border-amber-200/80 text-stone-800 shadow-amber-900/10'
+              }`}
+            >
+              {/* Left Indicator & Icon */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${
+                    isSuccess
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/25'
+                      : isError
+                      ? 'bg-rose-500 text-white shadow-rose-500/25'
+                      : 'bg-amber-500 text-white shadow-amber-500/25'
+                  }`}
+                >
+                  {isSuccess && <CheckCircle className="w-5 h-5 stroke-[2.5]" />}
+                  {isError && <XCircle className="w-5 h-5 stroke-[2.5]" />}
+                  {isWarning && <AlertTriangle className="w-5 h-5 stroke-[2.5]" />}
+                </div>
 
-            {/* CLOSE BUTTON */}
-            <button onClick={() => removeToast(t.id)} className="opacity-50 hover:opacity-100">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+                {/* Message Content */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-semibold text-stone-800 leading-snug break-words">
+                    {t.message}
+                  </p>
+                </div>
+              </div>
+
+              {/* Close Button (Touch Friendly) */}
+              <button
+                type="button"
+                onClick={() => removeToast(t.id)}
+                aria-label="Tutup notifikasi"
+                className="p-1.5 -mr-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100/80 active:scale-95 transition shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );

@@ -13,9 +13,11 @@ import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useToast } from '../components/GlobalToast';
 import { useCopyToClipboard } from './useCopyToClipboard';
 import type { OrderRow } from '../types/database';
+import { useTranslation } from '../i18n';
 
 export function useShareLink(order: OrderRow | null) {
   const toast = useToast();
+  const { t } = useTranslation();
   const copyToClipboard = useCopyToClipboard();
 
   const [shareMode, setShareMode] = useState('manual'); // 'manual' | 'excel'
@@ -38,23 +40,20 @@ Dengan memohon rahmat dan ridho Allah SWT, perkenankan kami mengundang Bapak/Ibu
 dengan
 🤵🏻 *${order.groom_name}*
 
-*Untuk informasi detail mengenai acara, silahkan kunjungi link dibawah ini :*
+Berikut tautan undangan kami untuk informasi lengkap mengenai acara :
 ${link}
 
 Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan untuk hadir dan memberikan doa restu.
-Atas kehadiran dan doa restunya kami ucapkan terima kasih.
-_Wassalamualaikum Warahmatullahi Wabarakaatuh_
 
-Hormat kami,
-*${order.bride_name} & ${order.groom_name}*`;
+_Wassalamualaikum Warahmatullahi Wabarakaatuh_
+`;
   };
 
   const handleShareWa = (name: string) => {
     if (!order) return;
     const link = `${window.location.origin}/wedding/${order.slug}?to=${encodeURIComponent(name)}`;
     const message = generateWaMessage(name, link);
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleGenerateManual = (e: FormEvent<HTMLFormElement>) => {
@@ -63,7 +62,7 @@ Hormat kami,
     if (!guestName) return;
     const link = `${window.location.origin}/wedding/${order.slug}?to=${encodeURIComponent(guestName)}`;
     setGeneratedLink(link);
-    toast.success("Link berhasil dibuat!");
+    toast.success(t('toast.linkCreated'));
   };
 
   // --- SMART CSV PARSER (CSV-only) ---
@@ -80,14 +79,14 @@ Hormat kami,
     // 1. VALIDASI EKSTENSI - hanya .csv
     const fileExt = (file.name.split('.').pop() ?? '').toLowerCase();
     if (fileExt !== 'csv') {
-      toast.error('Hanya file .csv yang didukung. Di Excel: File > Save As > CSV UTF-8.');
+      toast.error(t('toast.csvOnly'));
       return;
     }
 
     // 2. VALIDASI UKURAN
     const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`File terlalu besar. Maksimal ${MAX_FILE_SIZE / (1024 * 1024)}MB. Gunakan file yang lebih kecil atau pisahkan data.`);
+      toast.error(t('toast.fileTooLarge', { max: `${MAX_FILE_SIZE / (1024 * 1024)}MB` }));
       return;
     }
 
@@ -120,7 +119,7 @@ Hormat kami,
         const text = String(evt.target?.result ?? '').replace(/^\uFEFF/, '');
         const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
         if (lines.length === 0) {
-          toast.error("File kosong!");
+          toast.error(t('toast.fileEmpty'));
           return;
         }
 
@@ -168,18 +167,18 @@ Hormat kami,
 
         if (guests.length > 0) {
           setExcelGuests(guests);
-          toast.success(`Berhasil memuat ${guests.length} tamu!`);
+          toast.success(t('toast.guestsLoaded', { count: guests.length }));
         } else {
-          toast.error("Tidak ditemukan data nama tamu yang valid.");
+          toast.error(t('toast.noValidGuests'));
         }
       } catch (error) {
         console.error("CSV parsing error:", error);
-        toast.error("Gagal membaca file CSV. Pastikan format file benar.");
+        toast.error(t('toast.csvReadFailed'));
       }
     };
 
     reader.onerror = () => {
-      toast.error("Gagal membaca file. Silakan coba lagi.");
+      toast.error(t('toast.fileReadError'));
     };
 
     reader.readAsText(file, 'utf-8');

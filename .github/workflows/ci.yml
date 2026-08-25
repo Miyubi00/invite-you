@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  frontend:
+    name: Frontend (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (vitest)
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+  edge-functions:
+    name: Supabase Edge Functions (deno test + check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Unit test (_shared helpers)
+        run: deno test --allow-all supabase/functions/_shared/midtrans.test.ts
+
+      - name: Type-check semua Edge Functions
+        run: deno check \
+          supabase/functions/create-order/index.ts \
+          supabase/functions/customer-login/index.ts \
+          supabase/functions/midtrans-webhook/index.ts \
+          supabase/functions/payment-status/index.ts \
+          supabase/functions/activate-pending-order/index.ts \
+          supabase/functions/r2-upload/index.ts \
+          supabase/functions/r2-upload-url/index.ts \
+          supabase/functions/r2-delete/index.ts

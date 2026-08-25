@@ -25,6 +25,7 @@ import RsvpReplyModal from "./RsvpReplyModal";
 import { useRsvpServer, type RsvpStatusFilter } from "../../hooks/useRsvpServer";
 import { useRsvpTools } from "../../hooks/useRsvpTools";
 import type { RsvpRow } from "../../types/database";
+import { useTranslation } from "../../i18n";
 
 interface RsvpTabProps {
   /** Order ID pemilik buku tamu (dari route /dashboard/:orderId). */
@@ -40,8 +41,7 @@ const LABEL_CLASS =
   "mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#712E1E]";
 
 export default function RsvpTab({ orderId }: RsvpTabProps) {
-  // --- RSVP SERVER-SIDE: filter + pagination + statistik dieksekusi database.
-  // Komponen ini self-contained — cukup menerima orderId dari route.
+  const { t, language } = useTranslation();
   const rsvp = useRsvpServer(orderId);
   const tools = useRsvpTools(orderId, {
     refresh: rsvp.refresh,
@@ -72,9 +72,9 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
       {/* Header + Export */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-stone-800">Buku Tamu</h2>
+          <h2 className="text-2xl font-bold text-stone-800">{t('customer.rsvp.title')}</h2>
           <p className="mt-1 text-sm text-stone-500">
-            Kelola ucapan dan konfirmasi kehadiran tamu.
+            {t('customer.rsvp.desc')}
           </p>
         </div>
 
@@ -84,11 +84,11 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
           className="flex px-4 py-2.5 text-xs font-bold text-[#712E1E] bg-white rounded-xl border border-[#EBDFCE] shadow-sm items-center justify-center gap-2 self-start transition hover:bg-[#FAF6EE] active:scale-95 sm:self-auto"
         >
           <Download size={15} />
-          <span>Export Excel</span>
+          <span>{t('customer.rsvp.btnExport')}</span>
         </button>
       </div>
 
-      {/* Toolbar Filter — filter baru aktif setelah tekan Cari / Enter */}
+      {/* Toolbar Filter */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -100,13 +100,13 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
         <div className="min-w-[240px] flex-1">
           <label className={LABEL_CLASS}>
             <Search size={13} className="text-[#E59A59]" />
-            <span>Cari Tamu</span>
+            <span>{t('customer.rsvp.filterSearchLabel')}</span>
           </label>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
-              placeholder="Nama tamu atau isi pesan..."
+              placeholder={t('customer.rsvp.filterSearchPlaceholder')}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className={`${INPUT_CLASS} pl-9`}
@@ -118,7 +118,7 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
         <div className="min-w-[170px]">
           <label className={LABEL_CLASS}>
             <Calendar size={13} className="text-[#E59A59]" />
-            <span>Filter Tanggal</span>
+            <span>{t('customer.rsvp.filterDateLabel')}</span>
           </label>
           <input
             type="date"
@@ -132,17 +132,17 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
         <div className="min-w-[170px]">
           <label className={LABEL_CLASS}>
             <Users size={13} className="text-[#E59A59]" />
-            <span>Kehadiran</span>
+            <span>{t('customer.rsvp.filterStatusLabel')}</span>
           </label>
           <select
             value={statusInput}
             onChange={(e) => setStatusInput(e.target.value as StatusFilter)}
             className={INPUT_CLASS}
           >
-            <option value="all">Semua Kehadiran</option>
-            <option value="hadir">Hadir</option>
-            <option value="tidak_hadir">Tidak Hadir</option>
-            <option value="ragu">Ragu</option>
+            <option value="all">{t('customer.rsvp.statusAll')}</option>
+            <option value="hadir">{t('customer.rsvp.statusAttending')}</option>
+            <option value="tidak_hadir">{t('customer.rsvp.statusNotAttending')}</option>
+            <option value="ragu">{t('customer.rsvp.statusUncertain')}</option>
           </select>
         </div>
 
@@ -155,7 +155,7 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
               className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 text-xs font-bold text-rose-600 transition hover:bg-rose-100 active:scale-95 whitespace-nowrap"
             >
               <Trash2 size={13} />
-              <span>Reset Filter</span>
+              <span>{t('customer.rsvp.btnResetFilter')}</span>
             </button>
           )}
           <button
@@ -163,33 +163,33 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
             className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#E59A59] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#d48b4b] active:scale-95 whitespace-nowrap"
           >
             <Search size={13} />
-            <span>Cari</span>
+            <span>{t('customer.rsvp.btnSearch')}</span>
           </button>
         </div>
       </form>
 
-      {/* Statistik Card (mengikuti hasil filter — dihitung di database) */}
+      {/* Statistik Card */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Total Tamu"
+          label={t('customer.rsvp.statTotal')}
           value={total}
           labelClass="text-stone-400"
           valueClass="text-stone-800"
         />
         <StatCard
-          label="Hadir"
+          label={t('customer.rsvp.statAttending')}
           value={hadir}
           labelClass="text-emerald-600"
           valueClass="text-emerald-600"
         />
         <StatCard
-          label="Tidak Hadir"
+          label={t('customer.rsvp.statNotAttending')}
           value={tidakHadir}
           labelClass="text-rose-500"
           valueClass="text-rose-500"
         />
         <StatCard
-          label="Ragu"
+          label={t('customer.rsvp.statUncertain')}
           value={ragu}
           labelClass="text-amber-600"
           valueClass="text-amber-600"
@@ -202,23 +202,23 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
           <table className="w-full text-left text-sm text-stone-600">
             <thead className="text-[10px] font-bold tracking-wider text-stone-500 bg-[#FAF6EE] border-b border-[#EBDFCE] uppercase">
               <tr>
-                <th className="p-4">Nama Tamu</th>
-                <th className="p-4">Kehadiran</th>
-                <th className="p-4">Pesan & Balasan</th>
-                <th className="p-4 text-center">Aksi</th>
+                <th className="p-4">{t('customer.rsvp.thGuest')}</th>
+                <th className="p-4">{t('customer.rsvp.thStatus')}</th>
+                <th className="p-4">{t('customer.rsvp.thMessage')}</th>
+                <th className="p-4 text-center">{t('customer.rsvp.thAction')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F3EBDF]">
               {loading ? (
                 <tr>
                   <td colSpan={4} className="p-12 text-center text-sm text-stone-400 italic">
-                    Memuat…
+                    {t('common.loading')}
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="p-12 text-center text-sm text-stone-400 italic">
-                    {hasActiveFilter ? "Tidak ada data ditemukan." : "Belum ada data ucapan."}
+                    {hasActiveFilter ? t('customer.rsvp.emptyFiltered') : t('customer.rsvp.emptyDefault')}
                   </td>
                 </tr>
               ) : (
@@ -231,7 +231,7 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
                     <br />
                     <span className="text-[10px] text-stone-400">
                       {rsvp.created_at
-                        ? new Date(rsvp.created_at).toLocaleDateString("id-ID")
+                        ? new Date(rsvp.created_at).toLocaleDateString(language === 'en' ? "en-US" : "id-ID")
                         : "-"}
                     </span>
                   </td>
@@ -243,9 +243,9 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
                       "{rsvp.message}"
                     </p>
                     {rsvp.reply && (
-                      <div className="mt-2 p-2 text-xs text-stone-600 bg-[#FAF6EE] rounded-lg border border-[#EBDFCE] break-words">
+                      <div className="mt-2 p-2 text-xs text-stone-600 bg-[#FAF6EE] rounded-xl border border-[#EBDFCE] break-words">
                         <span className="block mb-0.5 font-bold text-[#712E1E]">
-                          Balasan Anda:
+                          {t('customer.rsvp.yourReply')}
                         </span>
                         {rsvp.reply}
                       </div>
@@ -262,17 +262,17 @@ export default function RsvpTab({ orderId }: RsvpTabProps) {
                           }));
                           setActiveReplyModal(rsvp);
                         }}
-                        className="flex px-3 py-1.5 text-xs font-bold text-[#712E1E] bg-[#FAF6EE] rounded-lg border border-[#EBDFCE] items-center gap-1.5 transition hover:bg-[#F3EBDF] active:scale-95"
+                        className="flex px-3 py-1.5 text-xs font-bold text-[#712E1E] bg-[#FAF6EE] rounded-xl border border-[#EBDFCE] items-center gap-1.5 transition hover:bg-[#F3EBDF] active:scale-95"
                       >
                         <MessageSquareReply size={13} />
-                        <span>{rsvp.reply ? "Edit" : "Balas"}</span>
+                        <span>{rsvp.reply ? t('customer.rsvp.btnEditReply') : t('customer.rsvp.btnReply')}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleDeleteRsvp(rsvp.id)}
-                        title="Hapus data"
-                        className="grid h-8 w-8 text-red-500 rounded-lg place-items-center transition hover:bg-red-50 hover:text-red-700 active:scale-95"
+                        title={t('customer.rsvp.btnDelete')}
+                        className="grid h-8 w-8 text-red-500 rounded-xl place-items-center transition hover:bg-red-50 hover:text-red-700 active:scale-95"
                       >
                         <Trash2 size={15} />
                       </button>
@@ -342,23 +342,25 @@ function StatusBadge({
   status: RsvpRow["status"];
   pax: number;
 }) {
+  const { t } = useTranslation();
+
   if (status === "hadir") {
     return (
       <span className="flex w-fit px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-full items-center gap-1">
-        <CheckCircle2 size={11} /> Hadir ({pax})
+        <CheckCircle2 size={11} /> {t('customer.rsvp.statusAttending')} ({pax})
       </span>
     );
   }
   if (status === "tidak_hadir") {
     return (
       <span className="w-fit px-2.5 py-1 text-xs font-bold text-rose-700 bg-rose-50 rounded-full">
-        Absen
+        {t('customer.rsvp.statusNotAttending')}
       </span>
     );
   }
   return (
     <span className="w-fit px-2.5 py-1 text-xs font-bold text-amber-700 bg-amber-50 rounded-full">
-      Ragu
+      {t('customer.rsvp.statusUncertain')}
     </span>
   );
 }

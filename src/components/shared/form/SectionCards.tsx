@@ -6,10 +6,6 @@
 // Keterikatan : ./FormKit, ./ui, types/database, hooks/useEditActions (PhotoField)
 // ============================================================
 
-// Kartu-kartu section form bersama (Lokasi, Keluarga, Foto, Galeri,
-// Musik & Kutipan, Rekening) untuk Dashboard mempelai dan Admin Panel.
-// Menerima data generik ber-shape EventDetails + handler perubahan.
-
 import type { ChangeEvent } from "react";
 import {
   Camera,
@@ -32,6 +28,7 @@ import {
 } from "./FormKit";
 import type { BankAccount, EventDetails } from "../../../types/database";
 import type { PhotoField } from "../../../hooks/useEditActions";
+import { useTranslation } from "../../../i18n";
 
 export type FieldChangeEvent = ChangeEvent<
   HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -51,50 +48,52 @@ interface DataCardProps {
 /* ------------------------------ Lokasi & Waktu ----------------------------- */
 
 export function LocationCard({ data, handleChange }: DataCardProps) {
+  const { t } = useTranslation();
+
   return (
     <section className={CARD}>
-      <CardHeader icon={<MapPin size={16} />} title="Lokasi & Waktu" />
+      <CardHeader icon={<MapPin size={16} />} title={t('customer.edit.cardLocation')} />
       <input
         name="venue_name"
         value={data.venue_name || ""}
         onChange={handleChange}
         className={INPUT}
-        placeholder="Nama Gedung / Tempat"
+        placeholder={t('customer.edit.venueName')}
       />
       <textarea
         name="venue_address"
         value={data.venue_address || ""}
         onChange={handleChange}
         className={`${INPUT} h-24 resize-none`}
-        placeholder="Alamat Lengkap"
+        placeholder={t('customer.edit.venueAddress')}
       />
       <input
         name="maps_link"
         value={data.maps_link || ""}
         onChange={handleChange}
         className={INPUT}
-        placeholder="Link Google Maps"
+        placeholder={t('customer.edit.mapsLink')}
       />
       <div className="grid grid-cols-2 gap-3">
         <DateField
-          label="Tgl Akad"
+          label={t('customer.edit.akadDate')}
           name="akad_date"
           value={data.akad_date}
           handleChange={handleChange}
         />
         <DateField
-          label="Tgl Resepsi"
+          label={t('customer.edit.resepsiDate')}
           name="resepsi_date"
           value={data.resepsi_date}
           handleChange={handleChange}
         />
       </div>
       <p className="-mt-3 text-xs italic text-stone-400">
-        *Kosongkan = tanggal utama pernikahan
+        {t('customer.edit.dateHint')}
       </p>
       <div className="grid grid-cols-2 gap-3">
         <TextField
-          label="Jam Akad"
+          label={t('customer.edit.akadTime')}
           name="akad_time"
           value={data.akad_time}
           handleChange={handleChange}
@@ -102,7 +101,7 @@ export function LocationCard({ data, handleChange }: DataCardProps) {
           centered
         />
         <TextField
-          label="Jam Resepsi"
+          label={t('customer.edit.resepsiTime')}
           name="resepsi_time"
           value={data.resepsi_time}
           handleChange={handleChange}
@@ -115,26 +114,26 @@ export function LocationCard({ data, handleChange }: DataCardProps) {
 }
 
 /* ------------------------------- Keluarga ---------------------------------- */
-// Dipakai customer dashboard (EditTab); di admin panel field orang tua
-// digabung langsung di bawah masing-masing mempelai (lihat AdminOrderCard).
 
 export function FamilyCard({ data, handleChange }: DataCardProps) {
+  const { t } = useTranslation();
+
   return (
     <section className={CARD}>
-      <CardHeader icon={<Users size={16} />} title="Data Keluarga" />
+      <CardHeader icon={<Users size={16} />} title={t('customer.edit.cardFamily')} />
       <TextField
-        label="Orang Tua Pria"
+        label={t('customer.edit.groomParents')}
         name="groom_parents"
         value={data.groom_parents}
         handleChange={handleChange}
-        placeholder="Bpk. Fulan & Ibu Fulanah"
+        placeholder={t('customer.edit.parentsPlaceholder')}
       />
       <TextField
-        label="Orang Tua Wanita"
+        label={t('customer.edit.brideParents')}
         name="bride_parents"
         value={data.bride_parents}
         handleChange={handleChange}
-        placeholder="Bpk. Fulan & Ibu Fulanah"
+        placeholder={t('customer.edit.parentsPlaceholder')}
       />
     </section>
   );
@@ -157,69 +156,69 @@ export function PhotosCard({
   onPreview: (url: string, title: string) => void;
   onRemovePhoto: (field: PhotoField, label: string) => void;
 }) {
+  const { t } = useTranslation();
   const isGroomUploading = isUploading && activeUploadField === "groom_photo";
   const isBrideUploading = isUploading && activeUploadField === "bride_photo";
   const isCoverUploading = isUploading && activeUploadField === "cover_photo";
 
   return (
     <section className={CARD}>
-      <CardHeader icon={<Camera size={16} />} title="Foto Mempelai & Cover" />
+      <CardHeader icon={<Camera size={16} />} title={t('customer.edit.cardPhotos')} />
 
       <div className="grid grid-cols-2 gap-4">
         <PhotoPicker
-          label="Mempelai Pria"
+          label={t('customer.edit.groomPhoto')}
           src={data.groom_photo}
-          alt="Foto Pria"
+          alt={t('customer.edit.groomPhoto')}
           uploading={isGroomUploading}
           onPick={(e) => handleFileUpload(e, "groom_photo")}
           onPreview={() =>
             data.groom_photo &&
-            onPreview(data.groom_photo, "Foto Mempelai Pria")
+            onPreview(data.groom_photo, t('customer.edit.groomPhoto'))
           }
-          onRemove={() => onRemovePhoto("groom_photo", "Foto Mempelai Pria")}
+          onRemove={() => onRemovePhoto("groom_photo", t('customer.edit.groomPhoto'))}
         />
         <PhotoPicker
-          label="Mempelai Wanita"
+          label={t('customer.edit.bridePhoto')}
           src={data.bride_photo}
-          alt="Foto Wanita"
+          alt={t('customer.edit.bridePhoto')}
           uploading={isBrideUploading}
           onPick={(e) => handleFileUpload(e, "bride_photo")}
           onPreview={() =>
             data.bride_photo &&
-            onPreview(data.bride_photo, "Foto Mempelai Wanita")
+            onPreview(data.bride_photo, t('customer.edit.bridePhoto'))
           }
-          onRemove={() => onRemovePhoto("bride_photo", "Foto Mempelai Wanita")}
+          onRemove={() => onRemovePhoto("bride_photo", t('customer.edit.bridePhoto'))}
         />
       </div>
 
       <div className="mt-2 space-y-2">
         <div className="flex items-center justify-between">
-          <span className={FIELD_LABEL}>Foto Sampul (Cover Banner)</span>
+          <span className={FIELD_LABEL}>{t('customer.edit.coverBanner')}</span>
           {data.cover_photo && (
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() =>
                   data.cover_photo &&
-                  onPreview(data.cover_photo, "Foto Sampul (Cover)")
+                  onPreview(data.cover_photo, t('customer.edit.coverBanner'))
                 }
                 className="flex items-center gap-1 text-xs font-semibold text-[#712E1E] transition hover:underline"
               >
-                <Eye size={13} /> Lihat
+                <Eye size={13} /> {t('common.view')}
               </button>
               <span className="text-stone-300">•</span>
               <button
                 type="button"
-                onClick={() => onRemovePhoto("cover_photo", "Foto Sampul")}
+                onClick={() => onRemovePhoto("cover_photo", t('customer.edit.coverBanner'))}
                 className="flex items-center gap-1 text-xs font-semibold text-rose-500 transition hover:underline"
               >
-                <Trash2 size={13} /> Hapus
+                <Trash2 size={13} /> {t('common.delete')}
               </button>
             </div>
           )}
         </div>
 
-        {/* Tambahkan flex-col & gap-3 pada container di bawah ini */}
         <div className="group relative flex h-40 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-dashed border-stone-300 bg-[#FAF6EE] transition hover:border-[#E59A59]">
           {data.cover_photo ? (
             <>
@@ -234,13 +233,13 @@ export function PhotosCard({
             <div className="flex flex-col items-center gap-1.5 text-stone-400">
               <Camera size={26} />
               <span className="text-xs font-medium">
-                Belum ada foto banner cover
+                {t('customer.edit.noCover')}
               </span>
             </div>
           )}
 
           <label className="relative z-10 cursor-pointer rounded-xl bg-white/90 px-4 py-2 text-xs font-bold text-stone-700 shadow-md backdrop-blur-sm transition hover:scale-105 hover:bg-white active:scale-95">
-            {data.cover_photo ? "Ganti Banner Cover" : "Upload Banner Cover"}
+            {data.cover_photo ? t('customer.edit.btnChangeCover') : t('customer.edit.btnUploadCover')}
             <input
               type="file"
               accept="image/*"
@@ -276,14 +275,16 @@ export function GalleryCard({
   onRequestRemove: (index: number) => void;
   onPreview: (url: string, title: string) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <section className={CARD}>
       <CardHeader
         icon={<ImagePlus size={16} />}
-        title="Galeri Foto"
+        title={t('customer.edit.cardGallery')}
         action={
           <span className="text-xs font-semibold text-stone-400">
-            {gallery.length} Foto
+            {t('customer.edit.galleryCount', { count: gallery.length })}
           </span>
         }
       />
@@ -295,7 +296,7 @@ export function GalleryCard({
           <ImagePlus size={18} />
         )}
         <span>
-          {isUploading ? "Mengunggah ke Galeri..." : "Upload Foto ke Galeri"}
+          {isUploading ? t('customer.edit.btnUploadingGallery') : t('customer.edit.btnUploadGallery')}
         </span>
         <input
           type="file"
@@ -309,7 +310,7 @@ export function GalleryCard({
 
       {gallery.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-stone-200 py-10 text-center text-xs italic text-stone-400">
-          Belum ada koleksi foto galeri yang diunggah.
+          {t('customer.edit.galleryEmpty')}
         </div>
       ) : (
         <div className="grid max-h-[380px] grid-cols-3 gap-3 overflow-y-auto pr-1">
@@ -328,7 +329,7 @@ export function GalleryCard({
                 <button
                   type="button"
                   onClick={() => onPreview(url, `Foto Galeri #${idx + 1}`)}
-                  title="Lihat Foto"
+                  title={t('common.view')}
                   className="grid h-8 w-8 place-items-center rounded-xl bg-white/25 text-white backdrop-blur-sm transition hover:bg-white/40 hover:scale-110 active:scale-95"
                 >
                   <Eye size={15} />
@@ -336,7 +337,7 @@ export function GalleryCard({
                 <button
                   type="button"
                   onClick={() => onRequestRemove(idx)}
-                  title="Hapus Foto"
+                  title={t('common.delete')}
                   className="grid h-8 w-8 place-items-center rounded-xl bg-rose-500/80 text-white backdrop-blur-sm transition hover:bg-rose-600 hover:scale-110 active:scale-95"
                 >
                   <Trash2 size={15} />
@@ -364,29 +365,26 @@ export function MusicQuoteCard({
   data: Partial<EventDetails>;
   handleChange: (e: FieldChangeEvent) => void;
   handleFileUpload: UploadHandler;
-  /** Sedang konversi WebM setelah file dipilih. */
   converting?: boolean;
-  /** Progres konversi dalam persen (bila sedang berlangsung). */
   convertPercent?: number | null;
-  /** Sedang menghapus musik (DB + bucket). */
   removing?: boolean;
-  /** Bila disediakan, tombol Hapus muncul saat musik terpasang. */
   onRemoveMusic?: () => Promise<void> | void;
 }) {
+  const { t } = useTranslation();
   const hasMusic = Boolean(data.audio_url);
   const busy = converting || removing;
 
   const statusText = converting
-    ? `Mengonversi musik${typeof convertPercent === 'number' ? ` ${convertPercent}%` : ''}, harap tunggu...`
+    ? t('customer.edit.musicConverting', { percent: convertPercent ?? 0 })
     : removing
-      ? 'Menghapus musik, harap tunggu...'
+      ? t('customer.edit.musicRemoving')
       : hasMusic
-        ? 'Musik Terpasang'
-        : 'Belum ada musik';
+        ? t('customer.edit.musicInstalled')
+        : t('customer.edit.musicNone');
 
   return (
     <section className={CARD}>
-      <CardHeader icon={<Music size={16} />} title="Musik & Kutipan" />
+      <CardHeader icon={<Music size={16} />} title={t('customer.edit.cardMusicQuote')} />
       <div className="flex items-center gap-3 rounded-xl border border-[#EBDFCE] bg-[#FAF6EF] p-3">
         <div className="min-w-0 flex-1">
           <p className={`text-xs font-bold ${converting || removing ? 'text-stone-400 italic' : 'text-stone-700'}`}>
@@ -397,39 +395,38 @@ export function MusicQuoteCard({
           )}
         </div>
 
-        {/* Aksi */}
         {hasMusic ? (
           onRemoveMusic && (
             <button
               type="button"
               onClick={() => void onRemoveMusic()}
               disabled={busy}
-              title="Hapus musik dari database & storage"
-              className="shrink-0 cursor-pointer rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-60 disabled:cursor-wait flex items-center gap-1.5"
+              title={t('common.delete')}
+              className="shrink-0 cursor-pointer rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-60 disabled:cursor-wait flex items-center gap-1.5"
             >
               {removing ? (
                 <>
-                  <Loader2 size={13} className="animate-spin" /> Menghapus...
+                  <Loader2 size={13} className="animate-spin" /> {t('customer.edit.btnRemovingMusic') || t('common.loading')}
                 </>
               ) : (
                 <>
-                  <Trash2 size={13} /> Hapus
+                  <Trash2 size={13} /> {t('common.delete')}
                 </>
               )}
             </button>
           )
         ) : (
           <label
-            className={`shrink-0 cursor-pointer rounded-lg bg-[#E59A59] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#d48b4b] flex items-center gap-1.5 ${
+            className={`shrink-0 cursor-pointer rounded-xl bg-[#E59A59] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#d48b4b] flex items-center gap-1.5 ${
               converting ? 'opacity-70 cursor-wait' : ''
             }`}
           >
             {converting ? (
               <>
-                <Loader2 size={13} className="animate-spin" /> Mengonversi...
+                <Loader2 size={13} className="animate-spin" /> {t('customer.edit.btnConvertingMusic')}
               </>
             ) : (
-              'Unggah Musik'
+              t('customer.edit.btnUploadMusic')
             )}
             <input
               type="file"
@@ -442,20 +439,20 @@ export function MusicQuoteCard({
         )}
       </div>
       <div className="space-y-1">
-        <label className={FIELD_LABEL}>Kutipan Undangan</label>
+        <label className={FIELD_LABEL}>{t('customer.edit.quoteLabel')}</label>
         <textarea
           name="quote"
           value={data.quote || ""}
           onChange={handleChange}
           className={`${INPUT} h-20 resize-none`}
-          placeholder="Tulis kutipan / doa..."
+          placeholder={t('customer.edit.quotePlaceholder')}
         />
         <input
           name="quote_src"
           value={data.quote_src || ""}
           onChange={handleChange}
           className={`${INPUT} mt-2`}
-          placeholder="Sumber (misal: Q.S Ar-Rum: 21)"
+          placeholder={t('customer.edit.quoteSrcPlaceholder')}
         />
       </div>
     </section>
@@ -475,24 +472,26 @@ export function BanksCard({
   onUpdate: (index: number, field: keyof BankAccount, value: string) => void;
   onRequestRemove: (index: number) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <section className={CARD}>
       <CardHeader
         icon={<CreditCard size={16} />}
-        title="Rekening Amplop Digital"
+        title={t('customer.edit.cardBanks')}
         action={
           <button
             type="button"
             onClick={onAdd}
-            className="rounded-lg bg-[#712E1E] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#8a4030]"
+            className="rounded-xl bg-[#712E1E] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition hover:bg-[#8a4030]"
           >
-            + Tambah
+            {t('customer.edit.btnAddBank')}
           </button>
         }
       />
       {banks.length === 0 && (
         <p className="text-xs italic text-stone-400 py-2">
-          Belum ada data rekening.
+          {t('customer.edit.banksEmpty')}
         </p>
       )}
       {banks.map((bank, idx) => (
@@ -511,18 +510,18 @@ export function BanksCard({
             <BankInput
               value={bank.bank}
               onChange={(v) => onUpdate(idx, "bank", v)}
-              placeholder="Bank"
+              placeholder={t('customer.edit.bankNamePlaceholder')}
             />
             <BankInput
               value={bank.number}
               onChange={(v) => onUpdate(idx, "number", v)}
-              placeholder="No. Rek"
+              placeholder={t('customer.edit.bankNumberPlaceholder')}
               mono
             />
             <BankInput
               value={bank.name}
               onChange={(v) => onUpdate(idx, "name", v)}
-              placeholder="A/N"
+              placeholder={t('customer.edit.bankOwnerPlaceholder')}
             />
           </div>
         </div>

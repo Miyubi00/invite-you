@@ -22,6 +22,7 @@ import { clearCustomerToken } from "../lib/customerClient";
 import { useToast } from "../components/GlobalToast";
 import { escapeIlike } from "./useRsvpServer";
 import type { OrderRow, PendingOrderRow, TemplateRow } from "../types/database";
+import { useTranslation } from "../i18n";
 
 export type OrderPaymentFilter = "all" | "success" | "pending" | "failed";
 
@@ -131,15 +132,16 @@ export function useAdminCatalog() {
  * WIB, status bayar) + pagination (.range + count exact) — menggantikan
  * fetch 1000 baris + filter client-side. Pola sama dengan useRsvpServer.
  */
-export function useOrdersPaged(initialPageSize = 10) {
+export function useOrdersPaged(initialPageSize = 25) {
   const toast = useToast();
+  const { t } = useTranslation();
 
-  // --- Draft filter (aktif setelah Cari / Enter) ---
+  // --- Draft filter ---
   const [searchInput, setSearchInput] = useState("");
   const [dateInput, setDateInput] = useState("");
   const [paymentInput, setPaymentInput] = useState<OrderPaymentFilter>("all");
 
-  // --- Applied filter (sumber kebenaran query) ---
+  // --- Applied filter ---
   const [applied, setApplied] = useState<{
     search: string;
     date: string;
@@ -150,32 +152,27 @@ export function useOrdersPaged(initialPageSize = 10) {
   const [pageSize, setPageSizeState] = useState(initialPageSize);
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const buildQuery = useCallback(
-    (opts: { headOnly?: boolean; offset?: number; limit?: number }) => {
+    async ({ offset, limit }: { offset: number; limit: number }) => {
       let q = supabase
         .from("orders")
-        .select(opts.headOnly ? "id" : "*", { count: "exact", head: opts.headOnly ?? false });
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false });
 
       if (applied.search) {
-        const esc = escapeIlike(applied.search).replace(/"/g, '""');
-        q = q.or(
-          `groom_name.ilike."%${esc}%",bride_name.ilike."%${esc}%",slug.ilike."%${esc}%"`,
-        );
+        const safe = `%${escapeIlike(applied.search)}%`;
+        q = q.or(`groom_name.ilike.${safe},bride_name.ilike.${safe}`);
       }
-      if (applied.payment !== "all") q = q.eq("payment_status", applied.payment);
       if (applied.date) {
-        // WIB eksplisit — konsisten dengan filter buku tamu.
-        q = q
-          .gte("created_at", `${applied.date}T00:00:00+07:00`)
-          .lte("created_at", `${applied.date}T23:59:59.999+07:00`);
+        q = q.eq("wedding_date", applied.date);
+      }
+      if (applied.payment !== "all") {
+        q = q.eq("payment_status", applied.payment);
       }
 
-      q = q.order("created_at", { ascending: false });
-      if (typeof opts.offset === "number" && typeof opts.limit === "number") {
-        q = q.range(opts.offset, opts.offset + opts.limit - 1);
-      }
+      q = q.range(offset, offset + limit - 1);
       return q;
     },
     [applied],
@@ -193,11 +190,11 @@ export function useOrdersPaged(initialPageSize = 10) {
       setTotal(count ?? 0);
     } catch (e) {
       console.error("[useOrdersPaged] Gagal memuat pesanan:", e);
-      toast.error("Gagal memuat data pesanan. Coba muat ulang halaman.");
+      toast.error(t("toast.adminLoadOrdersFailed"));
     } finally {
       setLoading(false);
     }
-  }, [buildQuery, page, pageSize, toast]);
+  }, [buildQuery, page, pageSize, toast, t]);
 
   useEffect(() => {
     let cancelled = false;

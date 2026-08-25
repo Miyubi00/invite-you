@@ -26,6 +26,7 @@ import ImageCropModal, { type CropAreaPixels } from '../components/shared/ImageC
 import { processImage, type CropRect } from '../utils/imageProcessing';
 import { convertToWebMAudio } from '../utils/audioProcessing';
 import type { EventDetails } from '../types/database';
+import { useTranslation } from '../i18n';
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 
@@ -60,6 +61,7 @@ export function useFileUpload<T extends UploadData>(
   getFormData?: () => T | undefined,
 ) {
   const toast = useToast();
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [converting, setConverting] = useState(false);
   const [convertPercent, setConvertPercent] = useState<number | null>(null);
@@ -143,8 +145,8 @@ export function useFileUpload<T extends UploadData>(
     // (browser tidak menembakkan event change untuk path file identik).
     e.target.value = '';
     if (!originalFile) return;
-    if (!orderId) return toast.error('Sesi pesanan tidak ditemukan. Muat ulang halaman.');
-    if (originalFile.size > MAX_FILE_SIZE) return toast.error('Ukuran file maksimal 8MB.');
+    if (!orderId) return toast.error(t('toast.sessionNotFound'));
+    if (originalFile.size > MAX_FILE_SIZE) return toast.error(t('toast.maxFileSize8MB'));
 
     const isAudio = fieldName === 'audio_url' || originalFile.type.startsWith('audio/');
     const cropRule = !isAudio ? CROP_RULES[String(fieldName)] : undefined;
@@ -172,7 +174,7 @@ export function useFileUpload<T extends UploadData>(
             `[AudioConvert] Output ${(result.blob.size / 1024).toFixed(0)}KB audio/webm.`,
           );
         } else {
-          toast.warning(`Konversi musik dilewati (${result.reason}) — file asli digunakan.`);
+          toast.warning(t('toast.musicConvertSkipped', { reason: result.reason }));
         }
       } finally {
         setConverting(false);
@@ -278,19 +280,19 @@ export function useFileUpload<T extends UploadData>(
       if (autoSave) {
         const saved = await persistUrl(fieldName, publicUrl, isGallery);
         if (saved) {
-          toast.success(isGallery ? 'Foto ditambahkan & tersimpan.' : 'Berhasil diunggah & tersimpan.');
+          toast.success(isGallery ? t('toast.galleryAddedSaved') : t('toast.uploadSuccessSaved'));
         } else {
-          toast.warning('Terunggah, namun belum tersimpan - klik Simpan Perubahan untuk mencoba lagi.');
+          toast.warning(t('toast.uploadedNotSaved'));
         }
       } else {
-        toast.success(isGallery ? 'Foto ditambahkan!' : 'Upload berhasil!');
+        toast.success(isGallery ? t('toast.galleryAdded') : t('toast.uploadSuccess'));
       }
 
       // --- Bersihkan file lama yang digantikan ---
       void cleanupOldObjects(previousUrls);
     } catch (err) {
       console.error('[Upload] Error:', err);
-      toast.error('Gagal upload: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui.'));
+      toast.error(t('toast.uploadFailed', { error: err instanceof Error ? err.message : 'Unknown error' }));
     } finally {
       setUploading(false);
       setActiveUploadField(null);
@@ -314,8 +316,8 @@ export function useFileUpload<T extends UploadData>(
         void cleanupOldObjects([oldUrl]);
       }
 
-      if (saved) toast.success('Musik berhasil dihapus & tersimpan.');
-      else toast.warning('Dihapus dari tampilan — klik Simpan Perubahan untuk mencoba lagi.');
+      if (saved) toast.success(t('toast.musicDeletedSaved'));
+      else toast.warning(t('toast.removedFromView'));
     } finally {
       setRemoving(false);
     }

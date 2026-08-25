@@ -10,6 +10,7 @@ import { DEFAULT_PHOTOS, formatDate, resolveBanks, resolvePhotos, resolveVenue, 
 import { useOpenInvitation } from '../shared/useOpenInvitation';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import { useToast } from '../../components/GlobalToast';
+import { useTranslation } from '../../i18n';
 
 export default function ChatBubbleTheme({ groom, bride, date, data, onRsvpSubmit, submittedData }: TemplateProps) {
     const [activeChat, setActiveChat] = useState<string | null>(null);
@@ -18,6 +19,7 @@ export default function ChatBubbleTheme({ groom, bride, date, data, onRsvpSubmit
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const audioUrl = data?.audio_url || '';
     const toast = useToast();
+    const { t } = useTranslation();
 
 
     // RSVP Form State (Local)
@@ -67,7 +69,7 @@ export default function ChatBubbleTheme({ groom, bride, date, data, onRsvpSubmit
     // RSVP Handler (Inside Chat)
     const handleSendRsvp = async () => {
         if (!onRsvpSubmit) {
-            toast.warning("Mode Demo: RSVP tidak disimpan.");
+            toast.warning(t('toast.demoRsvpWarning'));
             return;
         }
         setIsSending(true);

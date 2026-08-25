@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { resolveDbClient } from '../lib/customerClient';
 import { useToast } from '../components/GlobalToast';
 import type { RsvpRow } from '../types/database';
+import { useTranslation } from '../i18n';
 
 interface RsvpToolsOptions {
   /** Muat ulang halaman aktif dari server setelah mutasi berhasil. */
@@ -24,11 +25,12 @@ interface RsvpToolsOptions {
 
 export function useRsvpTools(orderId: string | undefined, options: RsvpToolsOptions) {
   const toast = useToast();
+  const { t } = useTranslation();
   const [replyText, setReplyText] = useState<Record<string, string>>({});
 
   const handleReply = async (rsvpId: string) => {
     const message = replyText[rsvpId];
-    if (!message) return toast.warning("Tulis balasan dulu.");
+    if (!message) return toast.warning(t('toast.replyRequired'));
     // eq order_id: defense-in-depth di atas RLS.
     const { count, error: replyError } = await resolveDbClient()
       .from('rsvps')
@@ -36,18 +38,17 @@ export function useRsvpTools(orderId: string | undefined, options: RsvpToolsOpti
       .eq('id', rsvpId)
       .eq('order_id', orderId ?? '');
     if (!replyError && (count ?? 0) > 0) {
-      toast.success("Balasan terkirim!");
+      toast.success(t('toast.replySent'));
       await options.refresh();
       setReplyText(prev => ({ ...prev, [rsvpId]: '' }));
     } else if (!replyError) {
-      toast.error("Gagal membalas: tidak ada data yang berubah.");
+      toast.error(t('toast.replyNoChange'));
     } else {
-      toast.error("Gagal membalas.");
+      toast.error(t('toast.replyFailed'));
     }
   };
 
   const handleDeleteRsvp = async (rsvpId: string) => {
-    // Kita pakai window.confirm sederhana agar cepat, atau bisa pakai ConfirmDialog custom jika mau
     if (!window.confirm("Apakah Anda yakin ingin menghapus pesan ini?")) return;
 
     const { count, error: deleteError } = await resolveDbClient()
@@ -57,20 +58,18 @@ export function useRsvpTools(orderId: string | undefined, options: RsvpToolsOpti
       .eq('order_id', orderId ?? '');
 
     if (!deleteError && (count ?? 0) > 0) {
-      toast.success("Pesan berhasil dihapus.");
+      toast.success(t('toast.commentDeleted'));
       await options.refresh();
     } else if (!deleteError) {
-      toast.error("Gagal menghapus pesan: tidak ada data yang terhapus.");
+      toast.error(t('toast.commentDeleteNoChange'));
     } else {
-      toast.error("Gagal menghapus pesan: " + deleteError.message);
+      toast.error(t('toast.commentDeleteFailed', { error: deleteError.message }));
     }
   };
 
   const downloadCSV = async () => {
-    // Export kini mencakup SELURUH baris yang cocok dengan filter aktif
-    // (bukan lagi maksimal 500 baris yang sempat termuat).
     const rsvps = await options.getAllRows();
-    if (rsvps.length === 0) return toast.warning("Belum ada data.");
+    if (rsvps.length === 0) return toast.warning(t('toast.noDataToExport'));
     /** Escape satu sel CSV: kutip-ganda di-escape ("") + selalu dibungkus
      *  kutip agar koma/newline dalam pesan tamu tidak memutus baris.
      *  Prefix apostrof untuk sel berawalan formula (mitigasi Excel formula injection). */
