@@ -1,0 +1,216 @@
+import { useRef } from 'react';
+import { Play, Pause, ArrowRight, MapPin, Calendar, Copy, Instagram, Aperture, Quote } from 'lucide-react';
+import type { TemplateProps } from '../../types/template';
+import { useCountdown } from '../../hooks/useCountdown';
+import { formatDate, resolveBanks, resolveGallery, resolvePhotos, resolveVenue, resolveSchedule } from '../../utils/templateHelpers';
+import { useOpenInvitation } from '../shared/useOpenInvitation';
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
+
+export default function MonoEditorialTheme({ groom, bride, date, guestName, data }: TemplateProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const copyRek = useCopyToClipboard();
+  
+  ;
+
+  const photos = resolvePhotos(data);;
+
+  // --- DATA ---
+  const gallery = resolveGallery(data);
+
+  const quote = data?.quote || "Love does not consist in gazing at each other, but in looking outward together in the same direction.";
+  const quoteSrc = data?.quote_src || "Antoine de Saint-Exupéry";
+  const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+
+  const formattedDate = formatDate(date, 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  const schedule = resolveSchedule(data, date);
+  const formattedAkadDate = schedule.akadDate ? formatDate(schedule.akadDate, 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : formattedDate;
+  const formattedResepsiDate = schedule.resepsiDate ? formatDate(schedule.resepsiDate, 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : formattedDate;
+
+
+  // --- COUNTDOWN LOGIC ---
+  const akadClock = (schedule.akadTime || "08:00").split(' ')[0].substring(0, 5);
+    const timeLeft = useCountdown(date, akadClock);
+
+// Pola bersama (dedup 3.2): amplop + audio instan (delay 0).
+const { isOpen, open, playing: isPlaying, toggle: toggleAudio } = useOpenInvitation(audioRef, 0);
+
+  return (
+    <div className="bg-white text-black min-h-screen font-sans selection:bg-black selection:text-white">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Inter:wght@300;400;600&display=swap');
+        .font-display { font-family: 'Bodoni Moda', serif; }
+        .font-body { font-family: 'Inter', sans-serif; }
+      `}</style>
+
+      {/* --- COVER OVERLAY --- */}
+      <div className={`fixed inset-0 z-50 bg-white transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${isOpen ? '-translate-y-full' : 'translate-y-0'}`}>
+        <div className="h-full flex flex-col relative">
+            {/* Top Image */}
+            <div className="h-[60%] w-full relative overflow-hidden">
+                <img src={photos.cover} className="w-full h-full object-cover grayscale" alt="Cover"/>
+                <div className="absolute inset-0 bg-black/10"></div>
+            </div>
+            {/* Bottom Content */}
+            <div className="h-[40%] flex flex-col justify-between p-8 border-t-2 border-black">
+                <div>
+                    <p className="font-body text-xs tracking-[0.3em] uppercase mb-2">The Wedding</p>
+                    <h1 className="font-display text-5xl md:text-7xl uppercase leading-none">{groom} <br/> <span className="italic font-light">&</span> {bride}</h1>
+                </div>
+                <div className="flex justify-between items-end">
+                    <div>
+                        <p className="font-body text-sm font-bold">DEAR: {guestName || "GUEST"}</p>
+                    </div>
+                    <button onClick={open} className="bg-black text-white rounded-full px-8 py-4 font-bold tracking-widest hover:bg-gray-800 transition flex items-center gap-2">
+                        OPEN <ArrowRight size={16}/>
+                    </button>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* --- MAIN CONTENT --- */}
+      <main className="relative">
+        
+        {/* HERO */}
+        <section className="min-h-screen flex flex-col pt-10 px-4 md:px-12 pb-12 border-b-2 border-black">
+            <div className="flex-1 flex flex-col justify-center items-center text-center">
+                <p className="font-body text-sm md:text-base tracking-[0.5em] mb-6">SAVE THE DATE</p>
+                <h2 className="font-display text-[12vw] leading-[0.8] tracking-tighter uppercase">{formattedDate}</h2>
+                <div className="mt-12 flex gap-4 md:gap-12">
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.days}</span><span className="text-xs font-bold uppercase">Days</span></div>
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.hours}</span><span className="text-xs font-bold uppercase">Hours</span></div>
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.minutes}</span><span className="text-xs font-bold uppercase">Mins</span></div>
+                   <div className="text-center"><span className="block font-display text-4xl">{timeLeft.seconds}</span><span className="text-xs font-bold uppercase">Sec</span></div>
+                </div>
+            </div>
+            <div className="w-full h-64 md:h-96 mt-10 relative overflow-hidden border-2 border-black">
+                <img src={photos.cover} className="w-full h-full object-cover grayscale hover:grayscale-0 transition duration-700" alt="Hero"/>
+            </div>
+        </section>
+
+        {/* COUPLE (Split Layout) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 border-b-2 border-black">
+            <div className="p-8 md:p-16 border-b-2 md:border-b-0 md:border-r-2 border-black flex flex-col justify-center items-center text-center">
+                <div className="w-48 h-64 border border-black p-2 mb-6 rotate-2 hover:rotate-0 transition">
+                    <img src={photos.groom} className="w-full h-full object-cover grayscale" alt="Groom"/>
+                </div>
+                <h3 className="font-display text-4xl mb-2">{groom}</h3>
+                <p className="font-body text-xs text-gray-500 max-w-xs">Putra dari</p>
+                <p className="font-body text-xs text-gray-500 max-w-xs">{data?.groom_parents}</p>
+            </div>
+            <div className="p-8 md:p-16 flex flex-col justify-center items-center text-center">
+                <div className="w-48 h-64 border border-black p-2 mb-6 -rotate-2 hover:rotate-0 transition">
+                    <img src={photos.bride} className="w-full h-full object-cover grayscale" alt="Bride"/>
+                </div>
+                <h3 className="font-display text-4xl mb-2">{bride}</h3>
+                <p className="font-body text-xs text-gray-500 max-w-xs">Putri dari</p>
+                <p className="font-body text-xs text-gray-500 max-w-xs">{data?.bride_parents}</p>
+            </div>
+        </section>
+
+        {/* QUOTE SECTION (NEW) */}
+        <section className="py-24 px-6 text-center border-b-2 border-black bg-gray-50 relative overflow-hidden">
+            {/* Background Text Decoration */}
+            <div className="absolute top-0 left-0 text-[10rem] font-display opacity-5 pointer-events-none select-none -translate-x-1/4 -translate-y-1/4">"</div>
+            
+            <div className="max-w-3xl mx-auto relative z-10">
+                <Quote size={48} className="mx-auto mb-8 text-black opacity-80" />
+                <p className="font-display text-3xl md:text-5xl italic leading-tight mb-8">
+                    "{quote}"
+                </p>
+                <div className="w-20 h-1 bg-black mx-auto mb-6"></div>
+                <p className="font-body text-sm font-bold tracking-[0.2em] uppercase">
+                    — {quoteSrc}
+                </p>
+            </div>
+        </section>
+
+        {/* EVENTS (Ticket Style) */}
+        <section className="py-20 px-4 md:px-12 bg-white border-b-2 border-black">
+            <h2 className="font-display text-5xl md:text-6xl text-center mb-16 uppercase italic">The Events</h2>
+            
+            <div className="flex flex-col md:flex-row gap-8 justify-center">
+                {/* Akad */}
+                <div className="bg-white border-2 border-black p-0 w-full md:w-96 relative shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div className="bg-black text-white p-4 text-center font-bold tracking-widest uppercase">Akad Nikah</div>
+                    <div className="p-8 text-center space-y-4">
+                        <div className="flex justify-center items-center gap-2"><Calendar size={16}/> <span>{formattedAkadDate}</span></div>
+                        <div className="flex justify-center items-center gap-2"><Play size={16} className="rotate-90"/> <span>{schedule.akadTime}</span></div>
+                    </div>
+                </div>
+
+                {/* Resepsi */}
+                <div className="bg-black text-white border-2 border-black p-0 w-full md:w-96 relative shadow-[8px_8px_0px_0px_rgba(100,100,100,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div className="bg-white text-black border-b-2 border-black p-4 text-center font-bold tracking-widest uppercase">Resepsi</div>
+                    <div className="p-8 text-center space-y-4">
+                        <div className="flex justify-center items-center gap-2"><Calendar size={16}/> <span>{formattedResepsiDate}</span></div>
+                        <div className="flex justify-center items-center gap-2"><Play size={16} className="rotate-90"/> <span>{schedule.resepsiTime}</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-8 justify-center mt-12">
+                <div className="bg-black text-white border-2 border-black p-0 w-full md:w-96 relative shadow-[8px_8px_0px_0px_rgba(59,130,246,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                    <div className="bg-white text-black border-b-2 border-black p-4 text-center font-bold tracking-widest uppercase">Venue</div>
+                    <div className="p-8 text-center space-y-4">
+                        <div className="flex justify-center items-center gap-2"><MapPin size={16}/> <span className="text-sm">{resolveVenue(data).name}</span></div>
+                        <p className="text-xs text-gray-400">{resolveVenue(data).address}</p>
+                    </div>
+                </div>
+            </div>
+            <div className="text-center mt-12">
+                <a href={resolveVenue(data).mapsLink} className="inline-block border-b-2 border-black pb-1 hover:pb-2 transition-all font-bold text-lg">GET DIRECTIONS</a>
+            </div>
+        </section>
+
+        {/* GALLERY SECTION */}
+        {gallery.length > 0 && (
+          <section className="border-b-2 border-black">
+             <div className="py-12 px-6 border-b-2 border-black flex justify-between items-end">
+                <h2 className="font-display text-4xl md:text-6xl uppercase leading-none">Visual <br/> <span className="italic">Diary</span></h2>
+                <Aperture size={32} className="animate-spin-slow"/>
+             </div>
+
+             <div className="grid grid-cols-2 md:grid-cols-4 bg-black">
+                {gallery.map((url, i) => (
+                   <div key={i} className={`relative group overflow-hidden border-r-2 border-b-2 border-white/0 md:border-white/0 bg-white aspect-[3/4] ${i === 0 ? 'md:col-span-2 md:row-span-2' : ''}`}>
+                      <img 
+                          src={url} 
+                          alt={`Gallery ${i}`} 
+                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 scale-100 group-hover:scale-105" 
+                      />
+                      <div className="absolute inset-0 border border-black pointer-events-none"></div>
+                   </div>
+                ))}
+             </div>
+          </section>
+        )}
+
+        {/* BANK & GIFT (Minimalist) */}
+        <section className="py-20 px-4 text-center">
+            <p className="font-body text-sm tracking-widest mb-6">WEDDING GIFT</p>
+            <div className="max-w-md mx-auto space-y-4">
+                {resolveBanks(data).map((bank, i) => (
+                    <div key={i} className="border border-black p-6 flex justify-between items-center hover:bg-black hover:text-white transition group">
+                        <div className="text-left">
+                            <span className="font-bold text-xl block font-display">{bank.bank}</span>
+                            <span className="text-sm opacity-70">{bank.name}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                             <span className="font-mono text-lg">{bank.number}</span>
+                             <button onClick={() => copyRek(bank.number)}><Copy size={18} className="group-hover:text-gray-300"/></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </section>
+      </main>
+
+      {/* FLOATING CONTROLS */}
+      <button onClick={toggleAudio} className="fixed bottom-6 right-6 z-40 bg-black text-white w-12 h-12 flex items-center justify-center border-2 border-white rounded-full hover:bg-white hover:text-black hover:border-black transition">
+          {isPlaying ? <Pause size={16}/> : <Play size={16} className="ml-1"/>}
+      </button>
+      <audio ref={audioRef} src={audioUrl} loop />
+    </div>
+  );
+}

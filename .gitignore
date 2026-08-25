@@ -29,6 +29,14 @@ build/
 # Supabase
 # ======================
 .supabase/
+# Cache & project link lokal dari Supabase CLI (dibuat ulang oleh `supabase link`)
+supabase/.temp/
+# JWT signing key material (PRIVATE — jangan pernah commit)
+supabase/signing_keys.json
+signing_keys.json
+# Secrets sementara untuk `supabase secrets set --env-file`
+customer_jwt_secrets.env
+*.secrets.env
 
 # ======================
 # OS / Editor

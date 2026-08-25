@@ -9,15 +9,14 @@
     <!-- 
       Midtrans Snap Widget
       SECURITY NOTE:
-      - This script provides the payment UI widget
-      - The actual client key is loaded dynamically via src/lib/midtransConfig.js
+      - Script Snap dimuat dinamis oleh src/lib/midtransConfig.ts berdasarkan
+        VITE_MIDTRANS_ENVIRONMENT ('sandbox' | 'production') — tidak di-hardcode.
       - Payment tokens are generated server-side (never exposed to frontend)
       - Server key is stored securely in Supabase as environment secret
     -->
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
