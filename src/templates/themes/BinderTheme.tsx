@@ -991,7 +991,7 @@ export default function BinderBookTheme({
 
 
 
-            <audio ref={audioRef} src={data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3"} loop />
+            <audio ref={audioRef} src={data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3"} loop />
 
         </div>
 

@@ -26,7 +26,7 @@ export interface TemplateOption {
 
 // --- BASE URL GAMBAR TEMA (Cloudflare R2, WebP) ---
 // Gambar preview tema di-host di R2 lewat custom domain; konversi PNG->WebP sudah dilakukan.
-const THEME_IMG_BASE = 'https://loverse.my.id/themes';
+const THEME_IMG_BASE = 'https://r2.loverse.my.id/themes';
 
 // --- MASTER DATA TEMPLATE ---
 // Edit di sini, semua halaman akan berubah otomatis.

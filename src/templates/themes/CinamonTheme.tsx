@@ -28,7 +28,7 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
     const banks = resolveBanks(data);
     const quote = data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya...";
     const quoteSrc = data?.quote_src || "QS. Ar-Rum: 21";
-    const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+    const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
     const formattedDate = formatDate(date, 'id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const schedule = resolveSchedule(data, date);
     const formattedAkadDate = schedule.akadDate ? formatDate(schedule.akadDate, 'id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : formattedDate;

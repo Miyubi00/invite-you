@@ -31,7 +31,7 @@ export default function ComicTheme({ groom, bride, date, guestName, data, onRsvp
     const banks = resolveBanks(data);
     const quote = data?.quote || "Two souls with but a single thought, two hearts that beat as one.";
     const quoteSrc = data?.quote_src || "John Keats";
-    const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/cdd49a279c.mp3";
+    const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/cdd49a279c.mp3";
 
     const formattedDate = formatDate(date, 'id-ID', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'

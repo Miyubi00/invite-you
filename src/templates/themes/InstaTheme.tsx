@@ -69,7 +69,7 @@ export default function InstaTheme({ groom, bride, date, guestName, data }: Temp
         profile: data?.cover_photo || DEFAULT_PHOTOS.cover,
         feed1: data?.cover_photo || DEFAULT_PHOTOS.gallery[0],
         ...resolvePhotos(data),
-        gift_bg: "https://loverse.my.id/defaults/img/9a293ef1a6.jpg",
+        gift_bg: "https://r2.loverse.my.id/defaults/img/9a293ef1a6.jpg",
         gallery: resolveGallery(data)
     };
 

@@ -10,17 +10,17 @@ import { join } from 'node:path';
 
 const map = JSON.parse(readFileSync('scripts/asset-map.json', 'utf8'));
 
-const AUDIO_FULL = 'https://loverse.my.id/defaults/audio/ee2e74c72c.mp3';
-const AUDIO_SHORT = 'https://loverse.my.id/defaults/audio/cdd49a279c.mp3';
+const AUDIO_FULL = 'https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3';
+const AUDIO_SHORT = 'https://r2.loverse.my.id/defaults/audio/cdd49a279c.mp3';
 
 const substitutions = {
   // Foto 404 (dihapus Unsplash) -> foto working yang sudah di R2:
   'https://images.unsplash.com/photo-1519225421980-715cb0202128?w=800&auto=format&fit=crop':
-    'https://loverse.my.id/defaults/img/1772b3133b.jpg', // cover default
+    'https://r2.loverse.my.id/defaults/img/1772b3133b.jpg', // cover default
   'https://images.unsplash.com/photo-1511285560982-1356c11d4606?w=500&fit=crop':
-    'https://loverse.my.id/defaults/img/146c15097b.jpg', // galeri-1
+    'https://r2.loverse.my.id/defaults/img/146c15097b.jpg', // galeri-1
   'https://images.unsplash.com/photo-1522673607200-1645062cd958?w=500&fit=crop':
-    'https://loverse.my.id/defaults/img/9a293ef1a6.jpg', // galeri-2
+    'https://r2.loverse.my.id/defaults/img/9a293ef1a6.jpg', // galeri-2
   // Audio Pixabay 403 -> track pengganti:
   'https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c153e2.mp3': AUDIO_SHORT, // SFX BitTheme
   'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3': AUDIO_FULL,

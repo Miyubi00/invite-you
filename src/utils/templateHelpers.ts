@@ -17,16 +17,16 @@ import type { TemplateData, RsvpPayload } from '../types/template';
 // ──────────────────────────────────────────────
 
 export const DEFAULT_PHOTOS = {
-  groom: 'https://loverse.my.id/defaults/img/ddeac34add.jpg',
-  bride: 'https://loverse.my.id/defaults/img/be5e4750ac.jpg',
-  cover: 'https://loverse.my.id/defaults/img/1772b3133b.jpg',
+  groom: 'https://r2.loverse.my.id/defaults/img/ddeac34add.jpg',
+  bride: 'https://r2.loverse.my.id/defaults/img/be5e4750ac.jpg',
+  cover: 'https://r2.loverse.my.id/defaults/img/1772b3133b.jpg',
   gallery: [
-    'https://loverse.my.id/defaults/img/146c15097b.jpg',
-    'https://loverse.my.id/defaults/img/9a293ef1a6.jpg',
-    'https://loverse.my.id/defaults/img/0150ee7a32.jpg',
-    'https://loverse.my.id/defaults/img/3c8de55846.jpg',
+    'https://r2.loverse.my.id/defaults/img/146c15097b.jpg',
+    'https://r2.loverse.my.id/defaults/img/9a293ef1a6.jpg',
+    'https://r2.loverse.my.id/defaults/img/0150ee7a32.jpg',
+    'https://r2.loverse.my.id/defaults/img/3c8de55846.jpg',
   ],
-  audio: 'https://loverse.my.id/defaults/audio/ee2e74c72c.mp3',
+  audio: 'https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3',
 } as const;
 
 // ──────────────────────────────────────────────

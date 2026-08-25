@@ -39,8 +39,8 @@ describe('resolvePhotos / resolveGallery / resolveVenue', () => {
   it('memakai foto default bila data kosong', () => {
     const p = resolvePhotos(null);
     // Default foto kini termirror di R2 (lihat scripts/mirror-assets.mjs).
-    expect(p.groom).toContain('loverse.my.id/defaults/img/');
-    expect(p.bride).toContain('loverse.my.id/defaults/img/');
+    expect(p.groom).toContain('r2.loverse.my.id/defaults/img/');
+    expect(p.bride).toContain('r2.loverse.my.id/defaults/img/');
     expect(resolveGallery(null).length).toBeGreaterThan(0);
   });
 

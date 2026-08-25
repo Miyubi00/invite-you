@@ -32,7 +32,7 @@ export default function IosGlassTheme({ groom, bride, date, guestName, data, onR
     const banks = resolveBanks(data);
     const quote = data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya...";
     const quoteSrc = data?.quote_src || "QS. Ar-Rum: 21";
-    const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+    const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
 
     const formattedDate = formatDate(date, 'en-US', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'

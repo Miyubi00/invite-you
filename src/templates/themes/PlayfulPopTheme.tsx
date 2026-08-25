@@ -32,7 +32,7 @@ export default function PlayfulPastelTheme({ groom, bride, date, guestName, data
     const banks = resolveBanks(data);
     const quote = data?.quote || "Happiness is being married to your best friend.";
     const quoteSrc = data?.quote_src || "Anonim";
-    const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+    const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
 
     const formattedDate = formatDate(date, 'id-ID', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'

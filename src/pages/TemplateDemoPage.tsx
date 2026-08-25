@@ -32,9 +32,9 @@ export default function TemplateDemo() {
     guestName: 'Tamu Spesial',
     event_details: {
       video_url: 'https://video-previews.elements.envatousercontent.com/8a64ff3b-7e94-47b7-8e2e-30dae1f5c957/watermarked_preview/watermarked_preview.mp4',
-      cover_photo: 'https://loverse.my.id/defaults/img/385e020e17.jpg',
-      groom_photo: 'https://loverse.my.id/defaults/img/7251954f12.jpg',
-      bride_photo: 'https://loverse.my.id/defaults/img/066bc138e5.jpg',
+      cover_photo: 'https://r2.loverse.my.id/defaults/img/385e020e17.jpg',
+      groom_photo: 'https://r2.loverse.my.id/defaults/img/7251954f12.jpg',
+      bride_photo: 'https://r2.loverse.my.id/defaults/img/066bc138e5.jpg',
       venue_name: 'Grand Ballroom Hotel Indonesia',
       venue_address: 'Jl. Jendral Sudirman No. 1, Jakarta Pusat, DKI Jakarta',
       maps_link: 'https://goo.gl/maps/example',
@@ -43,10 +43,10 @@ export default function TemplateDemo() {
       groom_parents: 'Bpk. Capulet & Ibu Capulet',
       bride_parents: 'Bpk. Montague & Ibu Montague',
       gallery: [
-        'https://loverse.my.id/defaults/img/0150ee7a32.jpg',
-        'https://loverse.my.id/defaults/img/146c15097b.jpg',
-        'https://loverse.my.id/defaults/img/3c8de55846.jpg',
-        'https://loverse.my.id/defaults/img/1772b3133b.jpg'
+        'https://r2.loverse.my.id/defaults/img/0150ee7a32.jpg',
+        'https://r2.loverse.my.id/defaults/img/146c15097b.jpg',
+        'https://r2.loverse.my.id/defaults/img/3c8de55846.jpg',
+        'https://r2.loverse.my.id/defaults/img/1772b3133b.jpg'
       ],
       banks: [
         { bank: 'BCA', number: '1234567890', name: 'Romeo' },
@@ -54,7 +54,7 @@ export default function TemplateDemo() {
       ],
       quote: 'Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri, supaya kamu cenderung dan merasa tenteram kepadanya.',
       quote_src: 'QS. Ar-Rum: 21',
-      audio_url: 'https://loverse.my.id/defaults/audio/ee2e74c72c.mp3',
+      audio_url: 'https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3',
       rsvps: [
         {
           id: '1',

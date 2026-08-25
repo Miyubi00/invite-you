@@ -55,7 +55,7 @@ export default function SkyWorldMapTheme({ groom, bride, date, data, onRsvpSubmi
 
     const quote = data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...";
     const quoteSrc = data?.quote_src || "QS. Ar-Rum: 21";
-    const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+    const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
 
     // --- OPENING LOGIC ---
     // Pola bersama (dedup 3.2): amplop + autoplay audio dalam satu hook.

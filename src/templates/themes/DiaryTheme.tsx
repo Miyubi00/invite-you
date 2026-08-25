@@ -31,7 +31,7 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
   const banks = resolveBanks(data);
   const quote = data?.quote || "Every love story is beautiful, but ours is my favorite.";
   const quoteSrc = data?.quote_src || "Unknown";
-  const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+  const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
 
   const formattedDate = formatDate(date, 'id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'

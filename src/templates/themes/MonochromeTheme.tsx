@@ -19,7 +19,7 @@ export default function MonoEditorialTheme({ groom, bride, date, guestName, data
 
   const quote = data?.quote || "Love does not consist in gazing at each other, but in looking outward together in the same direction.";
   const quoteSrc = data?.quote_src || "Antoine de Saint-Exupéry";
-  const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+  const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
 
   const formattedDate = formatDate(date, 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
   const schedule = resolveSchedule(data, date);

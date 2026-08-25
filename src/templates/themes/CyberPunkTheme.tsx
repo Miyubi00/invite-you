@@ -24,7 +24,7 @@ export default function CyberpunkTheme({ groom, bride, date, guestName, data }: 
   const banks = resolveBanks(data);
   const quote = data?.quote || "Two souls, one protocol. Connected forever.";
   const quoteSrc = data?.quote_src || "System.log";
-  const audioUrl = data?.audio_url || "https://loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+  const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
 
   const formattedDate = formatDate(date, 'en-GB', {
     day: '2-digit', month: '2-digit', year: 'numeric'
