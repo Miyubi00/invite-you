@@ -68,3 +68,4 @@ temp/
 # Optional: upload cache
 # ======================
 uploads/
+graphify-out/
