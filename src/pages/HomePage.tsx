@@ -673,68 +673,64 @@ export default function Landing() {
             {filteredTemplates.map((template) => (
               <div
                 key={template.slug}
-                className="bg-white p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-xl border border-[#EBDFCE] hover:border-[#E59A59]/40 flex flex-col items-start transition-all duration-300 h-full group"
+                className="bg-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-xl border border-[#EBDFCE] hover:border-[#E59A59]/40 flex flex-col items-start transition-all duration-300 h-full group"
               >
-                {/* Gambar Cover dengan Badge & Quick Preview */}
-                <div className="w-full aspect-[4/3] bg-[#FAF6EE] rounded-xl sm:rounded-2xl mb-2.5 sm:mb-3.5 overflow-hidden relative">
+                {/* Gambar Cover (Klik langsung membuka demo tema) */}
+                <Link
+                  to={`/demo/${template.slug}`}
+                  className="block w-full aspect-[4/3] bg-[#FAF6EE] rounded-xl sm:rounded-2xl mb-3 overflow-hidden relative group/img cursor-pointer"
+                  title={`Lihat demo ${template.name}`}
+                >
                   <SkeletonImage
                     src={template.image}
                     alt={template.name}
                     width={800}
                     height={600}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    className="w-full h-full object-cover group-hover/img:scale-105 group-hover:scale-105 transition duration-500"
                   />
 
                   {/* Kategori Badge */}
                   <div
                     className={`
-                      absolute top-2 left-2 sm:top-2.5 sm:left-2.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider shadow-sm backdrop-blur-xs
+                      absolute top-2.5 left-2.5 px-2.5 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider shadow-sm backdrop-blur-xs
                       ${template.category === 'RSVP'
                         ? 'bg-[#712E1E]/90 text-white'
-                        : 'bg-white/90 text-[#712E1E] border border-[#EBDFCE]'}
+                        : 'bg-white/95 text-[#712E1E] border border-[#EBDFCE]'}
                     `}
                   >
                     {template.category}
                   </div>
-
-                  {/* Overlay Quick Preview Button */}
-                  <Link
-                    to={`/demo/${template.slug}`}
-                    className="absolute bottom-2 right-2 px-2 py-1 rounded-lg bg-black/50 hover:bg-black/75 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 transition opacity-90 hover:opacity-100 shadow-xs"
-                    title={t('home.catalogPreview')}
-                  >
-                    <Eye className="w-3 h-3 text-[#FFD5AF]" />
-                    <span className="hidden xs:inline">{t('home.catalogPreview')}</span>
-                    <span className="inline xs:hidden">Demo</span>
-                  </Link>
-                </div>
+                </Link>
 
                 {/* Nama & Harga */}
-                <div className="w-full flex flex-col items-start mb-2.5 sm:mb-3.5 px-0.5">
-                  <h3 className="text-[#712E1E] text-xs sm:text-sm md:text-base font-extrabold leading-snug line-clamp-1 text-left group-hover:text-[#E59A59] transition">
+                <div className="w-full flex flex-col items-start mb-3 px-0.5">
+                  <Link
+                    to={`/demo/${template.slug}`}
+                    className="text-[#712E1E] text-xs sm:text-sm md:text-base font-extrabold leading-snug line-clamp-1 text-left group-hover:text-[#E59A59] transition"
+                  >
                     {template.name}
-                  </h3>
+                  </Link>
                   <span className="text-xs sm:text-sm md:text-base font-black text-[#E59A59] mt-0.5">
                     {formatIDR(template.price)}
                   </span>
                 </div>
 
-                {/* Tombol Action (Pilih Tema Utama) */}
-                <div className="w-full mt-auto flex gap-1.5 sm:gap-2">
+                {/* Dua Tombol Aksi Bersih & Konsisten di Mobile & Desktop */}
+                <div className="w-full mt-auto grid grid-cols-2 gap-1.5 sm:gap-2">
                   <Link
                     to={`/demo/${template.slug}`}
-                    className="sm:hidden px-2.5 py-2 rounded-xl border border-[#EBDFCE] hover:border-[#E59A59] text-stone-600 hover:text-[#712E1E] bg-[#FAF6EE] text-[11px] font-bold transition flex items-center justify-center shrink-0"
-                    title={t('home.catalogPreview')}
+                    className="w-full py-2 sm:py-2.5 rounded-xl border border-[#EBDFCE] hover:border-[#E59A59] bg-[#FAF6EE] hover:bg-white text-[#712E1E] font-bold text-[11px] sm:text-xs md:text-sm transition flex items-center justify-center gap-1 sm:gap-1.5 shadow-2xs"
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className="w-3.5 h-3.5 text-[#E59A59] shrink-0" />
+                    <span>{t('home.catalogPreviewShort')}</span>
                   </Link>
 
                   <Link
                     to={`/order?template=${template.slug}`}
-                    className="flex-1 py-2 sm:py-2.5 rounded-xl bg-[#E59A59] hover:bg-[#d48b4b] text-white font-extrabold text-[11px] sm:text-xs shadow-sm hover:shadow-md transition duration-200 active:scale-95 flex justify-center items-center gap-1.5"
+                    className="w-full py-2 sm:py-2.5 rounded-xl bg-[#E59A59] hover:bg-[#d48b4b] text-white font-bold text-[11px] sm:text-xs md:text-sm transition flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs active:scale-95"
                   >
-                    <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    <span>{t('home.catalogCreate')}</span>
+                    <Edit3 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{t('home.catalogCreate')}</span>
                   </Link>
                 </div>
               </div>
