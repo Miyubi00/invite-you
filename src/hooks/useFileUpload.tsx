@@ -24,7 +24,6 @@ import { enqueuePersist } from '../lib/persistQueue';
 import { useToast } from '../components/GlobalToast';
 import ImageCropModal, { type CropAreaPixels } from '../components/shared/ImageCropModal';
 import { processImage, type CropRect } from '../utils/imageProcessing';
-import { convertToWebMAudio } from '../utils/audioProcessing';
 import type { EventDetails } from '../types/database';
 import { useTranslation } from '../i18n';
 
@@ -63,8 +62,8 @@ export function useFileUpload<T extends UploadData>(
   const toast = useToast();
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
-  const [converting, setConverting] = useState(false);
-  const [convertPercent, setConvertPercent] = useState<number | null>(null);
+  const [converting] = useState(false);
+  const [convertPercent] = useState<number | null>(null);
   const [removing, setRemoving] = useState(false);
   const [activeUploadField, setActiveUploadField] = useState<string | null>(null);
   const [pendingCrop, setPendingCrop] = useState<PendingCrop | null>(null);
@@ -159,39 +158,13 @@ export function useFileUpload<T extends UploadData>(
       cropArea = area;
     }
 
-    // Musik: coba konversi ke WebM/Opus di Web Worker (bila tak didukung -> pakai file asli).
-    let mediaSource: Blob = originalFile;
-    if (isAudio) {
-      setConverting(true);
-      setConvertPercent(0);
-      try {
-        const result = await convertToWebMAudio(originalFile, (pct) =>
-          setConvertPercent(pct),
-        );
-        if (result.ok) {
-          mediaSource = result.blob;
-          console.info(
-            `[AudioConvert] Output ${(result.blob.size / 1024).toFixed(0)}KB audio/webm.`,
-          );
-        } else {
-          toast.warning(t('toast.musicConvertSkipped', { reason: result.reason }));
-        }
-      } finally {
-        setConverting(false);
-        setConvertPercent(null);
-      }
-    }
-
     setUploading(true);
     setActiveUploadField(isGallery ? 'gallery' : String(fieldName));
 
     try {
-      // --- Pemrosesan gambar sisi klien ---
-      let workBlob: Blob = mediaSource;
-      let workName =
-        isAudio && mediaSource !== originalFile
-          ? originalFile.name.replace(/\.[^.]+$/, '') + '.webm'
-          : originalFile.name;
+      // --- Pemrosesan media (Audio diteruskan langsung apa adanya tanpa konversi) ---
+      let workBlob: Blob = originalFile;
+      let workName = originalFile.name;
 
       if (!isAudio) {
         const limits = SIZE_LIMITS[String(fieldName)] ?? { maxWidth: 1400, maxHeight: 1400 };
@@ -206,12 +179,24 @@ export function useFileUpload<T extends UploadData>(
         workName = originalFile.name.replace(/\.[^.]+$/, '') + ext;
       }
 
+      // Pastikan Content-Type akurat untuk audio
+      let resolvedContentType = workBlob.type;
+      if (isAudio && (!resolvedContentType || resolvedContentType === 'application/octet-stream')) {
+        const ext = workName.split('.').pop()?.toLowerCase();
+        if (ext === 'mp3') resolvedContentType = 'audio/mpeg';
+        else if (ext === 'm4a') resolvedContentType = 'audio/mp4';
+        else if (ext === 'wav') resolvedContentType = 'audio/wav';
+        else if (ext === 'aac') resolvedContentType = 'audio/aac';
+        else if (ext === 'ogg') resolvedContentType = 'audio/ogg';
+        else resolvedContentType = 'audio/mpeg';
+      }
+
       // --- Kirim ke R2 (presigned utama, fallback proxy) ---
       const bodyPayload = {
         orderId,
         fileName: workName,
-        contentType: workBlob.type || 'application/octet-stream',
-        prefix: imagePrefix,
+        contentType: isAudio ? resolvedContentType : (workBlob.type || 'application/octet-stream'),
+        prefix: isAudio ? (imagePrefix.startsWith('ADMIN') ? 'ADMIN_IMG_' : 'AUDIO_') : (isGallery ? 'GALLERY_' : imagePrefix),
       };
 
       let publicUrl = '';
@@ -239,7 +224,7 @@ export function useFileUpload<T extends UploadData>(
         const form = new FormData();
         form.append('file', workBlob, workName);
         form.append('orderId', orderId);
-        form.append('prefix', imagePrefix);
+        form.append('prefix', isAudio ? (imagePrefix.startsWith('ADMIN') ? 'ADMIN_IMG_' : 'AUDIO_') : (isGallery ? 'GALLERY_' : imagePrefix));
 
         const headers = await buildFunctionHeaders();
         const response = await fetch(functionsUrl('r2-upload'), {

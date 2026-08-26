@@ -40,6 +40,7 @@ import { useTranslation } from "../i18n";
 export default function Dashboard() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const {
     order,
@@ -87,8 +88,6 @@ export default function Dashboard() {
   if (dataLoading) {
     return <DashboardSkeleton />;
   }
-
-  const { t } = useTranslation();
 
   if (!order) {
     return (

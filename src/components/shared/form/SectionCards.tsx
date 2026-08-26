@@ -357,6 +357,8 @@ export function MusicQuoteCard({
   data,
   handleChange,
   handleFileUpload,
+  uploading = false,
+  activeUploadField = null,
   converting = false,
   convertPercent = null,
   removing = false,
@@ -365,6 +367,8 @@ export function MusicQuoteCard({
   data: Partial<EventDetails>;
   handleChange: (e: FieldChangeEvent) => void;
   handleFileUpload: UploadHandler;
+  uploading?: boolean;
+  activeUploadField?: string | null;
   converting?: boolean;
   convertPercent?: number | null;
   removing?: boolean;
@@ -372,22 +376,25 @@ export function MusicQuoteCard({
 }) {
   const { t } = useTranslation();
   const hasMusic = Boolean(data.audio_url);
-  const busy = converting || removing;
+  const isAudioUploading = Boolean(uploading && activeUploadField === 'audio_url');
+  const busy = isAudioUploading || converting || removing;
 
-  const statusText = converting
-    ? t('customer.edit.musicConverting', { percent: convertPercent ?? 0 })
-    : removing
-      ? t('customer.edit.musicRemoving')
-      : hasMusic
-        ? t('customer.edit.musicInstalled')
-        : t('customer.edit.musicNone');
+  const statusText = isAudioUploading
+    ? (t('customer.edit.uploading') || 'Mengunggah musik...')
+    : converting
+      ? t('customer.edit.musicConverting', { percent: convertPercent ?? 0 })
+      : removing
+        ? t('customer.edit.musicRemoving')
+        : hasMusic
+          ? t('customer.edit.musicInstalled')
+          : t('customer.edit.musicNone');
 
   return (
     <section className={CARD}>
       <CardHeader icon={<Music size={16} />} title={t('customer.edit.cardMusicQuote')} />
       <div className="flex items-center gap-3 rounded-xl border border-[#EBDFCE] bg-[#FAF6EF] p-3">
         <div className="min-w-0 flex-1">
-          <p className={`text-xs font-bold ${converting || removing ? 'text-stone-400 italic' : 'text-stone-700'}`}>
+          <p className={`text-xs font-bold ${isAudioUploading || converting || removing ? 'text-stone-400 italic' : 'text-stone-700'}`}>
             {statusText}
           </p>
           {hasMusic && !removing && (
@@ -418,10 +425,14 @@ export function MusicQuoteCard({
         ) : (
           <label
             className={`shrink-0 cursor-pointer rounded-xl bg-[#E59A59] px-3 py-1.5 text-xs font-bold text-white transition hover:bg-[#d48b4b] flex items-center gap-1.5 ${
-              converting ? 'opacity-70 cursor-wait' : ''
+              isAudioUploading || converting ? 'opacity-70 cursor-wait pointer-events-none' : ''
             }`}
           >
-            {converting ? (
+            {isAudioUploading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" /> {t('customer.edit.uploading') || 'Mengunggah...'}
+              </>
+            ) : converting ? (
               <>
                 <Loader2 size={13} className="animate-spin" /> {t('customer.edit.btnConvertingMusic')}
               </>
@@ -430,10 +441,10 @@ export function MusicQuoteCard({
             )}
             <input
               type="file"
-              accept="audio/*"
+              accept="audio/*,audio/mpeg,audio/mp3,audio/wav,audio/m4a,audio/aac,audio/ogg"
               onChange={(e) => handleFileUpload(e, "audio_url")}
               className="hidden"
-              disabled={converting}
+              disabled={busy}
             />
           </label>
         )}

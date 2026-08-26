@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import type { OrderRow, OrderEditForm } from "../types/database";
@@ -47,14 +47,22 @@ export default function AdminPanel() {
     setPendingOrders, setTemplates,
   } = useAdminCatalog();
 
+  // Ref jembatan: callback sesi butuh refresh() ordersFilter yang belum
+  // bisa dideklarasikan di sini (butuh `session`). Callback hanya dipanggil
+  // setelah await auth (lebih lambat dari effect pemasangan ref) — aman.
+  const refreshOrdersRef = useRef<() => Promise<void>>(async () => {});
+
   const { session, setSession, sessionLoading } = useAdminSession(() => {
     void fetchData();
-    void ordersFilter.refresh();
+    void refreshOrdersRef.current();
   });
 
   const ordersFilter = useOrdersPaged(25, Boolean(session));
 
   const { refresh: refreshOrders } = ordersFilter;
+  useEffect(() => {
+    refreshOrdersRef.current = refreshOrders;
+  }, [refreshOrders]);
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchData(), refreshOrders()]);
   }, [fetchData, refreshOrders]);

@@ -206,7 +206,8 @@ export function useOrdersPaged(initialPageSize = 25, enabled = true) {
 
   useEffect(() => {
     if (!enabled) {
-      setLoading(false);
+      // Defer microtask: hindari setState sinkron di body effect (aturan lint).
+      void Promise.resolve().then(() => setLoading(false));
       return;
     }
     let cancelled = false;

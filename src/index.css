@@ -21,6 +21,22 @@
   100% { background-position: 200% 0; }
 }
 
+/* Animasi masuk bubble chat AI assistant */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-msg-in {
+  animation: msg-in 0.28s cubic-bezier(0.21, 1.02, 0.73, 1) both;
+}
+
+/* Scrollbar tipis untuk area chat AI */
+.chat-scroll { scrollbar-width: thin; scrollbar-color: #E3D5C0 transparent; }
+.chat-scroll::-webkit-scrollbar { width: 6px; }
+.chat-scroll::-webkit-scrollbar-track { background: transparent; }
+.chat-scroll::-webkit-scrollbar-thumb { background: #E3D5C0; border-radius: 999px; }
+.chat-scroll::-webkit-scrollbar-thumb:hover { background: #D9C6A8; }
+
 /* Global box-sizing & Mobile viewport horizontal overflow prevention */
 *, *::before, *::after {
   box-sizing: border-box;

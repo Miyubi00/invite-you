@@ -150,6 +150,8 @@ export default function EditTab({
                 data={formData}
                 handleChange={handleChange}
                 handleFileUpload={handleFileUpload}
+                uploading={uploading}
+                activeUploadField={activeUploadField}
                 converting={converting}
                 convertPercent={convertPercent}
                 removing={removing}

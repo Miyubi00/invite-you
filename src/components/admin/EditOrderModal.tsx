@@ -230,6 +230,8 @@ export default function EditOrderModal({
                 data={editFormData}
                 handleChange={handleChange}
                 handleFileUpload={handleFileUpload}
+                uploading={uploading}
+                activeUploadField={activeUploadField}
                 converting={converting}
                 convertPercent={convertPercent}
                 removing={removing}
