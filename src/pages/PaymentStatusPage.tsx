@@ -21,6 +21,12 @@ interface PaymentStatusResponse {
   bride_name: string;
   slug: string;
   email: string | null;
+  whatsapp?: string | null;
+  wedding_date?: string | null;
+  template_slug?: string | null;
+  template_name?: string | null;
+  price?: number | null;
+  payment_method?: string | null;
   snap_token: string | null;
   pin_code: string | null;
 }
@@ -118,85 +124,103 @@ export default function PaymentStatus() {
     // ====================================================================
     if (isManualWhatsApp) {
         return (
-            <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-4 font-sans">
-                <div className="bg-white p-8 md:p-12 rounded-2xl shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-[#25D366]"></div>
-                    
-                    <div className="animate-fade-in-up">
-                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-[#25D366] shadow-lg shadow-green-100">
-                            <MessageSquare className="w-12 h-12" />
-                        </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.manualTitle')}</h1>
-                        <p className="text-stone-400 mb-6 leading-relaxed">
-                            {t('paymentStatus.manualDesc')}
+            <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans w-full max-w-full overflow-x-hidden">
+                <div className="max-w-md w-full bg-white rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 text-center border border-[#EBDFCE] relative overflow-hidden">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-[#25D366] shadow-md shadow-green-100">
+                        <FaWhatsapp className="w-8 h-8 sm:w-10 sm:h-10" />
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.manualTitle')}</h1>
+                    <p className="text-stone-500 mb-6 text-xs sm:text-sm leading-relaxed">
+                        {t('paymentStatus.manualDesc')}
+                    </p>
+
+                    <div className="bg-[#FAF6EE] p-3 sm:p-4 rounded-xl mb-6 text-left border border-[#EBDFCE]">
+                        <p className="text-xs text-stone-600 leading-relaxed flex items-start gap-2">
+                            <span className="text-[#E59A59] font-bold text-sm">💡</span>
+                            <span>{t('paymentStatus.manualNote')}</span>
                         </p>
+                    </div>
 
-                        <div className="bg-orange-50 p-4 rounded-xl mb-8 border border-dashed border-orange-200">
-                            <p className="text-sm text-orange-800 font-medium">
-                                {t('paymentStatus.manualNote')}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-3">
-                            <a
-                                href={`https://wa.me/${ADMIN_WHATSAPP}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-full py-4 bg-[#25D366] text-white rounded-xl font-bold hover:bg-[#20bd5a] transition shadow-lg flex items-center justify-center gap-2"
-                            >
-                                <FaWhatsapp className="w-6 h-6" /> {t('paymentStatus.btnWhatsapp')}
-                            </a>
-                            <button onClick={() => navigate('/')} className="w-full py-4 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold hover:bg-stone-50 transition flex items-center justify-center gap-2">
-                                <Home className="w-5 h-5" /> {t('paymentStatus.btnHome')}
-                            </button>
-                        </div>
+                    <div className="flex flex-col gap-2.5 sm:gap-3">
+                        <a
+                            href={`https://wa.me/${ADMIN_WHATSAPP}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-3.5 sm:py-4 bg-[#25D366] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-[#20bd5a] transition shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
+                        >
+                            <FaWhatsapp className="w-5 h-5" /> {t('paymentStatus.btnWhatsapp')}
+                        </a>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="w-full py-3 sm:py-3.5 bg-[#FAF6EE] text-[#712E1E] rounded-xl font-bold text-xs sm:text-sm hover:bg-[#F3EBDF] transition border border-[#EBDFCE] flex items-center justify-center gap-2"
+                        >
+                            <Home className="w-4 h-4" /> {t('paymentStatus.btnHome')}
+                        </button>
                     </div>
                 </div>
             </div>
         );
     }
 
-    // --- RENDER JIKA ORDER MIDTRANS TIDAK KETEMU ---
-    if (!order) return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F1E8DC] p-6 text-center">
-            <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                    <XCircle className="w-8 h-8" />
+    // ====================================================================
+    // RENDER 2: JIKA ORDER TIDAK DITEMUKAN
+    // ====================================================================
+    if (!order || !order.found) {
+        return (
+            <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans w-full max-w-full overflow-x-hidden">
+                <div className="max-w-md w-full bg-white rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 text-center border border-[#EBDFCE]">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-stone-400">
+                        <XCircle className="w-8 h-8 sm:w-10 sm:h-10" />
+                    </div>
+                    <h1 className="text-xl sm:text-2xl font-black text-[#712E1E] mb-2">{t('paymentStatus.notFoundTitle')}</h1>
+                    <p className="text-stone-400 mb-6 sm:mb-8 text-xs sm:text-sm">
+                        {t('paymentStatus.notFoundDesc')}
+                    </p>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="w-full py-3 sm:py-3.5 bg-[#FAF6EE] text-[#712E1E] rounded-xl font-bold text-xs sm:text-sm hover:bg-[#F3EBDF] transition border border-[#EBDFCE]"
+                    >
+                        {t('paymentStatus.btnHome')}
+                    </button>
                 </div>
-                <h1 className="text-2xl font-bold text-[#712E1E]">{t('paymentStatus.notFoundTitle')}</h1>
-                <p className="text-stone-500 mt-2 text-sm">{t('paymentStatus.notFoundDesc')}</p>
-                <button onClick={() => navigate('/')} className="mt-6 w-full bg-[#E59A59] text-white px-6 py-3 rounded-xl font-bold shadow-md">{t('paymentStatus.btnHome')}</button>
             </div>
-        </div>
-    );
+        );
+    }
 
     // ====================================================================
-    // RENDER 2: UI MIDTRANS (Berdasarkan Status Database)
+    // RENDER 3: STATUS TRANSAKSI MIDTRANS
     // ====================================================================
     const isSuccess = order.payment_status === 'success';
     const isPending = order.payment_status === 'pending';
-    const isFailed = order.payment_status === 'failed' || order.payment_status === 'deny' || order.payment_status === 'expire';
+    const isFailed = ['failed', 'expired', 'deny', 'cancel'].includes(order.payment_status);
 
     return (
-        <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans">
-            <div className="bg-white p-5 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
-                <div className={`absolute top-0 left-0 w-full h-2 ${isSuccess ? 'bg-green-500' : isPending ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+        <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans w-full max-w-full overflow-x-hidden">
+            <div className="max-w-md w-full bg-white rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 text-center border border-[#EBDFCE]">
 
-                {/* --- SUKSES --- */}
+                {/* --- SUCCESS --- */}
                 {isSuccess && (
                     <div className="animate-fade-in-up">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-green-600 shadow-lg shadow-green-100">
-                            <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12" />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-emerald-600 shadow-md shadow-emerald-100">
+                            <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10" />
                         </div>
                         <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.successTitle')}</h1>
-                        <p className="text-stone-400 mb-6 sm:mb-8 text-xs sm:text-sm leading-relaxed">
+                        <p className="text-stone-500 mb-6 text-xs sm:text-sm leading-relaxed">
                             {t('paymentStatus.successDesc', { groom: order.groom_name, bride: order.bride_name })}
                         </p>
 
+                        {/* KOTAK PIN */}
                         {order.pin_code ? (
-                            <div className="bg-stone-50 p-3 sm:p-4 rounded-xl mb-3 sm:mb-4 border border-dashed border-stone-300">
-                                <p className="text-[10px] sm:text-xs text-stone-400 uppercase font-bold tracking-widest mb-1">{t('paymentStatus.pinLabel')}</p>
-                                <p className="text-xl sm:text-2xl font-mono font-bold text-[#712E1E] tracking-widest">{order.pin_code}</p>
+                            <div className="bg-[#FAF6EE] p-4 sm:p-5 rounded-2xl mb-4 sm:mb-6 border-2 border-dashed border-[#E59A59] text-center">
+                                <span className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase tracking-widest block mb-1">
+                                    {t('paymentStatus.pinLabel')}
+                                </span>
+                                <div className="text-3xl sm:text-4xl font-black text-[#712E1E] tracking-widest my-1 font-mono select-all">
+                                    {order.pin_code}
+                                </div>
+                                <p className="text-[10px] sm:text-[11px] text-stone-400 mt-1">
+                                    {t('paymentStatus.pinSecurityNote')}
+                                </p>
                             </div>
                         ) : null}
 
@@ -225,6 +249,11 @@ export default function PaymentStatus() {
                                             groomName: order.groom_name,
                                             brideName: order.bride_name,
                                             email: order.email || undefined,
+                                            whatsapp: order.whatsapp || undefined,
+                                            weddingDate: order.wedding_date || undefined,
+                                            templateName: order.template_name || 'Undangan Digital',
+                                            price: typeof order.price === 'number' && order.price > 0 ? order.price : 10070,
+                                            paymentMethod: order.payment_method || 'QRIS',
                                             pin: order.pin_code || undefined,
                                         });
                                     }

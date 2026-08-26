@@ -15,11 +15,11 @@ import Navbar from '../components/Navbar';
 // jadi halaman app-like tidak membuat dokumen ikut scroll.
 export default function PublicLayout() {
   return (
-    <>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[#F1E8DC]">
       <Navbar />
-      <div className="min-h-screen bg-[#F1E8DC]"> {/* Background default */}
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <Outlet />
-      </div>
-    </>
+      </main>
+    </div>
   );
 }

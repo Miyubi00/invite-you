@@ -21,9 +21,23 @@
   100% { background-position: 200% 0; }
 }
 
+/* Global box-sizing & Mobile viewport horizontal overflow prevention */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+}
+
 /* Pastikan body menggunakan warna background yang diminta */
 body {
   background-color: var(--color-brand-bg);
   font-family: var(--font-sans);
   color: var(--color-brand-text);
+  margin: 0;
+  padding: 0;
+  -webkit-text-size-adjust: 100%;
 }

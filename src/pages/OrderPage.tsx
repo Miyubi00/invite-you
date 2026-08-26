@@ -6,7 +6,7 @@
 // Keterikatan : lib/constants, lib/supabaseClient, ConfirmDialog, GlobalToast
 // ============================================================
 
-import { useState, useRef, useMemo, type ChangeEvent, type ReactNode } from "react";
+import { useState, useEffect, useRef, useMemo, type ChangeEvent, type ReactNode } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "../components/GlobalToast";
@@ -15,8 +15,8 @@ import { useTranslation } from "../i18n";
 import TurnstileWidget, { type TurnstileWidgetRef } from "../components/ui/TurnstileWidget";
 import {
   MASTER_TEMPLATES,
-  TEMPLATE_OPTIONS,
   ADMIN_WHATSAPP,
+  type MasterTemplate,
 } from "../lib/constants";
 import {
   ArrowLeft,
@@ -50,19 +50,19 @@ type PaymentMethodType =
   | "whatsapp";
 
 const MIDTRANS_LOGOS = {
-  qris: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/qris.svg",
-  dana: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/dana.svg",
-  shopeepay: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/shopeepay.svg",
-  spaylater: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/shopeepay-later-page.svg",
-  gopay: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/gopay_text.svg",
-  gopaylater: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/gopaylater.svg",
-  bca: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/bca.svg",
-  mandiri: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/mandiri.svg",
-  bni: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/bni.svg",
-  bri: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/bri.svg",
-  cimb: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/cimb.svg",
-  seabank: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/seabank.svg",
-  bsi: "https://snap-assets.sandbox.midtrans.com/snap-preferences/sandbox/v1/logos/bsi.svg",
+  qris: "/logos/payment/qris.svg",
+  dana: "/logos/payment/dana.svg",
+  shopeepay: "/logos/payment/shopeepay.svg",
+  spaylater: "/logos/payment/spaylater.svg",
+  gopay: "/logos/payment/gopay.svg",
+  gopaylater: "/logos/payment/gopaylater.svg",
+  bca: "/logos/payment/bca.svg",
+  mandiri: "/logos/payment/mandiri.svg",
+  bni: "/logos/payment/bni.svg",
+  bri: "/logos/payment/bri.svg",
+  cimb: "/logos/payment/cimb.svg",
+  seabank: "/logos/payment/seabank.svg",
+  bsi: "/logos/payment/bsi.svg",
 };
 
 const LogoPill = ({ src, alt, className = "h-4" }: { src: string; alt: string; className?: string }) => (
@@ -71,10 +71,23 @@ const LogoPill = ({ src, alt, className = "h-4" }: { src: string; alt: string; c
   </div>
 );
 
+export function getPaymentMethodFee(basePrice: number, method: PaymentMethodType): number {
+  if (method === "qris") {
+    return Math.ceil(basePrice * 0.007);
+  }
+  if (method === "gopay" || method === "shopeepay" || method === "dana") {
+    return Math.ceil(basePrice * 0.015);
+  }
+  if (method === "whatsapp") {
+    return 0;
+  }
+  return 4000; // Virtual Account Bank flat Rp 4.000
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const INPUT_CLASS =
-  "pl-10 w-full p-3 rounded-xl border border-stone-200 bg-white focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition";
+  "w-full min-w-0 py-2.5 sm:py-3 pr-3.5 pl-11 rounded-xl border border-stone-200 bg-white focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition text-sm sm:text-base";
 
 export default function OrderForm() {
   const { t } = useTranslation();
@@ -90,9 +103,48 @@ export default function OrderForm() {
   const [expandedCategory, setExpandedCategory] = useState<"qris" | "ewallet" | "va" | "whatsapp">("qris");
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
+  const [templateList, setTemplateList] = useState<MasterTemplate[]>(MASTER_TEMPLATES);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTemplates = async () => {
+      try {
+        const { data: dbTemplates, error } = await supabase
+          .from("templates")
+          .select("*")
+          .order("name", { ascending: true });
+
+        if (!error && dbTemplates && dbTemplates.length > 0 && isMounted) {
+          const combined = dbTemplates.map((dbItem) => {
+            const local = MASTER_TEMPLATES.find((t) => t.slug === dbItem.slug);
+            return {
+              id: dbItem.id ?? (local ? local.id : 0),
+              slug: dbItem.slug,
+              name: dbItem.name,
+              category: dbItem.category,
+              price: Number(dbItem.price),
+              image: local ? local.image : "https://r2.loverse.my.id/themes/botanical-gold.webp",
+            };
+          });
+          setTemplateList(combined);
+        }
+      } catch (err) {
+        console.warn("Gagal memuat harga template dari database:", err);
+      }
+    };
+
+    fetchTemplates();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const urlSlug = searchParams.get("template");
   const defaultTemplate =
-    TEMPLATE_OPTIONS.find((t) => t.slug === urlSlug) || TEMPLATE_OPTIONS[0];
+    templateList.find((t) => t.slug === urlSlug) ||
+    MASTER_TEMPLATES.find((t) => t.slug === urlSlug) ||
+    templateList[0] ||
+    MASTER_TEMPLATES[0];
 
   const initialFormState = {
     groom_name: "",
@@ -105,9 +157,9 @@ export default function OrderForm() {
 
   const [formData, setFormData] = useState(initialFormState);
   const selectedTemplate =
-    TEMPLATE_OPTIONS.find((t) => t.slug === formData.template_slug) ||
+    templateList.find((t) => t.slug === formData.template_slug) ||
     defaultTemplate;
-  const selectedImage = MASTER_TEMPLATES.find(
+  const selectedImage = selectedTemplate?.image || MASTER_TEMPLATES.find(
     (t) => t.slug === formData.template_slug,
   )?.image;
 
@@ -118,73 +170,52 @@ export default function OrderForm() {
   const handleWhatsappChange = (e: ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, "");
     if (val.startsWith("0")) val = val.substring(1);
-    if (val.startsWith("62")) val = val.substring(2);
     setFormData({ ...formData, whatsapp: val });
   };
 
   const handleTemplateChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const slug = e.target.value;
-    setFormData({ ...formData, template_slug: slug });
+    setFormData({ ...formData, template_slug: e.target.value });
   };
 
   const handleReset = () => {
     setFormData(initialFormState);
-    setCaptchaToken(null);
-    turnstileRef.current?.reset();
     setShowConfirm(false);
     toast.success(t("order.toastResetSuccess"));
   };
 
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  // Fungsi Validasi agar tidak diulang-ulang
-  const validateForm = () => {
-    if (
-      !formData.groom_name ||
-      !formData.bride_name ||
-      !formData.wedding_date
-    ) {
-      toast.error(t("order.validationErrorRequired"));
+  const validateInputs = () => {
+    if (!formData.groom_name.trim() || !formData.bride_name.trim()) {
+      toast.warning(t("validation.coupleRequired"));
       return false;
     }
-    if (formData.wedding_date < todayStr) {
-      toast.error(t("order.validationErrorDatePast"));
+    if (!formData.wedding_date) {
+      toast.warning(t("validation.weddingDateRequired"));
       return false;
     }
-    if (!formData.email || !EMAIL_RE.test(formData.email)) {
-      toast.error(t("order.validationErrorEmail"));
+    if (!formData.email.trim() || !EMAIL_RE.test(formData.email.trim())) {
+      toast.warning(t("validation.emailInvalid"));
       return false;
     }
-    if (!formData.whatsapp || formData.whatsapp.length < 9) {
-      toast.error(t("order.validationErrorWhatsapp"));
-      return false;
-    }
-    if (!captchaToken) {
-      toast.warning(t("common.captchaRequired"));
+    if (!formData.whatsapp.trim() || formData.whatsapp.length < 8) {
+      toast.warning(t("validation.whatsappInvalid"));
       return false;
     }
     return true;
   };
 
-  // ==========================================
-  // CHECKOUT VIA MIDTRANS (OTOMATIS)
-  // PIN digenerate webhook saat pembayaran berhasil.
-  // ==========================================
   const handleMidtransCheckout = async () => {
-    if (!validateForm()) return;
+    if (!validateInputs()) return;
+    if (!captchaToken) {
+      toast.warning(t("common.captchaRequired"));
+      return;
+    }
 
     setLoadingMidtrans(true);
+    const finalWhatsapp = `+62${formData.whatsapp}`;
 
     try {
-      if (typeof window.snap === "undefined" || !window.snap?.pay) {
-        toast.error(t("toast.midtransUnavailable"));
-        return;
-      }
-
-      const finalWhatsapp = `+62${formData.whatsapp}`;
-
-      toast.warning(t("toast.orderCreateLoading"));
-
       const { data, error } = await supabase.functions.invoke("create-order", {
         body: {
           groom_name: formData.groom_name.trim(),
@@ -199,59 +230,75 @@ export default function OrderForm() {
       });
 
       if (error) {
-        throw new Error(error?.message || "Gagal membuat pesanan pembayaran.");
+        let errMessage = t("toast.orderCreateFailed", { error: "Unknown error" });
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = (await ctx.json()) as { error?: string };
+            if (body?.error) errMessage = body.error;
+          }
+        } catch {
+          /* fallback */
+        }
+        throw new Error(errMessage);
       }
 
-      if (!data?.snap_token || !data?.order_id) {
-        throw new Error("Token pembayaran tidak diterima dari server.");
+      const payment = data as {
+        success: boolean;
+        order_id: string;
+        token?: string;
+        redirect_url?: string;
+      };
+
+      if (!payment || !payment.order_id) {
+        throw new Error(t("toast.orderCreateFailed", { error: "Gagal membuat invoice" }));
       }
 
-      window.snap?.pay?.(data.snap_token, {
-        onSuccess: function (result) {
-          toast.success(t("toast.paymentSuccessPinSent"));
-          navigate(
-            `/payment-status?order_id=${result.order_id || data.order_id}`,
-          );
-        },
-        onPending: function (result) {
-          toast.warning(t("toast.paymentWaiting"));
-          navigate(
-            `/payment-status?order_id=${result.order_id || data.order_id}`,
-          );
-        },
-        onError: function (result) {
-          console.error("[OrderForm] Payment error:", result);
-          toast.error(t("toast.paymentFailedRetry"));
-        },
-        onClose: function () {
-          toast.warning(t("toast.paymentPopupClosed"));
-          navigate(`/payment-status?order_id=${data.order_id}`);
-        },
-      });
+      if (payment.token && typeof window.snap !== "undefined" && window.snap?.pay) {
+        window.snap.pay(payment.token, {
+          onSuccess: function (result: { order_id?: string }) {
+            toast.success(t("toast.paymentSuccessPinSent"));
+            navigate(`/payment-status?order_id=${result.order_id || payment.order_id}`);
+          },
+          onPending: function (result: { order_id?: string }) {
+            toast.warning(t("toast.paymentWaiting"));
+            navigate(`/payment-status?order_id=${result.order_id || payment.order_id}`);
+          },
+          onError: function () {
+            toast.error(t("toast.paymentFailedRetry"));
+          },
+          onClose: function () {
+            toast.warning(t("toast.paymentPopupClosed"));
+            navigate(`/payment-status?order_id=${payment.order_id}`);
+          },
+        });
+      } else if (payment.redirect_url) {
+        window.location.href = payment.redirect_url;
+      } else {
+        navigate(`/payment-status?order_id=${payment.order_id}`);
+      }
     } catch (err) {
-      console.error("[OrderForm] Midtrans checkout error:", err);
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Terjadi kesalahan saat memproses pembayaran.";
-      toast.error(msg);
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : t("toast.systemError"));
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setLoadingMidtrans(false);
     }
   };
 
-  // ==========================================
-  // CHECKOUT VIA WHATSAPP (MANUAL — DIAKTIFKAN ADMIN)
-  // PIN digenerate otomatis saat admin mengaktifkan pesanan.
-  // ==========================================
   const handleWhatsappCheckout = async () => {
-    if (!validateForm()) return;
+    if (!validateInputs()) return;
+    if (!captchaToken) {
+      toast.warning(t("common.captchaRequired"));
+      return;
+    }
+
     setLoadingWA(true);
 
     try {
       const finalWhatsapp = `+62${formData.whatsapp}`;
 
-      // Insert ke tabel "pending_orders" (BUKAN orders) + email untuk pengiriman PIN
       const { error } = await supabase.from("pending_orders").insert([
         {
           groom_name: formData.groom_name,
@@ -297,18 +344,18 @@ export default function OrderForm() {
     }).format(value);
 
   return (
-    <div className="min-h-screen bg-[#F1E8DC] font-sans">
-      <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-10 md:py-14">
+    <div className="min-h-screen bg-[#F1E8DC] font-sans w-full max-w-full overflow-x-hidden">
+      <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 md:py-12 min-w-0">
         {/* --- HEADER --- */}
-        <div className="flex items-start justify-between gap-3 mb-6 sm:mb-8 md:mb-10">
-          <div>
+        <div className="flex items-start justify-between gap-3 mb-5 sm:mb-8 md:mb-10 min-w-0">
+          <div className="min-w-0">
             <Link
               to="/"
               className="inline-flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-[#E59A59] transition"
             >
               <ArrowLeft size={13} /> {t("order.back")}
             </Link>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#712E1E] mt-1.5 sm:mt-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#712E1E] mt-1.5 sm:mt-2 truncate">
               {t("order.title")}
             </h1>
             <p className="mt-1 text-xs sm:text-sm md:text-base text-stone-500">
@@ -327,12 +374,12 @@ export default function OrderForm() {
         </div>
 
         {/* --- GRID UTAMA: FORM + SUMMARY --- */}
-        <div className="grid lg:grid-cols-[1fr_380px] gap-5 sm:gap-6 lg:gap-8 items-start">
+        <div className="grid lg:grid-cols-[1fr_380px] gap-4 sm:gap-6 lg:gap-8 items-start w-full min-w-0 max-w-full">
           {/* ===== KOLOM KIRI: FORM ===== */}
-          <div className="space-y-4 sm:space-y-5 order-1">
+          <div className="space-y-4 sm:space-y-5 order-1 w-full min-w-0 max-w-full">
             {/* 1. Pilih Desain */}
             <SectionCard step="01" title={t("order.step1Title")}>
-              <div className="relative">
+              <div className="relative w-full min-w-0">
                 <Palette className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 pointer-events-none" />
                 <select
                   name="template_slug"
@@ -340,9 +387,9 @@ export default function OrderForm() {
                   onChange={handleTemplateChange}
                   className={`${INPUT_CLASS} cursor-pointer text-xs sm:text-sm font-medium`}
                 >
-                  {TEMPLATE_OPTIONS.map((tOpt) => (
+                  {templateList.map((tOpt) => (
                     <option key={tOpt.slug} value={tOpt.slug}>
-                      {tOpt.name} — {tOpt.category}
+                      {tOpt.name} — {tOpt.category} (Rp {tOpt.price.toLocaleString("id-ID")})
                     </option>
                   ))}
                 </select>
@@ -354,13 +401,13 @@ export default function OrderForm() {
 
             {/* 2. Data Mempelai, Acara & Kontak */}
             <SectionCard step="02" title={t("order.step2Title")}>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+              <div className="space-y-3.5 sm:space-y-4 w-full min-w-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 w-full min-w-0">
+                  <div className="min-w-0 w-full">
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#712E1E] mb-1.5">
                       {t("order.groomName")}
                     </label>
-                    <div className="relative">
+                    <div className="relative w-full min-w-0">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
                       <input
                         required
@@ -373,11 +420,11 @@ export default function OrderForm() {
                       />
                     </div>
                   </div>
-                  <div>
+                  <div className="min-w-0 w-full">
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#712E1E] mb-1.5">
                       {t("order.brideName")}
                     </label>
-                    <div className="relative">
+                    <div className="relative w-full min-w-0">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
                       <input
                         required
@@ -392,11 +439,11 @@ export default function OrderForm() {
                   </div>
                 </div>
 
-                <div>
+                <div className="min-w-0 w-full">
                   <label className="block text-xs font-bold uppercase tracking-wider text-[#712E1E] mb-1.5">
                     {t("order.weddingDate")}
                   </label>
-                  <div className="relative">
+                  <div className="relative w-full min-w-0">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
                     <input
                       required
@@ -410,12 +457,12 @@ export default function OrderForm() {
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-stone-200/70 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                <div className="pt-2 border-t border-stone-200/70 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 w-full min-w-0">
+                  <div className="min-w-0 w-full">
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#712E1E] mb-1.5">
                       {t("order.email")}
                     </label>
-                    <div className="relative">
+                    <div className="relative w-full min-w-0">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
                       <input
                         required
@@ -429,11 +476,11 @@ export default function OrderForm() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0 w-full">
                     <label className="block text-xs font-bold uppercase tracking-wider text-[#712E1E] mb-1.5">
                       {t("order.whatsapp")}
                     </label>
-                    <div className="relative">
+                    <div className="relative w-full min-w-0">
                       <FaWhatsapp className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
                       <input
                         required
@@ -456,17 +503,16 @@ export default function OrderForm() {
                 {t("order.step3Desc")}
               </p>
               <div className="space-y-3">
-                              {/* 1. Other QRIS (Universal) */}
+                {/* 1. Other QRIS (Universal) */}
                 <div
                   onClick={() => {
                     setPaymentMethod("qris");
                     setExpandedCategory("qris");
                   }}
-                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 ${
-                    paymentMethod === "qris"
-                      ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm"
-                      : "border-stone-200 bg-white hover:border-[#E59A59]/60 hover:bg-[#FAF6EE]/30"
-                  }`}
+                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 ${paymentMethod === "qris"
+                    ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm"
+                    : "border-stone-200 bg-white hover:border-[#E59A59]/60 hover:bg-[#FAF6EE]/30"
+                    }`}
                 >
                   <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                     <div className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${paymentMethod === "qris" ? "bg-[#712E1E] text-[#FFD5AF]" : "bg-stone-100 text-stone-600"}`}>
@@ -476,7 +522,10 @@ export default function OrderForm() {
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodQrisTitle")}</h4>
                         <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-[#E59A59]/20 text-[#B4693F] px-1.5 sm:px-2 py-0.5 rounded-full">
-                          {t("order.methodQrisBadge")}
+                          {t("order.feeQrisBadge")}
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-[#712E1E] ml-auto sm:ml-0">
+                          {formatIDR(selectedTemplate.price + Math.ceil(selectedTemplate.price * 0.007))}
                         </span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5 truncate sm:whitespace-normal">
@@ -493,11 +542,10 @@ export default function OrderForm() {
                 </div>
 
                 {/* 2. E-Wallet / Dompet Digital (Dropdown) */}
-                <div className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
-                  ["gopay", "shopeepay", "dana"].includes(paymentMethod) || expandedCategory === "ewallet"
-                    ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
-                    : "border-stone-200 bg-white"
-                }`}>
+                <div className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${["gopay", "shopeepay", "dana"].includes(paymentMethod) || expandedCategory === "ewallet"
+                  ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
+                  : "border-stone-200 bg-white"
+                  }`}>
                   <div
                     onClick={() => {
                       setExpandedCategory(expandedCategory === "ewallet" ? "qris" : "ewallet");
@@ -512,7 +560,15 @@ export default function OrderForm() {
                         <Smartphone size={20} className="sm:w-[22px] sm:h-[22px]" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodEwalletTitle")}</h4>
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodEwalletTitle")}</h4>
+                          <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-[#E59A59]/20 text-[#B4693F] px-1.5 sm:px-2 py-0.5 rounded-full">
+                            {t("order.feeEwalletBadge")}
+                          </span>
+                          <span className="text-xs sm:text-sm font-black text-[#712E1E]">
+                            {formatIDR(selectedTemplate.price + Math.ceil(selectedTemplate.price * 0.015))}
+                          </span>
+                        </div>
                         <p className="text-[11px] sm:text-xs text-stone-500 truncate sm:whitespace-normal">{t("order.methodEwalletSubtitle")}</p>
                       </div>
                     </div>
@@ -536,11 +592,10 @@ export default function OrderForm() {
                           setPaymentMethod("gopay");
                           setExpandedCategory("ewallet");
                         }}
-                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${
-                          paymentMethod === "gopay"
-                            ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
-                            : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
-                        }`}
+                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${paymentMethod === "gopay"
+                          ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
+                          : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
+                          }`}
                       >
                         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                           <div className="bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center gap-1 shadow-xs shrink-0">
@@ -552,8 +607,13 @@ export default function OrderForm() {
                             <p className="text-[10px] sm:text-[11px] text-stone-500 font-normal truncate">{t("order.gopayDesc")}</p>
                           </div>
                         </div>
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "gopay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                          {paymentMethod === "gopay" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs font-bold text-[#712E1E]">
+                            {formatIDR(selectedTemplate.price + Math.ceil(selectedTemplate.price * 0.015))}
+                          </span>
+                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "gopay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                            {paymentMethod === "gopay" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
+                          </div>
                         </div>
                       </button>
 
@@ -564,11 +624,10 @@ export default function OrderForm() {
                           setPaymentMethod("shopeepay");
                           setExpandedCategory("ewallet");
                         }}
-                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${
-                          paymentMethod === "shopeepay"
-                            ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
-                            : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
-                        }`}
+                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${paymentMethod === "shopeepay"
+                          ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
+                          : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
+                          }`}
                       >
                         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                           <div className="bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center gap-1 shadow-xs shrink-0">
@@ -580,8 +639,13 @@ export default function OrderForm() {
                             <p className="text-[10px] sm:text-[11px] text-stone-500 font-normal truncate">{t("order.shopeepayDesc")}</p>
                           </div>
                         </div>
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "shopeepay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                          {paymentMethod === "shopeepay" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs font-bold text-[#712E1E]">
+                            {formatIDR(selectedTemplate.price + Math.ceil(selectedTemplate.price * 0.015))}
+                          </span>
+                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "shopeepay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                            {paymentMethod === "shopeepay" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
+                          </div>
                         </div>
                       </button>
 
@@ -592,11 +656,10 @@ export default function OrderForm() {
                           setPaymentMethod("dana");
                           setExpandedCategory("ewallet");
                         }}
-                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${
-                          paymentMethod === "dana"
-                            ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
-                            : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
-                        }`}
+                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${paymentMethod === "dana"
+                          ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
+                          : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
+                          }`}
                       >
                         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                           <div className="bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center shadow-xs shrink-0">
@@ -607,8 +670,13 @@ export default function OrderForm() {
                             <p className="text-[10px] sm:text-[11px] text-stone-500 font-normal">{t("order.danaDesc")}</p>
                           </div>
                         </div>
-                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "dana" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                          {paymentMethod === "dana" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs font-bold text-[#712E1E]">
+                            {formatIDR(selectedTemplate.price + Math.ceil(selectedTemplate.price * 0.015))}
+                          </span>
+                          <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "dana" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                            {paymentMethod === "dana" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
+                          </div>
                         </div>
                       </button>
                     </div>
@@ -616,11 +684,10 @@ export default function OrderForm() {
                 </div>
 
                 {/* 3. ATM / Bank Transfer (Virtual Account) */}
-                <div className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
-                  ["bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va"].includes(paymentMethod) || expandedCategory === "va"
-                    ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
-                    : "border-stone-200 bg-white"
-                }`}>
+                <div className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${["bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va"].includes(paymentMethod) || expandedCategory === "va"
+                  ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
+                  : "border-stone-200 bg-white"
+                  }`}>
                   <div
                     onClick={() => {
                       setExpandedCategory(expandedCategory === "va" ? "qris" : "va");
@@ -635,7 +702,15 @@ export default function OrderForm() {
                         <Building2 size={20} className="sm:w-[22px] sm:h-[22px]" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodVaTitle")}</h4>
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodVaTitle")}</h4>
+                          <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-stone-100 text-stone-700 px-1.5 sm:px-2 py-0.5 rounded-full border border-stone-200">
+                            {t("order.feeVaBadge")}
+                          </span>
+                          <span className="text-xs sm:text-sm font-black text-[#712E1E]">
+                            {formatIDR(selectedTemplate.price + 4000)}
+                          </span>
+                        </div>
                         <p className="text-[11px] sm:text-xs text-stone-500 truncate sm:whitespace-normal">{t("order.methodVaSubtitle")}</p>
                       </div>
                     </div>
@@ -673,11 +748,10 @@ export default function OrderForm() {
                             setPaymentMethod(bank.id as PaymentMethodType);
                             setExpandedCategory("va");
                           }}
-                          className={`p-2.5 sm:p-3 rounded-xl border-2 text-left transition flex items-center justify-between gap-2 ${
-                            paymentMethod === bank.id
-                              ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
-                              : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
-                          }`}
+                          className={`p-2.5 sm:p-3 rounded-xl border-2 text-left transition flex items-center justify-between gap-2 ${paymentMethod === bank.id
+                            ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
+                            : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
+                            }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="bg-white border border-stone-200/80 rounded-md px-1.5 py-0.5 flex items-center justify-center shrink-0 shadow-xs min-w-[45px]">
@@ -685,8 +759,13 @@ export default function OrderForm() {
                             </div>
                             <span className="text-[11px] sm:text-xs font-semibold truncate">{bank.name}</span>
                           </div>
-                          <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === bank.id ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                            {paymentMethod === bank.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[11px] font-bold text-[#712E1E]">
+                              {formatIDR(selectedTemplate.price + 4000)}
+                            </span>
+                            <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === bank.id ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                              {paymentMethod === bank.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            </div>
                           </div>
                         </button>
                       ))}
@@ -694,17 +773,16 @@ export default function OrderForm() {
                   )}
                 </div>
 
-                {/* 6. Transfer Manual WhatsApp */}
+                {/* 4. Transfer Manual WhatsApp */}
                 <div
                   onClick={() => {
                     setPaymentMethod("whatsapp");
                     setExpandedCategory("whatsapp");
                   }}
-                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 ${
-                    paymentMethod === "whatsapp"
-                      ? "border-[#25D366] bg-green-50/60 shadow-sm"
-                      : "border-stone-200 bg-white hover:border-[#25D366]/60 hover:bg-green-50/30"
-                  }`}
+                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 ${paymentMethod === "whatsapp"
+                    ? "border-[#25D366] bg-green-50/60 shadow-sm"
+                    : "border-stone-200 bg-white hover:border-[#25D366]/60 hover:bg-green-50/30"
+                    }`}
                 >
                   <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
                     <div className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${paymentMethod === "whatsapp" ? "bg-[#25D366] text-white" : "bg-stone-100 text-stone-600"}`}>
@@ -713,8 +791,11 @@ export default function OrderForm() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodWaTitle")}</h4>
-                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-stone-100 text-stone-600 px-1.5 sm:px-2 py-0.5 rounded-full">
-                          {t("order.methodWaBadge")}
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-green-100 text-green-800 px-1.5 sm:px-2 py-0.5 rounded-full">
+                          {t("order.feeFreeBadge")}
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-[#712E1E] ml-auto sm:ml-0">
+                          {formatIDR(selectedTemplate.price)}
                         </span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5 truncate sm:whitespace-normal">{t("order.methodWaSubtitle")}</p>
@@ -724,7 +805,6 @@ export default function OrderForm() {
                     {paymentMethod === "whatsapp" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
                   </div>
                 </div>
-
               </div>
             </SectionCard>
           </div>
@@ -779,41 +859,55 @@ export default function OrderForm() {
                     label={t("order.methodSummaryLabel")}
                     value={
                       paymentMethod === "qris"
-                        ? "QRIS Universal"
+                        ? t("order.orderSummaryQris")
                         : paymentMethod === "gopay"
-                        ? "GoPay"
-                        : paymentMethod === "shopeepay"
-                        ? "ShopeePay"
-                        : paymentMethod === "dana"
-                        ? "Dana"
-                        : paymentMethod === "bca_va"
-                        ? "BCA VA"
-                        : paymentMethod === "echannel"
-                        ? "Mandiri VA"
-                        : paymentMethod === "bni_va"
-                        ? "BNI VA"
-                        : paymentMethod === "bri_va"
-                        ? "BRI VA"
-                        : paymentMethod === "cimb_va"
-                        ? "CIMB Niaga VA"
-                        : paymentMethod === "seabank_va"
-                        ? "SeaBank VA"
-                        : paymentMethod === "bsi_va"
-                        ? "BSI VA"
-                        : "WhatsApp CS"
+                          ? t("order.orderSummaryGopay")
+                          : paymentMethod === "shopeepay"
+                            ? t("order.orderSummaryShopeepay")
+                            : paymentMethod === "dana"
+                              ? t("order.orderSummaryDana")
+                              : paymentMethod === "bca_va"
+                                ? t("order.orderSummaryBcaVa")
+                                : paymentMethod === "echannel"
+                                  ? t("order.orderSummaryMandiriVa")
+                                  : paymentMethod === "bni_va"
+                                    ? t("order.orderSummaryBniVa")
+                                    : paymentMethod === "bri_va"
+                                      ? t("order.orderSummaryBriVa")
+                                      : paymentMethod === "cimb_va"
+                                        ? t("order.orderSummaryCimbVa")
+                                        : paymentMethod === "seabank_va"
+                                          ? t("order.orderSummarySeabankVa")
+                                          : paymentMethod === "bsi_va"
+                                            ? t("order.orderSummaryBsiVa")
+                                            : t("order.orderSummaryWa")
                     }
                     muted={false}
                   />
                 </div>
 
-                {/* Total — baris informasi, bukan tombol */}
-                <div className="flex justify-between items-center pt-4 border-t border-[#F3EBDF]">
-                  <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                    {t("order.totalPayment")}
-                  </span>
-                  <span className="text-lg font-extrabold text-[#712E1E]">
-                    {formatIDR(selectedTemplate.price)}
-                  </span>
+                {/* Rincian Harga & Total Bayar */}
+                <div className="space-y-2 pt-4 border-t border-[#F3EBDF]">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-stone-500 font-semibold">{t("order.templatePrice")}</span>
+                    <span className="font-bold text-stone-700">{formatIDR(selectedTemplate.price)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-stone-500 font-semibold">{t("order.adminFee")}</span>
+                    <span className={`font-bold ${getPaymentMethodFee(selectedTemplate.price, paymentMethod) > 0 ? "text-[#B4693F]" : "text-green-600"}`}>
+                      {getPaymentMethodFee(selectedTemplate.price, paymentMethod) > 0
+                        ? `+ ${formatIDR(getPaymentMethodFee(selectedTemplate.price, paymentMethod))}`
+                        : t("order.freeOfCharge")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2.5 border-t border-dashed border-[#F3EBDF]">
+                    <span className="text-xs font-bold uppercase tracking-wider text-stone-400">
+                      {t("order.totalPayment")}
+                    </span>
+                    <span className="text-lg font-extrabold text-[#712E1E]">
+                      {formatIDR(selectedTemplate.price + getPaymentMethodFee(selectedTemplate.price, paymentMethod))}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Cloudflare Turnstile Captcha Widget */}
@@ -833,11 +927,10 @@ export default function OrderForm() {
                       type="button"
                       onClick={handleWhatsappCheckout}
                       disabled={loadingWA || !captchaToken}
-                      className={`w-full py-3.5 rounded-xl font-bold text-base border-2 transition flex items-center justify-center gap-2 ${
-                        loadingWA || !captchaToken
-                          ? "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed"
-                          : "bg-[#25D366] border-[#25D366] text-white hover:bg-[#20bd5a] active:scale-[0.99] shadow-md shadow-green-600/20"
-                      }`}
+                      className={`w-full py-3.5 rounded-xl font-bold text-base border-2 transition flex items-center justify-center gap-2 ${loadingWA || !captchaToken
+                        ? "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed"
+                        : "bg-[#25D366] border-[#25D366] text-white hover:bg-[#20bd5a] active:scale-[0.99] shadow-md shadow-green-600/20"
+                        }`}
                     >
                       {loadingWA ? (
                         t("order.payWhatsappLoading")
@@ -852,11 +945,10 @@ export default function OrderForm() {
                       type="button"
                       onClick={handleMidtransCheckout}
                       disabled={loadingMidtrans || !captchaToken}
-                      className={`w-full py-3.5 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-md transition ${
-                        loadingMidtrans || !captchaToken
-                          ? "bg-stone-300 text-stone-500 cursor-not-allowed"
-                          : "bg-[#712E1E] text-white hover:bg-[#8E3B27] active:scale-[0.99]"
-                      }`}
+                      className={`w-full py-3.5 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-md transition ${loadingMidtrans || !captchaToken
+                        ? "bg-stone-300 text-stone-500 cursor-not-allowed"
+                        : "bg-[#712E1E] text-white hover:bg-[#8E3B27] active:scale-[0.99]"
+                        }`}
                     >
                       {loadingMidtrans ? (
                         t("order.payMidtransLoading")
@@ -873,26 +965,26 @@ export default function OrderForm() {
                             {paymentMethod === "qris"
                               ? t("order.btnPayQris")
                               : paymentMethod === "gopay"
-                              ? t("order.btnPayGopay")
-                              : paymentMethod === "shopeepay"
-                              ? t("order.btnPayShopeepay")
-                              : paymentMethod === "dana"
-                              ? t("order.btnPayDana")
-                              : paymentMethod === "bca_va"
-                              ? t("order.btnPayBca")
-                              : paymentMethod === "echannel"
-                              ? t("order.btnPayMandiri")
-                              : paymentMethod === "bni_va"
-                              ? t("order.btnPayBni")
-                              : paymentMethod === "bri_va"
-                              ? t("order.btnPayBri")
-                              : paymentMethod === "cimb_va"
-                              ? t("order.btnPayCimb")
-                              : paymentMethod === "seabank_va"
-                              ? t("order.btnPaySeabank")
-                              : paymentMethod === "bsi_va"
-                              ? t("order.btnPayBsi")
-                              : t("order.btnPayVa")}
+                                ? t("order.btnPayGopay")
+                                : paymentMethod === "shopeepay"
+                                  ? t("order.btnPayShopeepay")
+                                  : paymentMethod === "dana"
+                                    ? t("order.btnPayDana")
+                                    : paymentMethod === "bca_va"
+                                      ? t("order.btnPayBca")
+                                      : paymentMethod === "echannel"
+                                        ? t("order.btnPayMandiri")
+                                        : paymentMethod === "bni_va"
+                                          ? t("order.btnPayBni")
+                                          : paymentMethod === "bri_va"
+                                            ? t("order.btnPayBri")
+                                            : paymentMethod === "cimb_va"
+                                              ? t("order.btnPayCimb")
+                                              : paymentMethod === "seabank_va"
+                                                ? t("order.btnPaySeabank")
+                                                : paymentMethod === "bsi_va"
+                                                  ? t("order.btnPayBsi")
+                                                  : t("order.btnPayVa")}
                           </span>
                         </>
                       )}

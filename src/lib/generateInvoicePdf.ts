@@ -28,7 +28,7 @@ export async function downloadClientInvoice(data: ClientInvoiceData): Promise<vo
     year: 'numeric',
   });
 
-  const priceNumber = typeof data.price === 'number' && data.price > 0 ? data.price : 60000;
+  const priceNumber = typeof data.price === 'number' && data.price > 0 ? data.price : 10070;
   const formattedPrice = `Rp ${priceNumber.toLocaleString('id-ID')}`;
 
   // 1. Header Banner (#712E1E)
@@ -40,9 +40,20 @@ export async function downloadClientInvoice(data: ClientInvoiceData): Promise<vo
     color: rgb(0.443, 0.18, 0.118),
   });
 
+  // LoVerse Heart Logo Icon in Header
+  page.drawSvgPath(
+    'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+    {
+      x: 40,
+      y: 816,
+      scale: 1.0,
+      color: rgb(1, 0.835, 0.686),
+    },
+  );
+
   page.drawText('LoVerse', {
-    x: 40,
-    y: 792,
+    x: 70,
+    y: 794,
     size: 24,
     font: fontBold,
     color: rgb(1, 0.835, 0.686),
@@ -58,7 +69,7 @@ export async function downloadClientInvoice(data: ClientInvoiceData): Promise<vo
 
   page.drawText('INVOICE / BUKTI PEMBAYARAN', {
     x: 340,
-    y: 792,
+    y: 794,
     size: 12,
     font: fontBold,
     color: rgb(1, 1, 1),
@@ -145,7 +156,7 @@ export async function downloadClientInvoice(data: ClientInvoiceData): Promise<vo
     color: rgb(0.34, 0.29, 0.24),
   });
 
-  page.drawText(`Metode      : ${data.paymentMethod || 'Midtrans Automated'}`, {
+  page.drawText(`Metode      : ${data.paymentMethod || 'QRIS'}`, {
     x: 350,
     y: 653,
     size: 10,

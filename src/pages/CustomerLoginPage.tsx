@@ -133,14 +133,14 @@ export default function DashboardLogin() {
           {/* Input No WhatsApp */}
           <div>
             <label className="block text-xs sm:text-sm font-bold text-[#712E1E] mb-1">{t('login.whatsappLabel')}</label>
-            <div className="relative">
-                <Phone className="absolute left-3 top-3 w-5 h-5 text-stone-400" />
+            <div className="relative w-full min-w-0">
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-stone-400 pointer-events-none" />
                 <input 
                   type="tel" 
                   name="whatsapp" 
                   required 
                   placeholder={t('login.whatsappPlaceholder')} 
-                  className="pl-10 w-full p-2.5 sm:p-3 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition text-sm sm:text-base" 
+                  className="w-full min-w-0 py-2.5 sm:py-3 pr-3.5 pl-11 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition text-sm sm:text-base" 
                 />
             </div>
           </div>
@@ -148,8 +148,8 @@ export default function DashboardLogin() {
           {/* Input PIN */}
           <div className="bg-yellow-50 p-3.5 sm:p-4 rounded-xl border border-yellow-100">
               <label className="block text-xs sm:text-sm font-bold text-[#712E1E] mb-1">{t('login.pinLabel')}</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 sm:top-3.5 w-5 h-5 text-stone-400" />
+              <div className="relative w-full min-w-0">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-stone-400 pointer-events-none" />
                 
                 <input 
                   name="pin" 
@@ -160,15 +160,15 @@ export default function DashboardLogin() {
                   placeholder={t('login.pinPlaceholder')} 
                   value={pinValue}
                   onChange={handlePinChange} 
-                  className="pl-10 pr-12 w-full p-2.5 sm:p-3 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition bg-white font-mono tracking-widest text-base sm:text-lg" 
+                  className="w-full min-w-0 py-2.5 sm:py-3 pr-12 pl-11 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition bg-white font-mono tracking-widest text-base sm:text-lg" 
                 />
 
                 <button 
                   type="button"
                   onClick={() => setShowPin(!showPin)}
-                  className="absolute right-3 top-2.5 sm:top-3 text-stone-400 hover:text-[#E59A59] transition"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#E59A59] transition"
                 >
-                  {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPin ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </button>
               </div>
               <p className="text-[11px] sm:text-xs text-stone-500 mt-1.5 sm:mt-2">{t('login.pinHelp')}</p>

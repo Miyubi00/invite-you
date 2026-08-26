@@ -189,7 +189,27 @@ serve(async (req) => {
     const midtransApiUrl = snapApiBaseUrl(midtransEnv)
 
     const orderId = `undangan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    const grossAmount = template.price
+
+    // --- Hitung biaya layanan / admin fee sesuai metode pembayaran ---
+    let adminFee = 0
+    let feeName = ''
+
+    if (payment_method === 'qris' || payment_method === 'other_qris') {
+      adminFee = Math.ceil(template.price * 0.007) // 0.7% QRIS
+      feeName = 'QRIS (0.7%)'
+    } else if (payment_method === 'gopay' || payment_method === 'shopeepay' || payment_method === 'dana') {
+      adminFee = Math.ceil(template.price * 0.015) // 1.5% E-Wallet
+      feeName = 'E-Wallet (1.5%)'
+    } else if (payment_method === 'whatsapp') {
+      adminFee = 0
+      feeName = 'Gratis (Transfer Manual)'
+    } else {
+      // Virtual Account Bank
+      adminFee = 4000 // Flat Rp 4.000
+      feeName = 'Virtual Account (Flat Rp 4.000)'
+    }
+
+    const grossAmount = template.price + adminFee
 
     // --- Simpan order DULU (status pending, tanpa snap_token) ---
     // Urutan ini mencegah divergensi state: transaksi Midtrans tidak
@@ -209,7 +229,13 @@ serve(async (req) => {
           slug: generateSlug(groom_name, bride_name),
           midtrans_order_id: orderId,
           payment_status: 'pending',
-          event_details: {},
+          price: grossAmount,
+          event_details: {
+            payment_method,
+            base_price: template.price,
+            admin_fee: adminFee,
+            template_name: template.name,
+          },
         })
         .select()
         .single()
@@ -257,6 +283,24 @@ serve(async (req) => {
       enabledPayments = ['bca_va', 'echannel', 'bni_va', 'bri_va', 'cimb_va', 'other_va']
     }
 
+    const itemDetails: Array<{ id: string; price: number; quantity: number; name: string }> = [
+      {
+        id: template_slug,
+        price: template.price,
+        quantity: 1,
+        name: `Undangan Digital - ${template.name}`,
+      },
+    ]
+
+    if (adminFee > 0) {
+      itemDetails.push({
+        id: `fee-${payment_method || 'admin'}`,
+        price: adminFee,
+        quantity: 1,
+        name: `Biaya Layanan ${feeName}`,
+      })
+    }
+
     const transactionParams: Record<string, unknown> = {
       transaction_details: {
         order_id: orderId,
@@ -268,14 +312,7 @@ serve(async (req) => {
         phone: normalizedWa,
         email,
       },
-      item_details: [
-        {
-          id: template_slug,
-          price: grossAmount,
-          quantity: 1,
-          name: `Undangan Digital - ${template.name}`,
-        },
-      ],
+      item_details: itemDetails,
       enabled_payments: enabledPayments,
       custom_expiry: {
         expiry_duration: 15,

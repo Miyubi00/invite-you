@@ -50,7 +50,7 @@ serve(async (req) => {
     const { data: order, error } = await admin
       .from('orders')
       .select(
-        'payment_status, groom_name, bride_name, slug, email, snap_token, pin_code',
+        'payment_status, groom_name, bride_name, slug, email, whatsapp, wedding_date, template_slug, price, event_details, snap_token, pin_code',
       )
       .eq('midtrans_order_id', midtrans_order_id)
       .maybeSingle()
@@ -65,6 +65,43 @@ serve(async (req) => {
     const isPending = order.payment_status === 'pending'
     const isSuccess = order.payment_status === 'success'
 
+    // Ambil detail template & method jika ada
+    const evt = (order.event_details || {}) as Record<string, unknown>
+    let templateName = evt.template_name as string | undefined
+    const rawMethod = evt.payment_method as string | undefined
+    let finalPrice = typeof order.price === 'number' && order.price > 0 ? order.price : undefined
+
+    if (!templateName || !finalPrice) {
+      const { data: tpl } = await admin
+        .from('templates')
+        .select('name, price')
+        .eq('slug', order.template_slug || '')
+        .maybeSingle()
+      if (tpl) {
+        if (!templateName) templateName = tpl.name
+        if (!finalPrice) finalPrice = tpl.price
+      }
+    }
+
+    const methodMap: Record<string, string> = {
+      qris: 'QRIS',
+      other_qris: 'QRIS',
+      gopay: 'GoPay',
+      shopeepay: 'ShopeePay',
+      dana: 'Dana',
+      bca_va: 'BCA Virtual Account',
+      echannel: 'Mandiri Virtual Account',
+      mandiri_va: 'Mandiri Virtual Account',
+      bni_va: 'BNI Virtual Account',
+      bri_va: 'BRI Virtual Account',
+      cimb_va: 'CIMB Niaga VA',
+      seabank_va: 'SeaBank VA',
+      bsi_va: 'BSI VA',
+      whatsapp: 'Transfer Manual (WhatsApp)',
+    }
+
+    const paymentMethodDisplay = rawMethod ? (methodMap[rawMethod] || rawMethod.toUpperCase()) : 'QRIS'
+
     return json(
       {
         found: true,
@@ -73,6 +110,12 @@ serve(async (req) => {
         bride_name: order.bride_name,
         slug: order.slug,
         email: order.email ?? null,
+        whatsapp: order.whatsapp ?? null,
+        wedding_date: order.wedding_date ?? null,
+        template_slug: order.template_slug ?? null,
+        template_name: templateName || 'Undangan Digital',
+        price: finalPrice || 10070,
+        payment_method: paymentMethodDisplay,
         // Token bayar-ulang hanya relevan (dan hanya diberikan) saat pending.
         snap_token: isPending ? order.snap_token : null,
         // PIN hanya ditampilkan kepada pemegang capability saat lunas.
