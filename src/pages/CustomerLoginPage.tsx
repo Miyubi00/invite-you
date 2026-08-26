@@ -116,23 +116,23 @@ export default function DashboardLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-4 font-sans">
-      <div className="bg-white p-8 md:p-10 rounded-2xl shadow-xl w-full max-w-md border border-[#EBDFCE]">
+    <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans">
+      <div className="bg-white p-5 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl shadow-xl w-full max-w-md border border-[#EBDFCE]">
         
         {/* Header Login */}
-        <div className="text-center mb-8">
-          <div className="bg-[#E59A59]/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-             <HeartHandshake className="w-8 h-8 text-[#E59A59]" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="bg-[#E59A59]/10 w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 animate-pulse">
+             <HeartHandshake className="w-7 h-7 sm:w-8 sm:h-8 text-[#E59A59]" />
           </div>
-          <h1 className="text-3xl font-bold text-[#712E1E]">{t('login.title')}</h1>
-          <p className="text-stone-400 mt-2 text-sm">{t('login.subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E]">{t('login.title')}</h1>
+          <p className="text-stone-400 mt-1.5 text-xs sm:text-sm">{t('login.subtitle')}</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5">
+        <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
           
           {/* Input No WhatsApp */}
           <div>
-            <label className="block text-sm font-bold text-[#712E1E] mb-1">{t('login.whatsappLabel')}</label>
+            <label className="block text-xs sm:text-sm font-bold text-[#712E1E] mb-1">{t('login.whatsappLabel')}</label>
             <div className="relative">
                 <Phone className="absolute left-3 top-3 w-5 h-5 text-stone-400" />
                 <input 
@@ -140,16 +140,16 @@ export default function DashboardLogin() {
                   name="whatsapp" 
                   required 
                   placeholder={t('login.whatsappPlaceholder')} 
-                  className="pl-10 w-full p-3 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition" 
+                  className="pl-10 w-full p-2.5 sm:p-3 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition text-sm sm:text-base" 
                 />
             </div>
           </div>
 
           {/* Input PIN */}
-          <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-              <label className="block text-sm font-bold text-[#712E1E] mb-1">{t('login.pinLabel')}</label>
+          <div className="bg-yellow-50 p-3.5 sm:p-4 rounded-xl border border-yellow-100">
+              <label className="block text-xs sm:text-sm font-bold text-[#712E1E] mb-1">{t('login.pinLabel')}</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3.5 w-5 h-5 text-stone-400" />
+                <Lock className="absolute left-3 top-3 sm:top-3.5 w-5 h-5 text-stone-400" />
                 
                 <input 
                   name="pin" 
@@ -160,18 +160,18 @@ export default function DashboardLogin() {
                   placeholder={t('login.pinPlaceholder')} 
                   value={pinValue}
                   onChange={handlePinChange} 
-                  className="pl-10 pr-12 w-full p-3 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition bg-white font-mono tracking-widest text-lg" 
+                  className="pl-10 pr-12 w-full p-2.5 sm:p-3 rounded-xl border border-stone-200 focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition bg-white font-mono tracking-widest text-base sm:text-lg" 
                 />
 
                 <button 
                   type="button"
                   onClick={() => setShowPin(!showPin)}
-                  className="absolute right-3 top-3 text-stone-400 hover:text-[#E59A59] transition"
+                  className="absolute right-3 top-2.5 sm:top-3 text-stone-400 hover:text-[#E59A59] transition"
                 >
                   {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <p className="text-xs text-stone-500 mt-2">{t('login.pinHelp')}</p>
+              <p className="text-[11px] sm:text-xs text-stone-500 mt-1.5 sm:mt-2">{t('login.pinHelp')}</p>
           </div>
 
           {/* Cloudflare Turnstile Captcha Widget */}
@@ -184,7 +184,7 @@ export default function DashboardLogin() {
 
           <button 
             disabled={loading || !captchaToken}
-            className="w-full bg-[#E59A59] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-[#d48b4b] transition flex items-center justify-center gap-2 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full bg-[#E59A59] text-white py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg shadow-lg hover:bg-[#d48b4b] transition flex items-center justify-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
             {loading ? t('login.btnSubmitting') : (
                 <>

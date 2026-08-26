@@ -298,9 +298,9 @@ export default function OrderForm() {
 
   return (
     <div className="min-h-screen bg-[#F1E8DC] font-sans">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+      <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-10 md:py-14">
         {/* --- HEADER --- */}
-        <div className="flex items-start justify-between gap-4 mb-8 md:mb-10">
+        <div className="flex items-start justify-between gap-3 mb-6 sm:mb-8 md:mb-10">
           <div>
             <Link
               to="/"
@@ -308,28 +308,28 @@ export default function OrderForm() {
             >
               <ArrowLeft size={13} /> {t("order.back")}
             </Link>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-[#712E1E] mt-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#712E1E] mt-1.5 sm:mt-2">
               {t("order.title")}
             </h1>
-            <p className="mt-1.5 text-sm md:text-base text-stone-500">
+            <p className="mt-1 text-xs sm:text-sm md:text-base text-stone-500">
               {t("order.desc")}
             </p>
           </div>
 
           <button
             onClick={() => setShowConfirm(true)}
-            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-stone-400 hover:text-red-500 transition px-3 py-2 rounded-xl hover:bg-red-50"
+            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-stone-400 hover:text-red-500 transition px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl hover:bg-red-50"
             title={t("order.resetForm")}
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">{t("order.resetForm")}</span>
           </button>
         </div>
 
         {/* --- GRID UTAMA: FORM + SUMMARY --- */}
-        <div className="grid lg:grid-cols-[1fr_380px] gap-6 lg:gap-8 items-start">
+        <div className="grid lg:grid-cols-[1fr_380px] gap-5 sm:gap-6 lg:gap-8 items-start">
           {/* ===== KOLOM KIRI: FORM ===== */}
-          <div className="space-y-5 order-1">
+          <div className="space-y-4 sm:space-y-5 order-1">
             {/* 1. Pilih Desain */}
             <SectionCard step="01" title={t("order.step1Title")}>
               <div className="relative">
@@ -338,7 +338,7 @@ export default function OrderForm() {
                   name="template_slug"
                   value={formData.template_slug}
                   onChange={handleTemplateChange}
-                  className={`${INPUT_CLASS} cursor-pointer`}
+                  className={`${INPUT_CLASS} cursor-pointer text-xs sm:text-sm font-medium`}
                 >
                   {TEMPLATE_OPTIONS.map((tOpt) => (
                     <option key={tOpt.slug} value={tOpt.slug}>
@@ -347,7 +347,7 @@ export default function OrderForm() {
                   ))}
                 </select>
               </div>
-              <p className="text-xs text-stone-400 -mt-1">
+              <p className="text-[11px] sm:text-xs text-stone-400 -mt-1">
                 {t("order.step1Desc")}
               </p>
             </SectionCard>
@@ -456,45 +456,44 @@ export default function OrderForm() {
                 {t("order.step3Desc")}
               </p>
               <div className="space-y-3">
-                
-                {/* 1. Other QRIS (Universal) */}
+                              {/* 1. Other QRIS (Universal) */}
                 <div
                   onClick={() => {
                     setPaymentMethod("qris");
                     setExpandedCategory("qris");
                   }}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 ${
                     paymentMethod === "qris"
                       ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm"
                       : "border-stone-200 bg-white hover:border-[#E59A59]/60 hover:bg-[#FAF6EE]/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className={`p-2.5 rounded-xl shrink-0 ${paymentMethod === "qris" ? "bg-[#712E1E] text-[#FFD5AF]" : "bg-stone-100 text-stone-600"}`}>
-                      <QrCode size={22} />
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                    <div className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${paymentMethod === "qris" ? "bg-[#712E1E] text-[#FFD5AF]" : "bg-stone-100 text-stone-600"}`}>
+                      <QrCode size={20} className="sm:w-[22px] sm:h-[22px]" />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-bold text-[#712E1E]">{t("order.methodQrisTitle")}</h4>
-                        <span className="text-[9px] font-bold uppercase tracking-wider bg-[#E59A59]/20 text-[#B4693F] px-2 py-0.5 rounded-full">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodQrisTitle")}</h4>
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-[#E59A59]/20 text-[#B4693F] px-1.5 sm:px-2 py-0.5 rounded-full">
                           {t("order.methodQrisBadge")}
                         </span>
                       </div>
-                      <p className="text-xs text-stone-500 mt-0.5 truncate sm:whitespace-normal">
+                      <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5 truncate sm:whitespace-normal">
                         {t("order.methodQrisSubtitle")}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <LogoPill src={MIDTRANS_LOGOS.qris} alt="QRIS" className="h-5" />
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "qris" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                      {paymentMethod === "qris" && <div className="w-2 h-2 rounded-full bg-white" />}
+                  <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                    <LogoPill src={MIDTRANS_LOGOS.qris} alt="QRIS" className="h-4 sm:h-5" />
+                    <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "qris" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                      {paymentMethod === "qris" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
                     </div>
                   </div>
                 </div>
 
                 {/* 2. E-Wallet / Dompet Digital (Dropdown) */}
-                <div className={`rounded-2xl border-2 transition-all overflow-hidden ${
+                <div className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
                   ["gopay", "shopeepay", "dana"].includes(paymentMethod) || expandedCategory === "ewallet"
                     ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
                     : "border-stone-200 bg-white"
@@ -506,15 +505,15 @@ export default function OrderForm() {
                         setPaymentMethod("gopay");
                       }
                     }}
-                    className="p-4 cursor-pointer flex items-center justify-between gap-3"
+                    className="p-3 sm:p-4 cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className={`p-2.5 rounded-xl shrink-0 ${["gopay", "shopeepay", "dana"].includes(paymentMethod) ? "bg-[#712E1E] text-[#FFD5AF]" : "bg-stone-100 text-stone-600"}`}>
-                        <Smartphone size={22} />
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                      <div className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${["gopay", "shopeepay", "dana"].includes(paymentMethod) ? "bg-[#712E1E] text-[#FFD5AF]" : "bg-stone-100 text-stone-600"}`}>
+                        <Smartphone size={20} className="sm:w-[22px] sm:h-[22px]" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-[#712E1E]">{t("order.methodEwalletTitle")}</h4>
-                        <p className="text-xs text-stone-500 truncate sm:whitespace-normal">{t("order.methodEwalletSubtitle")}</p>
+                        <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodEwalletTitle")}</h4>
+                        <p className="text-[11px] sm:text-xs text-stone-500 truncate sm:whitespace-normal">{t("order.methodEwalletSubtitle")}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -529,7 +528,7 @@ export default function OrderForm() {
 
                   {/* Sub-Pilihan E-Wallet */}
                   {(expandedCategory === "ewallet" || ["gopay", "shopeepay", "dana"].includes(paymentMethod)) && (
-                    <div className="px-4 pb-4 pt-2 space-y-2 border-t border-stone-200/80 bg-white">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 space-y-2 border-t border-stone-200/80 bg-white">
                       {/* GoPay */}
                       <button
                         type="button"
@@ -537,24 +536,24 @@ export default function OrderForm() {
                           setPaymentMethod("gopay");
                           setExpandedCategory("ewallet");
                         }}
-                        className={`w-full p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-3 ${
+                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${
                           paymentMethod === "gopay"
                             ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
                             : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
                         }`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="bg-white border border-stone-200/90 rounded-lg px-2.5 py-1 flex items-center gap-1.5 shadow-xs shrink-0">
-                            <img src={MIDTRANS_LOGOS.gopay} alt="GoPay" className="h-4 w-auto object-contain" />
-                            <img src={MIDTRANS_LOGOS.gopaylater} alt="GoPayLater" className="h-4 w-auto object-contain" />
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                          <div className="bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center gap-1 shadow-xs shrink-0">
+                            <img src={MIDTRANS_LOGOS.gopay} alt="GoPay" className="h-3.5 sm:h-4 w-auto object-contain" />
+                            <img src={MIDTRANS_LOGOS.gopaylater} alt="GoPayLater" className="h-3.5 sm:h-4 w-auto object-contain" />
                           </div>
-                          <div>
-                            <h5 className="text-xs font-bold text-[#712E1E]">GoPay / GoPay Later</h5>
-                            <p className="text-[11px] text-stone-500 font-normal">{t("order.gopayDesc")}</p>
+                          <div className="min-w-0">
+                            <h5 className="text-xs font-bold text-[#712E1E] truncate">GoPay / GoPay Later</h5>
+                            <p className="text-[10px] sm:text-[11px] text-stone-500 font-normal truncate">{t("order.gopayDesc")}</p>
                           </div>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "gopay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                          {paymentMethod === "gopay" && <div className="w-2 h-2 rounded-full bg-white" />}
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "gopay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                          {paymentMethod === "gopay" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
                         </div>
                       </button>
 
@@ -565,24 +564,24 @@ export default function OrderForm() {
                           setPaymentMethod("shopeepay");
                           setExpandedCategory("ewallet");
                         }}
-                        className={`w-full p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-3 ${
+                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${
                           paymentMethod === "shopeepay"
                             ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
                             : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
                         }`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="bg-white border border-stone-200/90 rounded-lg px-2.5 py-1 flex items-center gap-1.5 shadow-xs shrink-0">
-                            <img src={MIDTRANS_LOGOS.shopeepay} alt="ShopeePay" className="h-4.5 w-auto object-contain" />
-                            <img src={MIDTRANS_LOGOS.spaylater} alt="SPayLater" className="h-4 w-auto object-contain" />
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                          <div className="bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center gap-1 shadow-xs shrink-0">
+                            <img src={MIDTRANS_LOGOS.shopeepay} alt="ShopeePay" className="h-3.5 sm:h-4.5 w-auto object-contain" />
+                            <img src={MIDTRANS_LOGOS.spaylater} alt="SPayLater" className="h-3.5 sm:h-4 w-auto object-contain" />
                           </div>
-                          <div>
-                            <h5 className="text-xs font-bold text-[#712E1E]">ShopeePay / SPayLater</h5>
-                            <p className="text-[11px] text-stone-500 font-normal">{t("order.shopeepayDesc")}</p>
+                          <div className="min-w-0">
+                            <h5 className="text-xs font-bold text-[#712E1E] truncate">ShopeePay / SPayLater</h5>
+                            <p className="text-[10px] sm:text-[11px] text-stone-500 font-normal truncate">{t("order.shopeepayDesc")}</p>
                           </div>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "shopeepay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                          {paymentMethod === "shopeepay" && <div className="w-2 h-2 rounded-full bg-white" />}
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "shopeepay" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                          {paymentMethod === "shopeepay" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
                         </div>
                       </button>
 
@@ -593,23 +592,23 @@ export default function OrderForm() {
                           setPaymentMethod("dana");
                           setExpandedCategory("ewallet");
                         }}
-                        className={`w-full p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-3 ${
+                        className={`w-full p-2.5 sm:p-3.5 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 sm:gap-3 ${
                           paymentMethod === "dana"
                             ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
                             : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
                         }`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="bg-white border border-stone-200/90 rounded-lg px-2.5 py-1 flex items-center shadow-xs shrink-0">
-                            <img src={MIDTRANS_LOGOS.dana} alt="Dana" className="h-4.5 w-auto object-contain" />
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                          <div className="bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center shadow-xs shrink-0">
+                            <img src={MIDTRANS_LOGOS.dana} alt="Dana" className="h-3.5 sm:h-4.5 w-auto object-contain" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <h5 className="text-xs font-bold text-[#712E1E]">Dana</h5>
-                            <p className="text-[11px] text-stone-500 font-normal">{t("order.danaDesc")}</p>
+                            <p className="text-[10px] sm:text-[11px] text-stone-500 font-normal">{t("order.danaDesc")}</p>
                           </div>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "dana" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
-                          {paymentMethod === "dana" && <div className="w-2 h-2 rounded-full bg-white" />}
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "dana" ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                          {paymentMethod === "dana" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
                         </div>
                       </button>
                     </div>
@@ -617,7 +616,7 @@ export default function OrderForm() {
                 </div>
 
                 {/* 3. ATM / Bank Transfer (Virtual Account) */}
-                <div className={`rounded-2xl border-2 transition-all overflow-hidden ${
+                <div className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
                   ["bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va"].includes(paymentMethod) || expandedCategory === "va"
                     ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
                     : "border-stone-200 bg-white"
@@ -629,15 +628,15 @@ export default function OrderForm() {
                         setPaymentMethod("bca_va");
                       }
                     }}
-                    className="p-4 cursor-pointer flex items-center justify-between gap-3"
+                    className="p-3 sm:p-4 cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className={`p-2.5 rounded-xl shrink-0 ${["bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va"].includes(paymentMethod) ? "bg-[#712E1E] text-[#FFD5AF]" : "bg-stone-100 text-stone-600"}`}>
-                        <Building2 size={22} />
+                    <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                      <div className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${["bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va"].includes(paymentMethod) ? "bg-[#712E1E] text-[#FFD5AF]" : "bg-stone-100 text-stone-600"}`}>
+                        <Building2 size={20} className="sm:w-[22px] sm:h-[22px]" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-[#712E1E]">{t("order.methodVaTitle")}</h4>
-                        <p className="text-xs text-stone-500 truncate sm:whitespace-normal">{t("order.methodVaSubtitle")}</p>
+                        <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodVaTitle")}</h4>
+                        <p className="text-[11px] sm:text-xs text-stone-500 truncate sm:whitespace-normal">{t("order.methodVaSubtitle")}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -657,15 +656,15 @@ export default function OrderForm() {
 
                   {/* Sub-Pilihan Bank */}
                   {(expandedCategory === "va" || ["bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va"].includes(paymentMethod)) && (
-                    <div className="px-4 pb-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5 border-t border-stone-200/80 bg-white">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-stone-200/80 bg-white">
                       {[
-                        { id: "bca_va", name: "BCA Virtual Account", logo: MIDTRANS_LOGOS.bca, h: "h-3.5" },
-                        { id: "echannel", name: "Mandiri Virtual Account", logo: MIDTRANS_LOGOS.mandiri, h: "h-3.5" },
-                        { id: "bni_va", name: "BNI Virtual Account", logo: MIDTRANS_LOGOS.bni, h: "h-3" },
-                        { id: "bri_va", name: "BRI Virtual Account", logo: MIDTRANS_LOGOS.bri, h: "h-3.5" },
-                        { id: "cimb_va", name: "CIMB Niaga VA", logo: MIDTRANS_LOGOS.cimb, h: "h-3" },
-                        { id: "seabank_va", name: "SeaBank Direct VA", logo: MIDTRANS_LOGOS.seabank, h: "h-3.5" },
-                        { id: "bsi_va", name: "BSI (Bank Syariah Indonesia)", logo: MIDTRANS_LOGOS.bsi, h: "h-3.5" },
+                        { id: "bca_va", name: "BCA Virtual Account", logo: MIDTRANS_LOGOS.bca, h: "h-3" },
+                        { id: "echannel", name: "Mandiri Virtual Account", logo: MIDTRANS_LOGOS.mandiri, h: "h-3" },
+                        { id: "bni_va", name: "BNI Virtual Account", logo: MIDTRANS_LOGOS.bni, h: "h-2.5" },
+                        { id: "bri_va", name: "BRI Virtual Account", logo: MIDTRANS_LOGOS.bri, h: "h-3" },
+                        { id: "cimb_va", name: "CIMB Niaga VA", logo: MIDTRANS_LOGOS.cimb, h: "h-2.5" },
+                        { id: "seabank_va", name: "SeaBank Direct VA", logo: MIDTRANS_LOGOS.seabank, h: "h-3" },
+                        { id: "bsi_va", name: "BSI (Bank Syariah Indonesia)", logo: MIDTRANS_LOGOS.bsi, h: "h-3" },
                       ].map((bank) => (
                         <button
                           key={bank.id}
@@ -674,19 +673,19 @@ export default function OrderForm() {
                             setPaymentMethod(bank.id as PaymentMethodType);
                             setExpandedCategory("va");
                           }}
-                          className={`p-3 rounded-xl border-2 text-left transition flex items-center justify-between gap-2.5 ${
+                          className={`p-2.5 sm:p-3 rounded-xl border-2 text-left transition flex items-center justify-between gap-2 ${
                             paymentMethod === bank.id
                               ? "border-[#712E1E] bg-[#FAF6EE] shadow-sm font-bold text-[#712E1E]"
                               : "border-stone-100 bg-stone-50/70 hover:bg-stone-100/80 text-stone-700"
                           }`}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="bg-white border border-stone-200/80 rounded-md px-2 py-0.5 flex items-center justify-center shrink-0 shadow-xs min-w-[50px]">
-                              <img src={bank.logo} alt={bank.name} className={`${bank.h} max-w-[45px] object-contain`} />
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="bg-white border border-stone-200/80 rounded-md px-1.5 py-0.5 flex items-center justify-center shrink-0 shadow-xs min-w-[45px]">
+                              <img src={bank.logo} alt={bank.name} className={`${bank.h} max-w-[40px] object-contain`} />
                             </div>
-                            <span className="text-xs font-semibold">{bank.name}</span>
+                            <span className="text-[11px] sm:text-xs font-semibold truncate">{bank.name}</span>
                           </div>
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === bank.id ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
+                          <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === bank.id ? "border-[#712E1E] bg-[#712E1E]" : "border-stone-300"}`}>
                             {paymentMethod === bank.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                           </div>
                         </button>
@@ -701,28 +700,28 @@ export default function OrderForm() {
                     setPaymentMethod("whatsapp");
                     setExpandedCategory("whatsapp");
                   }}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 sm:gap-3 ${
                     paymentMethod === "whatsapp"
                       ? "border-[#25D366] bg-green-50/60 shadow-sm"
                       : "border-stone-200 bg-white hover:border-[#25D366]/60 hover:bg-green-50/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className={`p-2.5 rounded-xl shrink-0 ${paymentMethod === "whatsapp" ? "bg-[#25D366] text-white" : "bg-stone-100 text-stone-600"}`}>
-                      <FaWhatsapp size={22} />
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+                    <div className={`p-2 sm:p-2.5 rounded-xl shrink-0 ${paymentMethod === "whatsapp" ? "bg-[#25D366] text-white" : "bg-stone-100 text-stone-600"}`}>
+                      <FaWhatsapp size={20} className="sm:w-[22px] sm:h-[22px]" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-bold text-[#712E1E]">{t("order.methodWaTitle")}</h4>
-                        <span className="text-[9px] font-bold uppercase tracking-wider bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-bold text-[#712E1E]">{t("order.methodWaTitle")}</h4>
+                        <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-stone-100 text-stone-600 px-1.5 sm:px-2 py-0.5 rounded-full">
                           {t("order.methodWaBadge")}
                         </span>
                       </div>
-                      <p className="text-xs text-stone-500 mt-0.5 truncate sm:whitespace-normal">{t("order.methodWaSubtitle")}</p>
+                      <p className="text-[11px] sm:text-xs text-stone-500 mt-0.5 truncate sm:whitespace-normal">{t("order.methodWaSubtitle")}</p>
                     </div>
                   </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "whatsapp" ? "border-[#25D366] bg-[#25D366]" : "border-stone-300"}`}>
-                    {paymentMethod === "whatsapp" && <div className="w-2 h-2 rounded-full bg-white" />}
+                  <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${paymentMethod === "whatsapp" ? "border-[#25D366] bg-[#25D366]" : "border-stone-300"}`}>
+                    {paymentMethod === "whatsapp" && <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white" />}
                   </div>
                 </div>
 
@@ -732,7 +731,7 @@ export default function OrderForm() {
 
           {/* ===== KOLOM KANAN: RINGKASAN & PEMBAYARAN ===== */}
           <aside className="order-2 lg:sticky lg:top-6 space-y-4">
-            <div className="bg-white rounded-2xl border border-[#EBDFCE] shadow-md overflow-hidden">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#EBDFCE] shadow-md overflow-hidden">
               {/* Banner tema */}
               <div className="relative aspect-[16/9] bg-[#FAF6EE] group">
                 {selectedImage && (
@@ -752,9 +751,9 @@ export default function OrderForm() {
                 </span>
               </div>
 
-              <div className="p-5 md:p-6 space-y-5">
+              <div className="p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5">
                 {/* Nama Tema */}
-                <h2 className="font-extrabold text-lg text-[#712E1E] leading-tight">
+                <h2 className="font-black text-base sm:text-lg text-[#712E1E] leading-tight">
                   {selectedTemplate.name}
                 </h2>
 
@@ -930,12 +929,12 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-2xl border border-[#EBDFCE] shadow-sm p-6 md:p-7 space-y-4">
-      <div className="flex items-center gap-3">
-        <span className="w-9 h-9 shrink-0 rounded-xl bg-[#F7EEE3] text-[#B4693F] grid place-items-center text-sm font-black tracking-tight">
+    <section className="bg-white rounded-2xl sm:rounded-3xl border border-[#EBDFCE] shadow-sm p-4 sm:p-6 md:p-7 space-y-3.5 sm:space-y-4">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        <span className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-[#F7EEE3] text-[#B4693F] grid place-items-center text-xs sm:text-sm font-black tracking-tight">
           {step}
         </span>
-        <h2 className="font-bold text-[#712E1E]">{title}</h2>
+        <h2 className="font-extrabold text-sm sm:text-base text-[#712E1E]">{title}</h2>
       </div>
       {children}
     </section>

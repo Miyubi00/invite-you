@@ -178,29 +178,29 @@ export default function PaymentStatus() {
     const isFailed = order.payment_status === 'failed' || order.payment_status === 'deny' || order.payment_status === 'expire';
 
     return (
-        <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-4 font-sans">
-            <div className="bg-white p-8 md:p-12 rounded-2xl shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
+        <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans">
+            <div className="bg-white p-5 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg text-center border border-white/50 relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-2 ${isSuccess ? 'bg-green-500' : isPending ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
 
                 {/* --- SUKSES --- */}
                 {isSuccess && (
                     <div className="animate-fade-in-up">
-                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 shadow-lg shadow-green-100">
-                            <CheckCircle className="w-12 h-12" />
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-green-600 shadow-lg shadow-green-100">
+                            <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.successTitle')}</h1>
-                        <p className="text-stone-400 mb-8 leading-relaxed">
+                        <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.successTitle')}</h1>
+                        <p className="text-stone-400 mb-6 sm:mb-8 text-xs sm:text-sm leading-relaxed">
                             {t('paymentStatus.successDesc', { groom: order.groom_name, bride: order.bride_name })}
                         </p>
 
                         {order.pin_code ? (
-                            <div className="bg-stone-50 p-4 rounded-xl mb-4 border border-dashed border-stone-300">
-                                <p className="text-xs text-stone-400 uppercase font-bold tracking-widest mb-1">{t('paymentStatus.pinLabel')}</p>
-                                <p className="text-2xl font-mono font-bold text-[#712E1E] tracking-widest">{order.pin_code}</p>
+                            <div className="bg-stone-50 p-3 sm:p-4 rounded-xl mb-3 sm:mb-4 border border-dashed border-stone-300">
+                                <p className="text-[10px] sm:text-xs text-stone-400 uppercase font-bold tracking-widest mb-1">{t('paymentStatus.pinLabel')}</p>
+                                <p className="text-xl sm:text-2xl font-mono font-bold text-[#712E1E] tracking-widest">{order.pin_code}</p>
                             </div>
                         ) : null}
 
-                        <div className="bg-[#F7EEE3] p-4 rounded-xl mb-8 border border-dashed border-[#E59A59]">
+                        <div className="bg-[#F7EEE3] p-3 sm:p-4 rounded-xl mb-6 sm:mb-8 border border-dashed border-[#E59A59]">
                             <p className="text-xs text-[#712E1E] leading-relaxed flex items-start gap-2">
                                 <Mail size={14} className="shrink-0 mt-0.5" />
                                 <span>
@@ -209,11 +209,11 @@ export default function PaymentStatus() {
                             </p>
                         </div>
 
-                        <div className="flex flex-col gap-3">
-                            <button onClick={() => navigate('/login')} className="w-full py-4 bg-[#712E1E] text-white rounded-xl font-bold hover:bg-[#5a2418] transition shadow-lg flex items-center justify-center gap-2">
+                        <div className="flex flex-col gap-2.5 sm:gap-3">
+                            <button onClick={() => navigate('/login')} className="w-full py-3.5 sm:py-4 bg-[#712E1E] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-[#5a2418] transition shadow-lg flex items-center justify-center gap-2">
                                 {t('paymentStatus.btnDashboard')} <ArrowRight className="w-5 h-5" />
                             </button>
-                            <button onClick={() => navigate(`/wedding/${order.slug}`)} className="w-full py-4 bg-white border-2 border-[#712E1E] text-[#712E1E] rounded-xl font-bold hover:bg-stone-50 transition">
+                            <button onClick={() => navigate(`/wedding/${order.slug}`)} className="w-full py-3.5 sm:py-4 bg-white border-2 border-[#712E1E] text-[#712E1E] rounded-xl font-bold text-sm sm:text-base hover:bg-stone-50 transition">
                                 {t('paymentStatus.btnViewInvitation')}
                             </button>
                             <button
@@ -229,7 +229,7 @@ export default function PaymentStatus() {
                                         });
                                     }
                                 }}
-                                className="w-full py-3 bg-[#FAF6EE] border border-[#EBDFCE] text-[#712E1E] rounded-xl font-bold hover:bg-[#F3EBDF] transition flex items-center justify-center gap-2 text-sm shadow-xs"
+                                className="w-full py-2.5 sm:py-3 bg-[#FAF6EE] border border-[#EBDFCE] text-[#712E1E] rounded-xl font-bold hover:bg-[#F3EBDF] transition flex items-center justify-center gap-2 text-xs sm:text-sm shadow-xs"
                             >
                                 <FileText className="w-4 h-4" /> {t('paymentStatus.btnDownloadInvoice')}
                             </button>
@@ -240,26 +240,26 @@ export default function PaymentStatus() {
                 {/* --- PENDING --- */}
                 {isPending && (
                     <div className="animate-fade-in-up">
-                        <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6 text-yellow-600 shadow-lg shadow-yellow-100 animate-pulse">
-                            <Clock className="w-12 h-12" />
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-yellow-600 shadow-lg shadow-yellow-100 animate-pulse">
+                            <Clock className="w-10 h-10 sm:w-12 sm:h-12" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.pendingTitle')}</h1>
-                        <p className="text-stone-400 mb-8">
+                        <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.pendingTitle')}</h1>
+                        <p className="text-stone-400 mb-6 sm:mb-8 text-xs sm:text-sm">
                             {t('paymentStatus.pendingDesc')}<br />
-                            <span className="text-xs mt-2 block">
+                            <span className="text-[11px] sm:text-xs mt-2 block">
                                 {t('paymentStatus.pendingNote')}
                             </span>
                         </p>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-2.5 sm:gap-3">
                             <button
                                 type="button"
                                 onClick={handlePayAgain}
-                                className="w-full py-4 rounded-xl font-bold text-lg shadow-xl transition transform hover:-translate-y-1 bg-[#E59A59] text-white hover:bg-[#d48b4b] flex items-center justify-center gap-2"
+                                className="w-full py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg shadow-xl transition transform hover:-translate-y-0.5 active:translate-y-0 bg-[#E59A59] text-white hover:bg-[#d48b4b] flex items-center justify-center gap-2"
                             >
                                 <CreditCard className="w-5 h-5" /> {t('paymentStatus.btnPayNow')}
                             </button>
-                            <button onClick={() => fetchOrderStatus()} className="w-full py-4 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition flex items-center justify-center gap-2">
+                            <button onClick={() => fetchOrderStatus()} className="w-full py-3.5 sm:py-4 bg-stone-100 text-stone-600 rounded-xl font-bold text-sm sm:text-base hover:bg-stone-200 transition flex items-center justify-center gap-2">
                                 <RefreshCcw className="w-4 h-4" /> {t('paymentStatus.btnCheckStatus')}
                             </button>
                         </div>
@@ -269,19 +269,19 @@ export default function PaymentStatus() {
                 {/* --- FAILED --- */}
                 {isFailed && (
                     <div className="animate-fade-in-up">
-                        <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 text-red-600 shadow-lg shadow-red-100">
-                            <XCircle className="w-12 h-12" />
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-red-600 shadow-lg shadow-red-100">
+                            <XCircle className="w-10 h-10 sm:w-12 sm:h-12" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-[#712E1E] mb-2">{t('paymentStatus.failedTitle')}</h1>
-                        <p className="text-stone-400 mb-8">
+                        <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.failedTitle')}</h1>
+                        <p className="text-stone-400 mb-6 sm:mb-8 text-xs sm:text-sm">
                             {t('paymentStatus.failedDesc')}
                         </p>
 
-                        <div className="flex flex-col gap-3">
-                            <button onClick={() => navigate('/order')} className="w-full py-4 bg-[#712E1E] text-white rounded-xl font-bold hover:bg-[#5a2418] transition shadow-lg">
+                        <div className="flex flex-col gap-2.5 sm:gap-3">
+                            <button onClick={() => navigate('/order')} className="w-full py-3.5 sm:py-4 bg-[#712E1E] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-[#5a2418] transition shadow-lg">
                                 {t('paymentStatus.btnNewOrder')}
                             </button>
-                            <button onClick={() => navigate('/')} className="w-full py-4 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold hover:bg-stone-50 transition flex items-center justify-center gap-2">
+                            <button onClick={() => navigate('/')} className="w-full py-3.5 sm:py-4 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold text-sm sm:text-base hover:bg-stone-50 transition flex items-center justify-center gap-2">
                                 <Home className="w-4 h-4" /> {t('paymentStatus.btnHome')}
                             </button>
                         </div>
