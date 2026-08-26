@@ -68,3 +68,5 @@ tmp/
 temp/
 graphify-out/
 logo.html
+.github/
+scripts/
