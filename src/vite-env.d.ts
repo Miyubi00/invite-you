@@ -16,6 +16,7 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_ANALYTICS_ID?: string;
   readonly VITE_FEATURE_FLAGS?: string;
+  readonly VITE_ADMIN_PATH?: string;
 }
 
 interface ImportMeta {

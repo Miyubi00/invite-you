@@ -1,5 +1,6 @@
-import { useState, useRef, type FormEvent } from 'react';
+import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { captureError } from '../../lib/monitoring';
 import type { ToastApi } from '../GlobalToast';
 import { ShieldCheck, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '../../i18n';
@@ -10,6 +11,12 @@ interface AdminLoginProps {
   toast: ToastApi;
 }
 
+/* Backoff progresif: setelah 3x gagal, tombol terkunci 30s lalu
+   bertambah 30s per kegagalan berikutnya (maks 5 menit). */
+const LOCK_THRESHOLD = 3;
+const LOCK_BASE_SECONDS = 30;
+const MAX_LOCK_SECONDS = 300;
+
 export default function AdminLogin({ toast }: AdminLoginProps) {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
@@ -17,10 +24,20 @@ export default function AdminLogin({ toast }: AdminLoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockSeconds, setLockSeconds] = useState(0);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
+
+  useEffect(() => {
+    if (lockSeconds <= 0) return;
+    const timer = window.setInterval(() => setLockSeconds((s) => s - 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [lockSeconds]);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (lockSeconds > 0) return;
 
     if (!captchaToken) {
       toast.warning(t('common.captchaRequired'));
@@ -29,15 +46,35 @@ export default function AdminLogin({ toast }: AdminLoginProps) {
 
     setLoginLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    /* captchaToken diverifikasi server-side oleh Supabase Auth.
+       WAJIB mengaktifkan Captcha protection di Dashboard Supabase
+       (Authentication -> Security -> Captcha -> Cloudflare Turnstile)
+       dengan site key yang sama; tanpa itu login akan ditolak. */
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken },
+    });
 
     setLoginLoading(false);
 
     if (error) {
       setCaptchaToken(null);
       turnstileRef.current?.reset();
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+      if (attempts >= LOCK_THRESHOLD) {
+        setLockSeconds(
+          Math.min(
+            LOCK_BASE_SECONDS * (attempts - LOCK_THRESHOLD + 1),
+            MAX_LOCK_SECONDS,
+          ),
+        );
+      }
+      captureError(new Error(error.message), { attempts });
       toast.error(t('toast.loginFailed', { error: error.message }));
     } else {
+      setFailedAttempts(0);
       toast.success(t('toast.adminWelcome'));
     }
   };
@@ -120,10 +157,12 @@ export default function AdminLogin({ toast }: AdminLoginProps) {
           {/* Tombol Submit */}
           <button
             type="submit"
-            disabled={loginLoading || !captchaToken}
+            disabled={loginLoading || !captchaToken || lockSeconds > 0}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#E59A59] py-3.5 text-sm font-bold text-white shadow-md shadow-[#E59A59]/25 transition hover:bg-[#d48b4b] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loginLoading ? (
+            {lockSeconds > 0 ? (
+              <span>{t('admin.loginLocked', { seconds: lockSeconds })}</span>
+            ) : loginLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>{t('admin.loginBtnLoading')}</span>

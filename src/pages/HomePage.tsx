@@ -715,11 +715,11 @@ export default function Landing() {
                   </span>
                 </div>
 
-                {/* Dua Tombol Aksi: di Mobile tombol Lihat berupa icon-only [👁️] & Pilih Tema dapat ruang lega */}
+                {/* Dua Tombol Aksi: tombol Lihat disembunyikan di Mobile (akses demo via gambar/judul) & Pilih Tema full-width */}
                 <div className="w-full mt-auto flex gap-1.5 sm:gap-2">
                   <Link
                     to={`/demo/${template.slug}`}
-                    className="px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border border-[#EBDFCE] hover:border-[#E59A59] bg-[#FAF6EE] hover:bg-white text-[#712E1E] font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                    className="hidden sm:flex px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border border-[#EBDFCE] hover:border-[#E59A59] bg-[#FAF6EE] hover:bg-white text-[#712E1E] font-bold text-xs sm:text-sm transition items-center justify-center gap-1.5 shadow-2xs shrink-0"
                     title={t('home.catalogPreviewShort')}
                     aria-label={`Lihat demo ${template.name}`}
                   >

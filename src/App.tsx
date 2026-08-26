@@ -14,6 +14,7 @@ import { ToastProvider } from './components/GlobalToast';
 import { LanguageProvider } from './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageSkeleton } from './components/ui/SkeletonLoaders';
+import { ADMIN_PATH } from './lib/adminPath';
 
 /* --- IMPORT LAYOUTS --- */
 import PublicLayout from './layouts/PublicLayout';
@@ -68,7 +69,7 @@ function App() {
               {/* GROUP 4: DASHBOARD (Fullscreen app shell, tanpa Navbar —
                   sidebar punya tombol Keluar sendiri) */}
               <Route path="/dashboard/:orderId" element={<CustomerDashboardPage />} />
-              <Route path="/admin" element={<AdminPanelPage />} />
+              <Route path={ADMIN_PATH} element={<AdminPanelPage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

@@ -11,6 +11,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { HeartHandshake, LogIn, Home, CreditCard, UserCircle, LogOut, LayoutDashboard, Phone, ShieldCheck } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from './shared/LanguageSwitcher';
+import { ADMIN_PATH } from '../lib/adminPath';
 
 type NavMode = 'default' | 'home' | 'logout' | 'admin';
 
@@ -67,7 +68,7 @@ export default function Navbar() {
       mode: 'logout'
     };
   }
-  else if (path === '/admin') {
+  else if (path === ADMIN_PATH) {
     navConfig = {
       title: t('nav.adminPanel'),
       icon: <ShieldCheck className="w-5 h-5 md:w-8 md:h-8 text-yellow-400" />,
@@ -77,7 +78,7 @@ export default function Navbar() {
   else if (path === '/contact') {
     navConfig = {
       title: t('nav.contact'),
-      icon: <Phone className="w-5 h-5 md:w-8 md:h-8 text-yellow-400" />,
+      icon: <Phone className="w-5 h-5 md:w-8 md:h-8 text-[#FFD5AF]" />,
       mode: 'home'
     };
   }
@@ -98,14 +99,14 @@ export default function Navbar() {
         {/* Switcher Bahasa ID/EN */}
         <LanguageSwitcher variant="header" />
 
-        {/* Kontak: hanya muncul di layar tablet/desktop agar navbar mobile tetap lega */}
+        {/* Kontak: icon-only di mobile (gaya tombol Login), teks muncul mulai layar kecil ke atas */}
         {isLandingPage && (
           <Link
             to="/contact"
-            className="hidden sm:flex px-3.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-[#F1E8DC] text-[#712E1E] text-xs sm:text-sm font-bold hover:bg-white transition items-center gap-1.5 whitespace-nowrap shadow-xs"
+            className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[#F1E8DC] text-[#712E1E] text-xs sm:text-sm font-bold hover:bg-[#d48b4b] transition flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
-            <Phone className="w-3.5 h-3.5" />
-            <span>{t('nav.contact')}</span>
+            <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline sm:inline">{t('nav.contact')}</span>
           </Link>
         )}
 
