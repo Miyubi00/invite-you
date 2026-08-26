@@ -132,9 +132,13 @@ export function useAdminCatalog() {
  * WIB, status bayar) + pagination (.range + count exact) — menggantikan
  * fetch 1000 baris + filter client-side. Pola sama dengan useRsvpServer.
  */
-export function useOrdersPaged(initialPageSize = 25) {
+export function useOrdersPaged(initialPageSize = 25, enabled = true) {
   const toast = useToast();
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   // --- Draft filter ---
   const [searchInput, setSearchInput] = useState("");
@@ -152,7 +156,7 @@ export function useOrdersPaged(initialPageSize = 25) {
   const [pageSize, setPageSizeState] = useState(initialPageSize);
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
 
   const buildQuery = useCallback(
     async ({ offset, limit }: { offset: number; limit: number }) => {
@@ -179,6 +183,10 @@ export function useOrdersPaged(initialPageSize = 25) {
   );
 
   const refresh = useCallback(async () => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, count, error } = await buildQuery({
@@ -190,13 +198,17 @@ export function useOrdersPaged(initialPageSize = 25) {
       setTotal(count ?? 0);
     } catch (e) {
       console.error("[useOrdersPaged] Gagal memuat pesanan:", e);
-      toast.error(t("toast.adminLoadOrdersFailed"));
+      toast.error(tRef.current("toast.adminLoadOrdersFailed"));
     } finally {
       setLoading(false);
     }
-  }, [buildQuery, page, pageSize, toast, t]);
+  }, [buildQuery, page, pageSize, enabled, toast]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     // Defer microtask: hindari setState sinkron di body effect (aturan lint).
     void Promise.resolve().then(() => {
@@ -205,7 +217,7 @@ export function useOrdersPaged(initialPageSize = 25) {
     return () => {
       cancelled = true;
     };
-  }, [refresh]);
+  }, [refresh, enabled]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 

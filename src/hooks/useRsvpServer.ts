@@ -12,7 +12,7 @@
 // Sekarang database mengerjakan filtering + paging; UI hanya menerima satu
 // halaman sehingga jumlah tamu ribuan pun tetap ringan.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { resolveDbClient } from '../lib/customerClient';
 import { useToast } from '../components/GlobalToast';
 import type { RsvpRow } from '../types/database';
@@ -34,6 +34,10 @@ export function escapeIlike(value: string): string {
 export function useRsvpServer(orderId: string | undefined, initialPageSize = PAGE_SIZE_DEFAULT) {
   const toast = useToast();
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   // --- Draft filter (baru aktif setelah tombol Cari / Enter) ---
   const [searchInput, setSearchInput] = useState('');
@@ -128,11 +132,11 @@ export function useRsvpServer(orderId: string | undefined, initialPageSize = PAG
       setStats({ hadir: counts[0], tidakHadir: counts[1], ragu: counts[2] });
     } catch (e) {
       console.error('[useRsvpServer] Gagal memuat RSVP:', e);
-      toast.error(t('toast.rsvpLoadFailed'));
+      toast.error(tRef.current('toast.rsvpLoadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [buildQuery, page, pageSize, orderId, toast, t]);
+  }, [buildQuery, page, pageSize, orderId, toast]);
 
   useEffect(() => {
     let cancelled = false;

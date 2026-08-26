@@ -9,7 +9,7 @@
 // Hook untuk Dashboard mempelai: validasi sesi, fetch order + RSVP,
 // state form event_details, serta simpan perubahan.
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clearCustomerToken, getCustomerToken, resolveDbClient } from '../lib/customerClient';
 import { enqueuePersist } from '../lib/persistQueue';
@@ -33,6 +33,10 @@ export function useDashboardData(orderId: string | undefined) {
   const navigate = useNavigate();
   const toast = useToast();
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,10 +72,10 @@ export function useDashboardData(orderId: string | undefined) {
         if (getCustomerToken()) {
           clearCustomerToken();
           sessionStorage.removeItem('active_order_id');
-          toast.warning(t('toast.sessionExpired'));
+          toast.warning(tRef.current('toast.sessionExpired'));
           navigate('/login');
         } else {
-          toast.error(t('toast.dataNotFound'));
+          toast.error(tRef.current('toast.dataNotFound'));
         }
         setDataLoading(false);
         return;
@@ -101,8 +105,7 @@ export function useDashboardData(orderId: string | undefined) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, navigate, t]);
+  }, [orderId, navigate, toast]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value } as DashboardForm));

@@ -47,17 +47,17 @@ export default function AdminPanel() {
     setPendingOrders, setTemplates,
   } = useAdminCatalog();
 
-  const ordersFilter = useOrdersPaged();
+  const { session, setSession, sessionLoading } = useAdminSession(() => {
+    void fetchData();
+    void ordersFilter.refresh();
+  });
+
+  const ordersFilter = useOrdersPaged(25, Boolean(session));
 
   const { refresh: refreshOrders } = ordersFilter;
   const refreshAll = useCallback(async () => {
     await Promise.all([fetchData(), refreshOrders()]);
   }, [fetchData, refreshOrders]);
-
-  const { session, setSession, sessionLoading } = useAdminSession(() => {
-    void fetchData();
-    void ordersFilter.refresh();
-  });
 
   const [activeTab, setActiveTab] = useUrlTab(["orders", "whatsapp", "templates", "edit"], "orders");
   const [searchParams, setSearchParams] = useSearchParams();
