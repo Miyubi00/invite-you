@@ -715,19 +715,21 @@ export default function Landing() {
                   </span>
                 </div>
 
-                {/* Dua Tombol Aksi Bersih & Konsisten di Mobile & Desktop */}
-                <div className="w-full mt-auto grid grid-cols-2 gap-1.5 sm:gap-2">
+                {/* Dua Tombol Aksi: di Mobile tombol Lihat berupa icon-only [👁️] & Pilih Tema dapat ruang lega */}
+                <div className="w-full mt-auto flex gap-1.5 sm:gap-2">
                   <Link
                     to={`/demo/${template.slug}`}
-                    className="w-full py-2 sm:py-2.5 rounded-xl border border-[#EBDFCE] hover:border-[#E59A59] bg-[#FAF6EE] hover:bg-white text-[#712E1E] font-bold text-[11px] sm:text-xs md:text-sm transition flex items-center justify-center gap-1 sm:gap-1.5 shadow-2xs"
+                    className="px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border border-[#EBDFCE] hover:border-[#E59A59] bg-[#FAF6EE] hover:bg-white text-[#712E1E] font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 shadow-2xs shrink-0"
+                    title={t('home.catalogPreviewShort')}
+                    aria-label={`Lihat demo ${template.name}`}
                   >
-                    <Eye className="w-3.5 h-3.5 text-[#E59A59] shrink-0" />
-                    <span>{t('home.catalogPreviewShort')}</span>
+                    <Eye className="w-4 h-4 text-[#E59A59] shrink-0" />
+                    <span className="hidden sm:inline">{t('home.catalogPreviewShort')}</span>
                   </Link>
 
                   <Link
                     to={`/order?template=${template.slug}`}
-                    className="w-full py-2 sm:py-2.5 rounded-xl bg-[#E59A59] hover:bg-[#d48b4b] text-white font-bold text-[11px] sm:text-xs md:text-sm transition flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs active:scale-95"
+                    className="flex-1 py-2 sm:py-2.5 rounded-xl bg-[#E59A59] hover:bg-[#d48b4b] text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-1.5 shadow-xs active:scale-95 min-w-0"
                   >
                     <Edit3 className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">{t('home.catalogCreate')}</span>
