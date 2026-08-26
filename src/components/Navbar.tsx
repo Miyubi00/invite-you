@@ -83,27 +83,28 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-[#712E1E] px-4 md:px-12 py-3 md:py-4 flex justify-between items-center shadow-lg sticky top-0 z-50 transition-all duration-300">
+    <nav className="bg-[#712E1E] px-3.5 sm:px-6 md:px-12 py-2.5 sm:py-3.5 flex justify-between items-center shadow-md sticky top-0 z-50 transition-all duration-300">
 
       {/* LOGO / JUDUL */}
-      <div className="text-lg md:text-2xl font-bold text-[#FFD5AF] tracking-wide truncate mr-2">
-        <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition">
+      <div className="text-base sm:text-xl md:text-2xl font-black text-[#FFD5AF] tracking-tight truncate mr-2">
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2 hover:opacity-90 transition">
           {navConfig.icon}
-          <span>{navConfig.title}</span>
+          <span className="font-extrabold">{navConfig.title}</span>
         </Link>
       </div>
 
-      <div className="flex gap-2 md:gap-3 items-center">
+      <div className="flex gap-1.5 sm:gap-2.5 items-center shrink-0">
 
         {/* Switcher Bahasa ID/EN */}
         <LanguageSwitcher variant="header" />
 
+        {/* Kontak: hanya muncul di layar tablet/desktop agar navbar mobile tetap lega */}
         {isLandingPage && (
           <Link
             to="/contact"
-            className="px-3 md:px-5 py-2 rounded-xl bg-[#F1E8DC] text-[#712E1E] text-xs md:text-base font-medium hover:bg-white transition flex items-center gap-1 md:gap-2 whitespace-nowrap"
+            className="hidden sm:flex px-3.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-[#F1E8DC] text-[#712E1E] text-xs sm:text-sm font-bold hover:bg-white transition items-center gap-1.5 whitespace-nowrap shadow-xs"
           >
-            <Phone className="w-3 h-3 md:w-4 md:h-4" />
+            <Phone className="w-3.5 h-3.5" />
             <span>{t('nav.contact')}</span>
           </Link>
         )}
@@ -112,8 +113,8 @@ export default function Navbar() {
 
         {/* CASE 1: MODE HOME (Balik ke Depan) */}
         {navConfig.mode === 'home' && (
-          <Link to="/" className="px-3 md:px-5 py-2 rounded-xl bg-[#E59A59] text-white text-xs md:text-base font-medium hover:bg-[#d48b4b] transition flex items-center gap-1 md:gap-2 shadow-md whitespace-nowrap">
-            <Home className="w-3 h-3 md:w-4 md:h-4" />
+          <Link to="/" className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#E59A59] text-white text-xs sm:text-sm font-bold hover:bg-[#d48b4b] transition flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+            <Home className="w-3.5 h-3.5" />
             <span>{t('nav.home')}</span>
           </Link>
         )}
@@ -122,23 +123,23 @@ export default function Navbar() {
         {navConfig.mode === 'logout' && (
           <button
             onClick={handleLogout}
-            className="px-3 md:px-5 py-2 rounded-xl bg-red-600 text-white text-xs md:text-base font-medium hover:bg-red-700 transition flex items-center gap-1 md:gap-2 shadow-md whitespace-nowrap"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-red-600 text-white text-xs sm:text-sm font-bold hover:bg-red-700 transition flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
-            <LogOut className="w-3 h-3 md:w-4 md:h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             <span>{t('nav.logout')}</span>
           </button>
         )}
 
         {/* CASE 3: DEFAULT (Tombol Login) */}
         {navConfig.mode === 'default' && (
-          <Link to="/login" className="px-3 md:px-5 py-2 rounded-xl bg-[#E59A59] text-white text-xs md:text-base font-medium hover:bg-[#d48b4b] transition flex items-center gap-1 md:gap-2 shadow-md whitespace-nowrap">
-            <LogIn className="w-3 h-3 md:w-4 md:h-4" />
+          <Link to="/login" className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-[#E59A59] text-white text-xs sm:text-sm font-bold hover:bg-[#d48b4b] transition flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+            <LogIn className="w-3.5 h-3.5" />
             <span>{t('nav.login')}</span>
           </Link>
         )}
 
         {navConfig.mode === 'admin' && (
-          <span className="text-white text-xs bg-red-600 px-3 py-1 rounded-xl font-bold animate-pulse">
+          <span className="text-white text-[11px] sm:text-xs bg-red-600 px-2.5 py-1 rounded-xl font-bold animate-pulse">
             {t('nav.superuserMode')}
           </span>
         )}
