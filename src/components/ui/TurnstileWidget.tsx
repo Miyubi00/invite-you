@@ -47,6 +47,17 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
 
+    // Keep callbacks reference-stable to avoid tearing down the widget on parent state updates
+    const onSuccessRef = useRef(onSuccess);
+    const onErrorRef = useRef(onError);
+    const onExpireRef = useRef(onExpire);
+
+    useEffect(() => {
+      onSuccessRef.current = onSuccess;
+      onErrorRef.current = onError;
+      onExpireRef.current = onExpire;
+    }, [onSuccess, onError, onExpire]);
+
     useImperativeHandle(ref, () => ({
       reset: () => {
         if (window.turnstile && widgetIdRef.current) {
@@ -59,7 +70,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
       let isMounted = true;
 
       const renderWidget = () => {
-        if (!containerRef.current || !window.turnstile || widgetIdRef.current) return;
+        if (!containerRef.current || !window.turnstile || widgetIdRef.current !== null) return;
 
         try {
           widgetIdRef.current = window.turnstile.render(containerRef.current, {
@@ -67,13 +78,19 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
             theme,
             size: 'flexible',
             callback: (token: string) => {
-              if (isMounted) onSuccess(token);
+              if (isMounted && onSuccessRef.current) {
+                onSuccessRef.current(token);
+              }
             },
             'error-callback': () => {
-              if (isMounted && onError) onError();
+              if (isMounted && onErrorRef.current) {
+                onErrorRef.current();
+              }
             },
             'expired-callback': () => {
-              if (isMounted && onExpire) onExpire();
+              if (isMounted && onExpireRef.current) {
+                onExpireRef.current();
+              }
             },
           });
         } catch (err) {
@@ -105,7 +122,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
 
       return () => {
         isMounted = false;
-        if (window.turnstile && widgetIdRef.current) {
+        if (window.turnstile && widgetIdRef.current !== null) {
           try {
             window.turnstile.remove(widgetIdRef.current);
           } catch {
@@ -114,7 +131,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
           widgetIdRef.current = null;
         }
       };
-    }, [siteKey, theme, onSuccess, onError, onExpire]);
+    }, [siteKey, theme]);
 
     return (
       <div className={`w-full flex justify-center items-center my-2 ${className}`}>
