@@ -1,17 +1,18 @@
 // supabase/functions/ai-chat/index.ts
 // Proxy AI assistant untuk halaman /contact -> Google Gemini (free tier).
+// + Handover ke admin via Telegram (single-admin, busy indicator, allowlist).
 //
-// Alur: frontend kirim riwayat pesan, fungsi ini memvalidasi + rate-limit,
-// lalu meneruskan ke Gemini dengan system prompt berisi knowledge base
-// LoVerse. Saat Gemini limit/sibuk (429/5xx) atau error jaringan, fungsi
-// tetap balas 200 dengan { busy: true } supaya UI menampilkan pesan
-// "AI sedang sibuk" + tombol eskalasi WhatsApp (bukan error mentah).
+// Alur handover:
+//   Klien: "mau bicara admin" -> ai-chat deteksi intent -> cek busy (1 active max)
+//          -> jika busy: balas busy+WA fallback
+//          -> jika tidak: buat sesi telegram_handover_sessions (active), kirim notif ke Telegram, balas "Menghubungkan..."
+//   Klien dalam sesi active: semua pesan user langsung diteruskan ke Telegram (bypass Gemini)
+//   Admin balas di Telegram -> telegram-webhook tulis ke transcript -> klien polling dapat balasan
+//   Polling: frontend kirim { poll:true, anonId } setiap 3 detik saat handoverActive
 //
-// Secret yang wajib diset:  GEMINI_API_KEY
-// Secret opsional:          GEMINI_MODEL (default: gemini-2.5-flash-lite)
-//                           ALLOWED_ORIGIN (origin produksi)
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
@@ -34,7 +35,7 @@ function json(body: unknown, status: number): Response {
 // Knowledge base LoVerse (harga per Agustus 2026).
 // ------------------------------------------------------------
 
-const SYSTEM_PROMPT = `Anda adalah "LoVerse AI", asisten layanan pelanggan platform undangan digital LoVerse (loverse.id).
+const SYSTEM_PROMPT = `Anda adalah "LoVerse AI", asisten layanan pelanggan platform undangan digital LoVerse (loverse.my.id).
 
 ATURAN:
 - Jawab singkat, ramah, dan jelas (maksimal ±120 kata) dalam Bahasa Indonesia atau bahasa yang dipakai user.
@@ -110,9 +111,9 @@ Kategori RSVP & Interaktif (Rp15.000, termasuk fitur RSVP & buku tamu):
 
 [Bantuan & Kontak]
 - Jam operasional admin: Senin-Minggu, 09.00-21.00 WIB. Asisten AI online 24/7.
-- WhatsApp Utama (Konsultasi & Pesan): 0877-7701-6398.
-- Admin Bantuan Teknis: 0896-3954-3075. Admin Revisi Desain: 0851-7988-0092.
-- Instagram: @loverse.id.`;
+- WhatsApp Admin: 0851-7988-0092 (satu nomor untuk semua kebutuhan).
+- Instagram: @loverse.id.
+- Website: https://loverse.my.id.`;
 
 // ------------------------------------------------------------
 // Rate limit sederhana per IP: maks 10 permintaan / 5 menit.
@@ -131,13 +132,182 @@ function isRateLimited(ip: string): boolean {
   }
   recent.push(now);
   hits.set(ip, recent);
-  // Bersihkan entri mati sesekali agar Map tidak tumbuh tanpa batas.
   if (hits.size > 5000) {
     for (const [key, stamps] of hits) {
       if (stamps.every((ts) => now - ts >= RATE_WINDOW_MS)) hits.delete(key);
     }
   }
   return false;
+}
+
+// ------------------------------------------------------------
+// Telegram handover helpers (single-admin, busy indicator)
+// ------------------------------------------------------------
+
+const HANDOVER_TIMEOUT_MS = 15 * 60 * 1000;
+
+const HANDOVER_PATTERNS: RegExp[] = [
+  /bicara.*admin|admin.*bicara/i,
+  /hubungkan.*admin|admin.*hubungkan/i,
+  /mau.*admin|admin.*mau/i,
+  /chat.*admin|admin.*chat/i,
+  /butuh.*manusia|manusia.*butuh/i,
+  /mau.*cs\b|cs\b.*mau/i,
+  /operator|human support/i,
+  /terhubung.*admin/i,
+];
+
+function isHandoverIntent(text: string): boolean {
+  return HANDOVER_PATTERNS.some((re) => re.test(text));
+}
+
+function isCloseIntent(text: string): boolean {
+  return /^(selesai|akhiri|tutup|close|done)$/i.test(text.trim());
+}
+
+const REPLY_HANDOVER_CONNECTING =
+  'Menghubungkan ke admin...';
+const REPLY_HANDOVER_CONNECTED =
+  'Terhubung ke admin — silakan ketik pesan kamu, admin akan membalas langsung di sini. Ketik "selesai" untuk mengakhiri.';
+const REPLY_HANDOVER_BUSY =
+  'Admin sedang sibuk melayani klien lain (hanya 1 sesi aktif). Silakan kirim pesan WhatsApp ke 0851-7988-0092, nanti akan segera dibalas. Atau tunggu beberapa menit lalu coba lagi dengan ketik "admin".';
+const REPLY_HANDOVER_FORWARDED =
+  'Pesan kamu sudah diteruskan ke admin. Tunggu balasan di sini ya.';
+const REPLY_HANDOVER_CLOSED =
+  'Sesi dengan admin telah diakhiri. Kamu kembali terhubung dengan LoVerse AI. Ada yang bisa dibantu lagi?';
+
+function getSupabaseAdmin() {
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+function isExpired(updatedAt: string): boolean {
+  return Date.now() - new Date(updatedAt).getTime() > HANDOVER_TIMEOUT_MS;
+}
+
+async function findActiveSession(anonId: string) {
+  const admin = getSupabaseAdmin();
+  if (!admin || !anonId) return null;
+  const { data } = await admin
+    .from('telegram_handover_sessions')
+    .select('id, anon_id, status, transcript, telegram_message_id, telegram_chat_id, updated_at')
+    .eq('anon_id', anonId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (!data) return null;
+  if (isExpired(data.updated_at as string)) {
+    await admin.from('telegram_handover_sessions').update({ status: 'closed' }).eq('id', data.id);
+    return null;
+  }
+  return data as { id: string; anon_id: string; status: string; transcript: unknown; telegram_message_id: number | null; telegram_chat_id: string | null; updated_at: string };
+}
+
+async function findAnyActiveSession(excludeAnonId?: string) {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const { data } = await admin
+    .from('telegram_handover_sessions')
+    .select('id, anon_id, updated_at')
+    .eq('status', 'active')
+    .order('updated_at', { ascending: false })
+    .limit(10);
+  if (!data || data.length === 0) return null;
+  for (const row of data) {
+    if (excludeAnonId && row.anon_id === excludeAnonId) continue;
+    if (!isExpired(row.updated_at as string)) return row;
+    // auto-close expired
+    await admin.from('telegram_handover_sessions').update({ status: 'closed' }).eq('id', row.id);
+  }
+  return null;
+}
+
+async function createHandoverSession(anonId: string, firstMessage: string) {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const transcript = [{ role: 'user', content: firstMessage, at: new Date().toISOString() }];
+  const { data, error } = await admin
+    .from('telegram_handover_sessions')
+    .insert({ anon_id: anonId, status: 'active', transcript })
+    .select('id')
+    .single();
+  if (error) {
+    console.error('handover create error', error);
+    return null;
+  }
+  return data as { id: string };
+}
+
+async function appendToSession(anonId: string, entry: Record<string, unknown>) {
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+  const sess = await findActiveSession(anonId);
+  if (!sess) return;
+  const transcript = Array.isArray(sess.transcript) ? sess.transcript as unknown[] : [];
+  transcript.push(entry);
+  await admin.from('telegram_handover_sessions').update({ transcript }).eq('id', sess.id);
+}
+
+async function notifyAdminNewHandover(anonId: string, firstMessage: string, historyPreview: string) {
+  const token = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
+  const chatId = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID') ?? '';
+  if (!token || !chatId) {
+    console.warn('Telegram not configured (BOT_TOKEN/ADMIN_CHAT_ID missing)');
+    return;
+  }
+  const preview = historyPreview.slice(0, 600);
+  const text =
+    `🔔 <b>Permintaan handover baru</b>\n` +
+    `Anon: <code>${anonId.slice(0, 8)}</code>\n` +
+    `Pesan: ${firstMessage.slice(0, 300)}\n` +
+    (preview ? `\nRiwayat singkat:\n${preview}` : '') +
+    `\n\nBalas pesan ini untuk menjawab klien. /close untuk akhiri.`;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data?.result?.message_id) {
+      const admin = getSupabaseAdmin();
+      if (admin) {
+        const sess = await findActiveSession(anonId);
+        if (sess) {
+          await admin.from('telegram_handover_sessions').update({
+            telegram_chat_id: chatId,
+            telegram_message_id: data.result.message_id,
+          }).eq('id', sess.id);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('notify admin error', e);
+  }
+}
+
+async function forwardToTelegram(anonId: string, text: string) {
+  const token = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
+  const chatId = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID') ?? '';
+  if (!token || !chatId) return;
+  const sess = await findActiveSession(anonId);
+  const replyId = (sess?.telegram_message_id as number | null) ?? undefined;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `💬 <b>Klien ${anonId.slice(0, 8)}</b>:\n${text.slice(0, 1000)}`,
+        parse_mode: 'HTML',
+        reply_to_message_id: replyId,
+      }),
+    });
+  } catch (e) {
+    console.error('forward to telegram error', e);
+  }
+  await appendToSession(anonId, { role: 'user', content: text, at: new Date().toISOString() });
 }
 
 // ------------------------------------------------------------
@@ -161,7 +331,6 @@ function parseMessages(raw: unknown): IncomingMessage[] | null {
     }
     out.push({ role, content: content.trim() });
   }
-  // Konteks dikirim ke model dibatasi 12 pesan terakhir (hemat kuota/token).
   return out.slice(-12);
 }
 
@@ -196,7 +365,6 @@ async function callModel(model: string, history: IncomingMessage[]): Promise<str
     );
 
     if (!res.ok) {
-      // Simpan potongan pesan Google agar penyebab kegagalan terbaca di log.
       const body = await res.text().catch(() => '');
       throw new UpstreamError(res.status, body.slice(0, 300));
     }
@@ -217,9 +385,6 @@ async function callModel(model: string, history: IncomingMessage[]): Promise<str
   }
 }
 
-// Rantai model: secret GEMINI_MODEL (jika diset) dicoba lebih dulu, lalu
-// fallback bawaan. Alias "-latest" selalu menunjuk generasi termutakhir
-// sehingga tahan terhadap model lama yang dipensiunkan Google.
 const MODEL_CHAIN: string[] = [
   ...new Set(
     [
@@ -231,12 +396,6 @@ const MODEL_CHAIN: string[] = [
     ].filter(Boolean),
   ),
 ];
-
-// ------------------------------------------------------------
-// Deteksi percobaan prompt injection / pencurian instruksi.
-// Dicocokkan ke pesan TERBARU saja agar riwayat lama tidak
-// membuat sesi terblokir permanen.
-// ------------------------------------------------------------
 
 const INJECTION_PATTERNS: RegExp[] = [
   /knowledge[\s_-]?base/i,
@@ -264,7 +423,6 @@ async function askGemini(history: IncomingMessage[]): Promise<string> {
     } catch (err) {
       lastError = err;
       const status = err instanceof UpstreamError ? err.status : 0;
-      // Kesalahan payload (400) tidak akan berubah dengan ganti model.
       if (status === 400) throw err;
       console.error(
         `ai-chat ${model} gagal:`,
@@ -279,33 +437,105 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('cf-connecting-ip') ??
+    'unknown';
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: 'Payload tidak valid.' }, 400);
+  }
+
+  // --- Polling & close handover: bypass rate-limit & GEMINI check (polling tiap 3 detik) ---
+  if ((body as { poll?: unknown }).poll && typeof (body as { anonId?: unknown }).anonId === 'string') {
+    const anonId = (body as { anonId: string }).anonId.slice(0, 64);
+    const admin = getSupabaseAdmin();
+    if (!admin) return json({ transcript: [] }, 200);
+    const { data } = await admin
+      .from('telegram_handover_sessions')
+      .select('transcript,status,updated_at')
+      .eq('anon_id', anonId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return json({ transcript: [] }, 200);
+    if (Date.now() - new Date((data as { updated_at: string }).updated_at).getTime() > HANDOVER_TIMEOUT_MS) {
+      return json({ transcript: [] }, 200);
+    }
+    return json({ transcript: (data as { transcript: unknown }).transcript, status: (data as { status: string }).status }, 200);
+  }
+  if ((body as { closeHandover?: unknown }).closeHandover && typeof (body as { anonId?: unknown }).anonId === 'string') {
+    const anonId = (body as { anonId: string }).anonId.slice(0, 64);
+    const admin = getSupabaseAdmin();
+    if (admin) await admin.from('telegram_handover_sessions').update({ status: 'closed' }).eq('anon_id', anonId).eq('status', 'active');
+    return json({ reply: REPLY_HANDOVER_CLOSED }, 200);
+  }
+
   if (!GEMINI_API_KEY) {
     console.error('GEMINI_API_KEY belum diset di secrets.');
     return json({ busy: true }, 200);
   }
 
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('cf-connecting-ip') ??
-    'unknown';
   if (isRateLimited(ip)) return json({ busy: true }, 200);
 
   try {
-    const { messages } = await req.json();
-    const parsed = parseMessages(messages);
+
+    const parsed = parseMessages(body.messages);
     if (!parsed) return json({ error: 'Payload tidak valid.' }, 400);
 
-    // Pesan terbaru mengandung pola injeksi -> tolak tanpa memanggil Gemini.
+    const anonIdRaw = typeof body.anonId === 'string' ? body.anonId : ip;
+    const anonId = String(anonIdRaw).slice(0, 64);
+
     const latest = parsed[parsed.length - 1];
     if (latest?.role === 'user' && isInjectionAttempt(latest.content)) {
       return json({ reply: REFUSAL_REPLY }, 200);
+    }
+
+    // --- Jika sudah dalam sesi handover aktif, forward langsung ke Telegram (silent) ---
+    const existing = await findActiveSession(anonId);
+    if (existing) {
+      const latestText = latest?.role === 'user' ? latest.content : '';
+      if (isCloseIntent(latestText)) {
+        const admin = getSupabaseAdmin();
+        if (admin) await admin.from('telegram_handover_sessions').update({ status: 'closed' }).eq('id', existing.id);
+        const token = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';
+        const chatId = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID') ?? '';
+        if (token && chatId) {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: `✅ Klien ${anonId.slice(0, 8)} mengakhiri sesi.` }),
+          }).catch(() => {});
+        }
+        return json({ reply: REPLY_HANDOVER_CLOSED, handoverClosed: true }, 200);
+      }
+      if (latest?.role === 'user') {
+        await forwardToTelegram(anonId, latest.content);
+        return json({ handover: true, silent: true }, 200);
+      }
+    }
+
+    // --- Intent handover baru ---
+    if (latest?.role === 'user' && isHandoverIntent(latest.content)) {
+      const busy = await findAnyActiveSession(anonId);
+      if (busy) {
+        return json({ handoverBusy: true, reply: REPLY_HANDOVER_BUSY }, 200);
+      }
+      const preview = parsed.slice(-6).map((m) => `${m.role}: ${m.content.slice(0, 80)}`).join('\n');
+      const created = await createHandoverSession(anonId, latest.content);
+      if (!created) return json({ reply: REPLY_HANDOVER_BUSY, handoverBusy: true }, 200);
+      await notifyAdminNewHandover(anonId, latest.content, preview);
+      // Kirim connecting + connected sekaligus (dua step digabung agar UX cepat)
+      return json({ handover: true, reply: `${REPLY_HANDOVER_CONNECTING}\n\n${REPLY_HANDOVER_CONNECTED}` }, 200);
     }
 
     const reply = await askGemini(parsed);
     return json({ reply }, 200);
   } catch (err) {
     console.error('ai-chat:', err instanceof Error ? err.message : err);
-    // Semua kegagalan upstream diterjemahkan menjadi kondisi "sibuk".
     return json({ busy: true }, 200);
   }
 });

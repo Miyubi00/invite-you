@@ -26,7 +26,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
  * 20260824140000_order_attempts.sql). Fail-open bila tabel belum ada.
  */
 const RATE_WINDOW_MS = 15 * 60 * 1000 // 15 menit
-const MAX_ORDERS_PER_IP = 30 // batas aman 30 percobaan per IP
+const MAX_ORDERS_PER_IP = 10 // batas ketat anti-spam publik (10 percobaan per IP per 15 menit)
 const RATE_LIMIT_MSG = 'Terlalu banyak pemesanan dari perangkat ini. Silakan coba lagi dalam beberapa menit.'
 
 type SupabaseAdmin = ReturnType<typeof createClient>

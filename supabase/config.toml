@@ -1,0 +1,6 @@
+# Supabase local config
+# verify_jwt = false untuk webhook Telegram (Telegram tidak kirim Authorization Supabase)
+# ai-chat tetap butuh JWT (dipanggil via supabase.functions.invoke dengan anon key)
+
+[functions.telegram-webhook]
+verify_jwt = false

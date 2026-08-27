@@ -29,6 +29,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { useTranslation } from '../i18n';
 import AiAssistant from '../components/contact/AiAssistant';
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
+import { ADMIN_WHATSAPP } from '../lib/constants';
 
 interface WaAdmin {
   name: string;
@@ -130,28 +131,13 @@ export default function Contact() {
       link: 'https://instagram.com/loverse.id',
     },
     whatsappMain: {
-      name: 'Admin Utama (Sales)',
-      number: '6287777016398',
-      displayNumber: '+62 877-7701-6398',
+      name: 'Admin LoVerse',
+      number: ADMIN_WHATSAPP,
+      displayNumber: '+62 851-7988-0092',
       labelKey: 'contact.adminSales',
-      defaultMessage: 'Halo Admin LoVerse, saya mau konsultasi & tanya tentang undangan digital...',
+      defaultMessage: 'Halo Admin LoVerse, saya mau konsultasi tentang undangan digital...',
     },
-    whatsappAdmins: [
-      {
-        name: 'Admin Support 1',
-        number: '6289639543075',
-        displayNumber: '+62 896-3954-3075',
-        labelKey: 'contact.adminTech',
-        defaultMessage: 'Halo Tim Support LoVerse, saya butuh bantuan teknis / aktivasi undangan...',
-      },
-      {
-        name: 'Admin Support 2',
-        number: '6285179880092',
-        displayNumber: '+62 851-7988-0092',
-        labelKey: 'contact.adminDesign',
-        defaultMessage: 'Halo Tim Desain LoVerse, saya butuh bantuan kustomisasi / revisi desain undangan...',
-      },
-    ],
+    whatsappAdmins: [],
   };
 
   const handleWA = (number: string, message: string) => {

@@ -3,13 +3,14 @@
 // ------------------------------------------------------------
 // Kartu AI assistant di halaman /contact: messenger-style chat
 // dengan avatar per pesan, animasi masuk, chip pertanyaan cepat,
+// handover ke admin via Telegram (single-admin, busy indicator),
 // serta eskalasi ke admin WhatsApp saat AI sibuk/limit/gagal.
 // Dipakai di  : pages/ContactPage
 // Keterikatan : hooks/useAiChat, i18n, lucide-react, react-icons
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Bot, RotateCcw, Send, ShieldCheck, Sparkles } from 'lucide-react';
+import { AlertTriangle, Bot, Headset, MessageCircle, RotateCcw, Send, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useTranslation } from '../../i18n';
 import { useAiChat } from '../../hooks/useAiChat';
@@ -28,17 +29,16 @@ const SUGGESTION_KEYS = [
 
 export default function AiAssistant({ waNumber }: AiAssistantProps) {
   const { t } = useTranslation();
-  const { messages, isTyping, send, retry } = useAiChat();
+  const { messages, isTyping, isAdminTyping, send, retry, handoverActive, closeHandover, requestHandover } = useAiChat();
 
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll ke pesan terbaru saat riwayat / status mengetik berubah.
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, handoverActive]);
 
   const canSend = draft.trim().length > 0 && !isTyping;
 
@@ -65,37 +65,51 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
         </div>
 
         <div className="relative flex items-center gap-3.5">
-          {/* Avatar dengan ring gradasi + titik online */}
           <div className="relative shrink-0 rounded-full p-[2.5px] bg-gradient-to-br from-[#E59A59] via-[#FFD5AF] to-[#E59A59] shadow-md">
             <div className="rounded-full bg-[#4A1D12] p-2.5">
-              <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFD5AF]" />
+              {handoverActive ? <Headset className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-300" /> : <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-[#FFD5AF]" />}
             </div>
-            <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#4A1D12]" />
+            <span className={`absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-[#4A1D12] ${handoverActive ? 'bg-emerald-400' : 'bg-emerald-400'}`} />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <h2 className="text-base sm:text-lg font-extrabold text-white leading-tight">
-                {t('contact.ai.title')}
+                {handoverActive ? 'Admin LoVerse' : t('contact.ai.title')}
               </h2>
-              <span className="inline-flex items-center gap-1.5 bg-emerald-400/15 border border-emerald-300/30 text-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold leading-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {t('contact.ai.onlineChip')}
+              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold leading-none border ${handoverActive ? 'bg-emerald-400/20 border-emerald-300/40 text-emerald-200' : 'bg-emerald-400/15 border-emerald-300/30 text-emerald-200'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${handoverActive ? 'bg-emerald-400 animate-pulse' : 'bg-emerald-400 animate-pulse'}`} />
+                {handoverActive ? 'Terhubung ke admin' : t('contact.ai.onlineChip')}
               </span>
             </div>
             <p className="mt-0.5 text-[11px] sm:text-xs text-[#FFD5AF]/85 truncate">
-              {t('contact.ai.subtitle')}
+              {handoverActive ? 'Balasan admin akan muncul di sini • Ketik "selesai" untuk akhiri' : t('contact.ai.subtitle')}
             </p>
           </div>
+          {handoverActive && (
+            <button
+              onClick={closeHandover}
+              className="shrink-0 inline-flex items-center gap-1 bg-white/10 hover:bg-white/20 border border-white/15 text-white/90 px-2.5 py-1.5 rounded-full text-xs font-semibold transition"
+            >
+              <X size={12} /> Akhiri
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Handover banner */}
+      {handoverActive && (
+        <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2 flex items-center gap-2 text-xs text-emerald-800">
+          <MessageCircle size={14} className="text-emerald-600 shrink-0" />
+          <span className="font-semibold">Terhubung ke admin</span>
+        </div>
+      )}
 
       {/* --- AREA PESAN --- */}
       <div
         ref={scrollRef}
         className="chat-scroll h-[320px] sm:h-[380px] lg:h-[420px] max-h-[55dvh] overflow-y-auto bg-[#FAF6EE] px-3.5 sm:px-5 py-4 sm:py-5 space-y-4"
       >
-        {/* Kondisi kosong: sapaan + chip pertanyaan cepat */}
         {messages.length === 0 && !isTyping && (
           <div className="flex h-full flex-col items-center justify-center gap-5 px-2 text-center animate-msg-in">
             <div className="relative">
@@ -120,11 +134,17 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
                 </button>
               ))}
             </div>
+            <button
+              onClick={requestHandover}
+              disabled={isTyping}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#712E1E] bg-white border border-[#EBDFCE] px-3.5 py-2 rounded-full hover:bg-[#FAF6EE] transition disabled:opacity-50"
+            >
+              <Headset size={14} className="text-emerald-600" /> Hubungkan ke admin
+            </button>
           </div>
         )}
 
         {messages.map((msg, idx) => {
-          // Bubble user
           if (msg.role === 'user') {
             return (
               <div key={idx} className="flex justify-end animate-msg-in">
@@ -135,7 +155,6 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
             );
           }
 
-          // AI sibuk (limit/quota) -> kartu amber + eskalasi WhatsApp
           if (msg.kind === 'busy') {
             return (
               <div key={idx} className="flex justify-start animate-msg-in">
@@ -159,7 +178,56 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
             );
           }
 
-          // Error -> kartu rose + retry
+          if (msg.kind === 'handover_busy') {
+            return (
+              <div key={idx} className="flex justify-start animate-msg-in">
+                <div className="w-[92%] sm:w-[85%] bg-amber-50/90 border border-amber-200 rounded-2xl rounded-tl-md p-4 space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-amber-100 text-amber-600">
+                      <Headset className="w-3.5 h-3.5" />
+                    </span>
+                    <p className="font-bold text-xs text-amber-800">Admin sedang sibuk</p>
+                  </div>
+                  <p className="text-xs text-stone-600 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <button
+                    onClick={handleEscalate}
+                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:scale-[0.98] transition shadow-sm"
+                  >
+                    <FaWhatsapp className="w-4 h-4" />
+                    Chat WhatsApp 0851-7988-0092
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          if (msg.kind === 'handover') {
+            return (
+              <div key={idx} className="flex items-start gap-2.5 animate-msg-in">
+                <div className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-emerald-600 border border-emerald-700 shadow-xs flex items-center justify-center">
+                  <Headset className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="max-w-[85%] sm:max-w-[75%] bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm shadow-xs whitespace-pre-wrap break-words leading-relaxed">
+                  {msg.content}
+                </div>
+              </div>
+            );
+          }
+
+          if (msg.kind === 'admin') {
+            return (
+              <div key={idx} className="flex items-start gap-2.5 animate-msg-in">
+                <div className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-700 border border-emerald-600 shadow-xs flex items-center justify-center">
+                  <Headset className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="max-w-[85%] sm:max-w-[75%] bg-white border border-emerald-200 text-stone-800 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm shadow-xs whitespace-pre-wrap break-words leading-relaxed">
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Admin</span>
+                  <p className="mt-1">{msg.content}</p>
+                </div>
+              </div>
+            );
+          }
+
           if (msg.kind === 'error') {
             return (
               <div key={idx} className="flex justify-start animate-msg-in">
@@ -184,7 +252,6 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
             );
           }
 
-          // Bubble jawaban AI normal: avatar mini + bubble putih
           return (
             <div key={idx} className="flex items-start gap-2.5 animate-msg-in">
               <div className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#712E1E] to-[#4A1D12] border border-[#EBDFCE] shadow-xs flex items-center justify-center">
@@ -197,8 +264,24 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
           );
         })}
 
-        {/* Typing indicator: avatar mini + gelembung titik */}
-        {isTyping && (
+        {isAdminTyping && !isTyping && (
+          <div className="flex items-start gap-2.5 animate-msg-in">
+            <div className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-emerald-600 border border-emerald-700 shadow-xs flex items-center justify-center">
+              <Headset className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="bg-white border border-emerald-200 rounded-2xl rounded-tl-md px-4 py-3.5 shadow-xs flex items-center gap-1.5">
+              {[0, 150, 300].map((delay) => (
+                <span
+                  key={delay}
+                  className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+              <span className="sr-only">Admin mengetik...</span>
+            </div>
+          </div>
+        )}
+        {isTyping && !handoverActive && !isAdminTyping && (
           <div className="flex items-start gap-2.5 animate-msg-in">
             <div className="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-gradient-to-br from-[#712E1E] to-[#4A1D12] border border-[#EBDFCE] shadow-xs flex items-center justify-center">
               <Bot className="w-3.5 h-3.5 text-[#FFD5AF]" />
@@ -235,7 +318,7 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
                 handleSend();
               }
             }}
-            placeholder={t('contact.ai.placeholder')}
+            placeholder={handoverActive ? 'Ketik pesan untuk admin...' : t('contact.ai.placeholder')}
             aria-label={t('contact.ai.send')}
             maxLength={1000}
             className="flex-1 resize-none bg-transparent focus:outline-none text-sm py-2 placeholder:text-stone-400 max-h-28"
@@ -249,10 +332,17 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
             <Send className="w-4 h-4 -translate-x-px" />
           </button>
         </div>
-        <p className="mt-2 text-[10px] text-stone-400 flex items-center justify-center gap-1.5">
-          <ShieldCheck className="w-3 h-3 shrink-0" />
-          {t('contact.ai.disclaimer')}
-        </p>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="text-[10px] text-stone-400 flex items-center gap-1.5">
+            <ShieldCheck className="w-3 h-3 shrink-0" />
+            {t('contact.ai.disclaimer')}
+          </p>
+          {!handoverActive && (
+            <button onClick={requestHandover} disabled={isTyping} className="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 disabled:opacity-50">
+              <Headset size={12} /> Hubungkan admin
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );
