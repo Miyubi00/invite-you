@@ -16,12 +16,13 @@ import {
   type ChangeEvent,
 } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Link, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "../components/GlobalToast";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { useTranslation } from "../i18n";
 import type { TurnstileWidgetRef } from "../components/ui/TurnstileWidget";
 import { MASTER_TEMPLATES, type MasterTemplate } from "../lib/constants";
+import { goBackOrHome } from "../lib/navigation";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import { OrderDetailsForm } from "../components/order/OrderDetailsForm";
 import { PaymentMethodPicker } from "../components/order/PaymentMethodPicker";
@@ -35,6 +36,7 @@ import { useOrderCheckout } from "../hooks/useOrderCheckout";
 export default function OrderForm() {
   const { t } = useTranslation();
   const toast = useToast();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -153,12 +155,13 @@ export default function OrderForm() {
         {/* --- HEADER --- */}
         <div className="flex items-start justify-between gap-3 mb-5 sm:mb-8 md:mb-10 min-w-0">
           <div className="min-w-0">
-            <Link
-              to="/"
+            <button
+              type="button"
+              onClick={() => goBackOrHome(navigate)}
               className="inline-flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-[#E59A59] transition"
             >
               <ArrowLeft size={13} /> {t("order.back")}
-            </Link>
+            </button>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#712E1E] mt-1.5 sm:mt-2 truncate">
               {t("order.title")}
             </h1>

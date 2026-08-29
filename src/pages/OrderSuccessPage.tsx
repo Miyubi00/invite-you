@@ -9,14 +9,16 @@
 // Halaman terima kasih setelah order via WhatsApp: ringkasan langkah
 // selanjutnya + tombol hubungi admin. Statis — tanpa fetch data.
 
-import { Link } from 'react-router-dom';
-import { CheckCircle2, Home, MessageSquare, Mail, ShieldCheck } from 'lucide-react';
-import { FaWhatsapp } from 'react-icons/fa';
-import { ADMIN_WHATSAPP } from '../lib/constants';
-import { useTranslation } from '../i18n';
+import { useNavigate } from "react-router-dom";
+import { CheckCircle2, Home, MessageSquare, Mail, ShieldCheck } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
+import { ADMIN_WHATSAPP } from "../lib/constants";
+import { goBackOrHome } from "../lib/navigation";
+import { useTranslation } from "../i18n";
 
 export default function OrderSuccess() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const steps = [
     {
@@ -77,12 +79,13 @@ export default function OrderSuccess() {
             >
               <FaWhatsapp className="w-5 h-5 sm:w-6 sm:h-6" /> {t('orderSuccess.btnWhatsapp')}
             </a>
-            <Link
-              to="/"
+            <button
+              type="button"
+              onClick={() => goBackOrHome(navigate)}
               className="w-full py-3.5 sm:py-4 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold text-sm sm:text-base hover:bg-stone-50 transition flex items-center justify-center gap-2"
             >
               <Home className="w-5 h-5" /> {t('orderSuccess.btnHome')}
-            </Link>
+            </button>
           </div>
         </div>
       </div>

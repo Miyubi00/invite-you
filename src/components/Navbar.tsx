@@ -12,6 +12,7 @@ import { HeartHandshake, LogIn, Home, CreditCard, UserCircle, LogOut, LayoutDash
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from './shared/LanguageSwitcher';
 import { ADMIN_PATH } from '../lib/adminPath';
+import { goBackOrHome } from '../lib/navigation';
 
 type NavMode = 'default' | 'home' | 'logout' | 'admin';
 
@@ -114,10 +115,14 @@ export default function Navbar() {
 
         {/* CASE 1: MODE HOME (Balik ke Depan) */}
         {navConfig.mode === 'home' && (
-          <Link to="/" className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[#E59A59] text-white text-xs sm:text-sm font-bold hover:bg-[#d48b4b] transition flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+          <button
+            type="button"
+            onClick={() => goBackOrHome(navigate)}
+            className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[#E59A59] text-white text-xs sm:text-sm font-bold hover:bg-[#d48b4b] transition flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+          >
             <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden xs:inline sm:inline">{t('nav.home')}</span>
-          </Link>
+          </button>
         )}
 
         {/* CASE 2: MODE LOGOUT (Khusus Dashboard) */}
