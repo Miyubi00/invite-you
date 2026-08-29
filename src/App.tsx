@@ -14,6 +14,7 @@ import { ToastProvider } from './components/GlobalToast';
 import { LanguageProvider } from './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageSkeleton } from './components/ui/SkeletonLoaders';
+import ScrollToTop from './components/ScrollToTop';
 import { ADMIN_PATH } from './lib/adminPath';
 
 /* --- IMPORT LAYOUTS --- */
@@ -43,6 +44,7 @@ function App() {
     <LanguageProvider>
       <ToastProvider>
         <ErrorBoundary>
+          <ScrollToTop />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* GROUP 1: PUBLIC PAGES (Pakai Navbar Coklat) */}
