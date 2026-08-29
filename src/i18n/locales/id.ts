@@ -209,6 +209,7 @@ export const id = {
     feeVaBadge: "+Rp 4.000 Biaya",
     feeFreeBadge: "Gratis Rp 0",
     freeOfCharge: "Rp 0 (Gratis)",
+    selectPaymentMethod: "Pilih Metode Pembayaran",
     orderSummaryQris: "QRIS Universal (+0.7%)",
     orderSummaryGopay: "GoPay (+1.5%)",
     orderSummaryShopeepay: "ShopeePay (+1.5%)",
@@ -228,6 +229,7 @@ export const id = {
     emailInvalid: "Format alamat email tidak valid (contoh: nama@email.com).",
     whatsappInvalid: "Nomor WhatsApp tidak valid (minimal 8-9 digit angka).",
     captchaRequired: "Silakan selesaikan verifikasi keamanan captcha terlebih dahulu.",
+    paymentMethodRequired: "Silakan pilih metode pembayaran terlebih dahulu.",
     required: "Field ini wajib diisi.",
   },
   orderSuccess: {

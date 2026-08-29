@@ -211,6 +211,7 @@ export const en: TranslationDictionary = {
     feeVaBadge: "+Rp 4,000 Fee",
     feeFreeBadge: "Free Rp 0",
     freeOfCharge: "Rp 0 (Free)",
+    selectPaymentMethod: "Select a Payment Method",
     orderSummaryQris: "QRIS Universal (+0.7%)",
     orderSummaryGopay: "GoPay (+1.5%)",
     orderSummaryShopeepay: "ShopeePay (+1.5%)",
@@ -230,6 +231,7 @@ export const en: TranslationDictionary = {
     emailInvalid: "Invalid email address format (e.g. name@email.com).",
     whatsappInvalid: "Invalid WhatsApp number (minimum 8-9 digits).",
     captchaRequired: "Please complete the security captcha verification first.",
+    paymentMethodRequired: "Please select a payment method first.",
     required: "This field is required.",
   },
   orderSuccess: {

@@ -41,9 +41,11 @@ export default function OrderForm() {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>("qris");
+  // Tidak ada metode pembayaran bawaan — user harus memilih sendiri (Step 03).
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethodType | null>(null);
   const [expandedCategory, setExpandedCategory] =
-    useState<ExpandedCategory>("qris");
+    useState<ExpandedCategory | null>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const [templateList, setTemplateList] =
@@ -125,6 +127,8 @@ export default function OrderForm() {
 
   const handleReset = () => {
     setFormData(initialFormState);
+    setPaymentMethod(null);
+    setExpandedCategory(null);
     setShowConfirm(false);
     toast.success(t("order.toastResetSuccess"));
   };

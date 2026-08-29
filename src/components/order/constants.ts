@@ -70,12 +70,14 @@ export type EwalletMethod = (typeof EWALLET_METHODS)[number];
 export type VaMethod = (typeof VA_METHODS)[number];
 
 export const isEwalletMethod = (
-  method: PaymentMethodType,
+  method: PaymentMethodType | null,
 ): method is EwalletMethod =>
-  (EWALLET_METHODS as readonly string[]).includes(method);
+  (EWALLET_METHODS as readonly string[]).includes(method as string);
 
-export const isVaMethod = (method: PaymentMethodType): method is VaMethod =>
-  (VA_METHODS as readonly string[]).includes(method);
+export const isVaMethod = (
+  method: PaymentMethodType | null,
+): method is VaMethod =>
+  (VA_METHODS as readonly string[]).includes(method as string);
 
 interface EwalletOption {
   id: EwalletMethod;

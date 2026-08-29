@@ -24,7 +24,7 @@ import {
 interface UseOrderCheckoutArgs {
   formData: OrderFormData;
   selectedTemplate: MasterTemplate;
-  paymentMethod: PaymentMethodType;
+  paymentMethod: PaymentMethodType | null;
   captchaToken: string | null;
   invalidateCaptcha: () => void;
 }
@@ -65,6 +65,10 @@ export function useOrderCheckout({
 
   const handleMidtransCheckout = async () => {
     if (!validateInputs()) return;
+    if (!paymentMethod) {
+      toast.warning(t("validation.paymentMethodRequired"));
+      return;
+    }
     if (!captchaToken) {
       toast.warning(t("common.captchaRequired"));
       return;

@@ -30,7 +30,7 @@ interface OrderSummaryProps {
   formData: OrderFormData;
   selectedTemplate: MasterTemplate;
   selectedImage?: string;
-  paymentMethod: PaymentMethodType;
+  paymentMethod: PaymentMethodType | null;
   captchaToken: string | null;
   setCaptchaToken: (token: string | null) => void;
   turnstileRef: RefObject<TurnstileWidgetRef | null>;
@@ -55,7 +55,9 @@ export function OrderSummary({
 }: OrderSummaryProps) {
   const { t } = useTranslation();
 
-  const adminFee = getPaymentMethodFee(selectedTemplate.price, paymentMethod);
+  const adminFee = paymentMethod
+    ? getPaymentMethodFee(selectedTemplate.price, paymentMethod)
+    : 0;
   const total = selectedTemplate.price + adminFee;
 
   return (
@@ -106,8 +108,12 @@ export function OrderSummary({
           />
           <SummaryRow
             label={t("order.methodSummaryLabel")}
-            value={t(PAYMENT_SUMMARY_LABEL_KEYS[paymentMethod])}
-            muted={false}
+            value={
+              paymentMethod
+                ? t(PAYMENT_SUMMARY_LABEL_KEYS[paymentMethod])
+                : t("order.selectPaymentMethod")
+            }
+            muted={!paymentMethod}
           />
         </div>
 
@@ -153,9 +159,18 @@ export function OrderSummary({
           />
         </div>
 
-        {/* Tombol Aksi Sesuai Metode Terpilih */}
+        {/* Tombol Aksi Sesuai Metode Terpilih (disable bila belum memilih) */}
         <div className="space-y-2.5 pt-1">
-          {paymentMethod === "whatsapp" ? (
+          {paymentMethod === null ? (
+            <button
+              type="button"
+              disabled
+              className="w-full py-3.5 rounded-xl font-bold text-base border-2 border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Smartphone className="w-5 h-5" />
+              {t("order.selectPaymentMethod")}
+            </button>
+          ) : paymentMethod === "whatsapp" ? (
             <button
               type="button"
               onClick={onWhatsappCheckout}

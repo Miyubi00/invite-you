@@ -29,10 +29,10 @@ import { SectionCard } from "./SectionCard";
 
 interface PaymentMethodPickerProps {
   basePrice: number;
-  paymentMethod: PaymentMethodType;
+  paymentMethod: PaymentMethodType | null;
   onSelect: (method: PaymentMethodType) => void;
-  expandedCategory: ExpandedCategory;
-  onExpand: (category: ExpandedCategory) => void;
+  expandedCategory: ExpandedCategory | null;
+  onExpand: (category: ExpandedCategory | null) => void;
 }
 
 const LogoPill = ({
@@ -260,10 +260,8 @@ export function PaymentMethodPicker({
         >
           <CategoryCard
             onClick={() => {
-              onExpand(expandedCategory === "ewallet" ? "qris" : "ewallet");
-              if (!isEwalletActive) {
-                onSelect("gopay");
-              }
+              // Hanya membuka/tutup accordion — tidak meng-auto-pilih metode.
+              onExpand(expandedCategory === "ewallet" ? null : "ewallet");
             }}
             className="p-3 sm:p-4 cursor-pointer"
             iconBoxClass={isEwalletActive ? ICON_ACTIVE : ICON_INACTIVE}
@@ -342,10 +340,8 @@ export function PaymentMethodPicker({
         >
           <CategoryCard
             onClick={() => {
-              onExpand(expandedCategory === "va" ? "qris" : "va");
-              if (!isVaActive) {
-                onSelect("bca_va");
-              }
+              // Hanya membuka/tutup accordion — tidak meng-auto-pilih metode.
+              onExpand(expandedCategory === "va" ? null : "va");
             }}
             className="p-3 sm:p-4 cursor-pointer"
             iconBoxClass={isVaActive ? ICON_ACTIVE : ICON_INACTIVE}
