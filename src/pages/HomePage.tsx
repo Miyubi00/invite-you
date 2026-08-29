@@ -110,6 +110,7 @@ export default function Landing() {
   const [templates, setTemplates] = useState<Array<TemplateRow & { image: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [soldCount, setSoldCount] = useState<number | null>(null);
+  const [minPrice, setMinPrice] = useState<number | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Carousel State for Hero Showcase (Otomatis berganti tema)
@@ -196,6 +197,12 @@ export default function Landing() {
             };
           });
           setTemplates(combinedData);
+
+          // Harga minimum dari database (hanya template aktif) untuk heroDesc
+          const active = combinedData.filter((t) => t.is_active && typeof t.price === 'number');
+          if (active.length > 0) {
+            setMinPrice(Math.min(...active.map((t) => t.price as number)));
+          }
         }
       } catch (error) {
         console.error('Gagal mengambil data template:', error);
@@ -230,6 +237,11 @@ export default function Landing() {
 
   const formatIDR = (value: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+
+  // Harga minimum ditampilkan di heroDesc: dari DB (aktif) bila ada,
+  // fallback ke harga terendah MASTER_TEMPLATES saat masih loading / gagal fetch.
+  const fallbackMinPrice = Math.min(...MASTER_TEMPLATES.map((t) => t.price));
+  const displayMinPrice = minPrice ?? fallbackMinPrice;
 
   const toggleFaq = (idx: number) => {
     setOpenFaq((prev) => (prev === idx ? null : idx));
@@ -274,7 +286,7 @@ export default function Landing() {
 
               {/* Persuasive Description */}
               <p className="text-stone-600 text-sm sm:text-base md:text-lg leading-relaxed max-w-xl">
-                {t('home.heroDesc')}
+                {t('home.heroDesc', { price: formatIDR(displayMinPrice) })}
               </p>
 
               {/* Dual Action Buttons */}

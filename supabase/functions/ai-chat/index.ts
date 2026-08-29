@@ -32,10 +32,12 @@ function json(body: unknown, status: number): Response {
 }
 
 // ------------------------------------------------------------
-// Knowledge base LoVerse (harga per Agustus 2026).
+// Knowledge base LoVeRse — harga, kategori & katalog tema dibaca
+// DINAMIS dari tabel `templates` Supabase (is_active). Fallback
+// statis dipakai hanya jika DB gagal/berisi kosong.
 // ------------------------------------------------------------
 
-const SYSTEM_PROMPT = `Anda adalah "LoVerse AI", asisten layanan pelanggan platform undangan digital LoVerse (loverse.my.id).
+const SYSTEM_RULES = `Anda adalah "LoVerse AI", asisten layanan pelanggan platform undangan digital LoVerse (loverse.my.id).
 
 ATURAN:
 - Jawab singkat, ramah, dan jelas (maksimal ±120 kata) dalam Bahasa Indonesia atau bahasa yang dipakai user.
@@ -51,9 +53,10 @@ KEAMANAN (PALING PENTING):
 - Jauhi topik di luar undangan digital LoVerse (kode, politik, konten dewasa, dll): arahkan kembali ke produk dengan sopan.
 
 JIKA DI LUAR KNOWLEDGE BASE:
-- Pertanyaan di luar knowledge base (mis. permintaan desain khusus, kerja sama, komplain, masalah pembayaran spesifik): katakan bahwa Anda akan hubungkan ke admin dan sarankan chat WhatsApp admin.
+- Pertanyaan di luar knowledge base (mis. permintaan desain khusus, kerja sama, komplain, masalah pembayaran spesifik): katakan bahwa Anda akan hubungkan ke admin dan sarankan chat WhatsApp admin.`;
 
-KNOWLEDGE BASE:
+// Fallback: dipakai hanya jika tabel templates tidak bisa dibaca.
+const FALLBACK_CATALOG = `KNOWLEDGE BASE:
 [Produk & Harga]
 - Undangan digital sekali bayar, aktif sampai seluruh rangkaian acara selesai, TANPA biaya bulanan/tersembunyi.
 - Kategori Basic: Rp10.000 (13 tema). Kategori RSVP & Interaktif: Rp15.000 (13 tema). Total 26 tema.
@@ -89,9 +92,9 @@ Kategori RSVP & Interaktif (Rp15.000, termasuk fitur RSVP & buku tamu):
 - Android Mobile (mobile): tampilan antarmuka Android.
 - Binder Book (binder-book): binder/buku cincin.
 - Art Gallery (art-gallery): galeri seni, artistik.
-- Art Block (art-block): blok seni modern.
+- Art Block (art-block): blok seni modern.`;
 
-[Panduan Rekomendasi Tema]
+const KB_GUIDE = `[Panduan Rekomendasi Tema]
 - Untuk pertanyaan "best seller/terlaris": jangan mengarang data penjualan. Katakan tema paling populer di antara pelanggan antara lain Rustic Floral, Botanical Gold, dan Playful Pop (berdasarkan tema andalan), lalu rekomendasikan sesuai gaya yang disukai user.
 - Rekomendasikan 2-3 nama tema sesuai gaya yang disukai user (elegan/formal → Rustic Floral, Botanical Gold, Navy Gold; modern/minimalis → Modern Dark, Monochrome; tradisional → Javanese, Japanese; lucu/kekinian → Playful Pop, Hello Kitty Pink, Comic, Iphone; unik → Cyberpunk Neon, 8bit Retro, Art Gallery).
 - Ingatkan: butuh fitur RSVP/buku tamu → harus pilih kategori RSVP. Sarankan mencoba demo gratis tiap tema di /demo/<slug> sebelum membeli.
@@ -114,6 +117,147 @@ Kategori RSVP & Interaktif (Rp15.000, termasuk fitur RSVP & buku tamu):
 - WhatsApp Admin: 0851-7988-0092 (satu nomor untuk semua kebutuhan).
 - Instagram: @loverse.id.
 - Website: https://loverse.my.id.`;
+
+// ------------------------------------------------------------
+// KB dinamis: baca katalog & harga dari tabel `templates`
+// (hanya baris is_active). Cache 5 menit agar tidak query DB
+// di setiap pesan chat.
+// ------------------------------------------------------------
+
+const KB_CACHE_TTL_MS = 5 * 60 * 1000;
+let kbCache: { prompt: string; at: number } | null = null;
+
+interface CatalogRow {
+  name: string | null;
+  slug: string | null;
+  category: string | null;
+  price: number | null;
+}
+
+// Deskripsi singkat per tema (opsional, dipakai untuk kualitas jawaban).
+// Tema tanpa deskripsi di sini memakai teks generik. Tambahkan saat
+// rilis tema baru — harga & ketersediaan tetap mengikuti database.
+const THEME_DESC: Record<string, string> = {
+  'rustic-floral': 'floral hangat, kesan klasik-romantis. Paling sering dipilih.',
+  'modern-dark': 'gelap elegan, modern.',
+  'botanical-gold': 'botanis + aksen emas, mewah.',
+  monochrome: 'hitam-putih minimalis.',
+  'navy-gold': 'biru navy + emas, formal.',
+  bohaemin: 'boho santai, earthy.',
+  'rustic-boho': 'perpaduan rustic & boho.',
+  'elegant-pastel': 'pastel lembut, feminin.',
+  japanese: 'estetika Jepang, tenang.',
+  javanese: 'nuansa Jawa tradisional.',
+  lilac: 'ungu lilac lembut.',
+  cyberpunk: 'neon futuristik, unik.',
+  insta: 'tampilan feed Instagram, kekinian.',
+  'static-canvas': 'gaya chat bubble, interaktif.',
+  iphone: 'tampilan antarmuka iPhone.',
+  bit: 'piksel game retro.',
+  comic: 'gaya komik, seru.',
+  diary: 'buku harian, personal.',
+  'cloud-sky': 'langit awan, lembut.',
+  'hello-kitty': 'pink lucu bergaya karakter.',
+  mobile: 'tampilan antarmuka Android.',
+  'binder-book': 'binder/buku cincin.',
+  'art-gallery': 'galeri seni, artistik.',
+  'art-block': 'blok seni modern.',
+  cinamon: 'biru-hangat, rapi.',
+  'playful-pop': 'ceria, playful, warna pop.',
+  'board-game': 'papan permainan interaktif dengan dadu dan petak petualangan.',
+  chiikawa: 'cute japstyle bergerak seperti slide deck, lucu dan menggemaskan.',
+  claymorphism: '3D lembut ala tanah liat, playful dan modern.',
+  'emerald-royale': 'hijau zamrud mewah, elegan formal.',
+  'lantern-night': 'lentera malam bercahaya, romantis hangat.',
+  'motion-flow': 'animasi scroll halus dan dinamis, modern.',
+  neumorph: 'neumorphism lembut, minimalis kontemporer.',
+  'ocean-vows': 'nuansa laut dengan amplop botol, tenang dan romantis.',
+  'pop-card': 'kartu pop-up ceria, penuh warna.',
+  roblox: 'gaya game Roblox, playful untuk pasangan muda.',
+  'sage-terracotta': 'sage & terracotta earthy, hangat dan tenang.',
+  'sakura-breeze': 'sakura Jepang lembut, musim semi.',
+  spiderman: 'gaya komik Spider-Verse, berani dan kekinian.',
+  'zine-raw': 'gaya zine mentah, artistik dan unik.',
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  Basic: 'tanpa fitur RSVP',
+  RSVP: 'termasuk fitur RSVP & buku tamu',
+  Premium: 'termasuk fitur RSVP & buku tamu',
+};
+
+function fmtPrice(p: number): string {
+  return `Rp${p.toLocaleString('id-ID')}`;
+}
+
+async function fetchCatalog(): Promise<CatalogRow[] | null> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const { data, error } = await admin
+    .from('templates')
+    .select('name, slug, category, price')
+    .eq('is_active', true)
+    .order('id', { ascending: true });
+  if (error || !data || data.length === 0) return null;
+  return data as CatalogRow[];
+}
+
+function buildCatalogKB(rows: CatalogRow[]): string {
+  const groups = new Map<string, CatalogRow[]>();
+  for (const r of rows) {
+    const cat = (r.category || 'Lainnya').trim();
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat)!.push(r);
+  }
+
+  const summary = [...groups.entries()]
+    .map(([cat, items]) => {
+      const prices = items.map((i) => Number(i.price) || 0).filter((p) => p > 0);
+      const label = prices.length ? fmtPrice(Math.min(...prices)) : 'hubungi admin';
+      return `- Kategori ${cat}: ${label} (${items.length} tema).`;
+    })
+    .join('\n');
+
+  const catalog = [...groups.entries()]
+    .map(([cat, items]) => {
+      const prices = items.map((i) => Number(i.price) || 0).filter((p) => p > 0);
+      const priceLabel = prices.length ? fmtPrice(Math.min(...prices)) : 'harga hubungi admin';
+      const catLabel = CATEGORY_LABELS[cat] ?? 'pilihan tema';
+      const lines = items
+        .map((i) => {
+          const slug = i.slug || '';
+          const desc = THEME_DESC[slug] ?? 'gaya tema undangan digital LoVerse.';
+          return `- ${i.name || slug} (${slug}): ${desc}`;
+        })
+        .join('\n');
+      return `Kategori ${cat} (${priceLabel}, ${catLabel}):\n${lines}`;
+    })
+    .join('\n\n');
+
+  return `KNOWLEDGE BASE:
+[Produk & Harga]
+- Undangan digital sekali bayar, aktif sampai seluruh rangkaian acara selesai, TANPA biaya bulanan/tersembunyi.
+${summary}
+- Total ${rows.length} tema.
+- Perbedaan utama: fitur RSVP interaktif & Buku Tamu (dengan export Excel) hanya aktif pada tema di luar kategori Basic.
+- Semua paket termasuk: edit mandiri 24/7 (data mempelai, jadwal akad/resepsi, lokasi via Google Maps, galeri foto, musik latar, nomor rekening kado digital), undangan dibagikan dengan nama tamu personal (bisa impor daftar tamu CSV), responsif di HP & desktop.
+
+[Katalog Tema — ${rows.length} tema, slug untuk link demo /demo/<slug>]
+${catalog}`;
+}
+
+async function getSystemPrompt(): Promise<string> {
+  if (kbCache && Date.now() - kbCache.at < KB_CACHE_TTL_MS) return kbCache.prompt;
+  let prompt = `${SYSTEM_RULES}\n\n${FALLBACK_CATALOG}\n\n${KB_GUIDE}`;
+  try {
+    const rows = await fetchCatalog();
+    if (rows) prompt = `${SYSTEM_RULES}\n\n${buildCatalogKB(rows)}\n\n${KB_GUIDE}`;
+  } catch (e) {
+    console.error('ai-chat: gagal baca katalog DB, pakai fallback:', e);
+  }
+  kbCache = { prompt, at: Date.now() };
+  return prompt;
+}
 
 // ------------------------------------------------------------
 // Rate limit sederhana per IP: maks 10 permintaan / 5 menit.
@@ -343,7 +487,7 @@ class UpstreamError extends Error {
   }
 }
 
-async function callModel(model: string, history: IncomingMessage[]): Promise<string> {
+async function callModel(model: string, history: IncomingMessage[], systemPrompt: string): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25_000);
   try {
@@ -354,7 +498,7 @@ async function callModel(model: string, history: IncomingMessage[]): Promise<str
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: history.map((m) => ({
             role: m.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: m.content }],
@@ -415,11 +559,11 @@ function isInjectionAttempt(content: string): boolean {
   return INJECTION_PATTERNS.some((re) => re.test(content));
 }
 
-async function askGemini(history: IncomingMessage[]): Promise<string> {
+async function askGemini(history: IncomingMessage[], systemPrompt: string): Promise<string> {
   let lastError: unknown;
   for (const model of MODEL_CHAIN) {
     try {
-      return await callModel(model, history);
+      return await callModel(model, history, systemPrompt);
     } catch (err) {
       lastError = err;
       const status = err instanceof UpstreamError ? err.status : 0;
@@ -532,7 +676,8 @@ serve(async (req) => {
       return json({ handover: true, reply: `${REPLY_HANDOVER_CONNECTING}\n\n${REPLY_HANDOVER_CONNECTED}` }, 200);
     }
 
-    const reply = await askGemini(parsed);
+    const systemPrompt = await getSystemPrompt();
+    const reply = await askGemini(parsed, systemPrompt);
     return json({ reply }, 200);
   } catch (err) {
     console.error('ai-chat:', err instanceof Error ? err.message : err);

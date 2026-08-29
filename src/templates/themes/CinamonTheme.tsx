@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
     Cloud, Heart, MapPin, Calendar, Gift,
     Music, Play, Pause, Star, Sparkles, Copy, ArrowDown, Quote, MessageSquare, CheckCircle
@@ -11,6 +12,25 @@ import { useOpenInvitation } from '../shared/useOpenInvitation';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import { useToast } from '../../components/GlobalToast';
 import { useTranslation } from '../../i18n';
+
+// ── KARAKTER CINNAMOROLL (sumber: cinnamoroll.fandom.com) ──────────
+// Semua gambar dirender dalam lingkaran putih (CharacterBadge) agar
+// aset JPG/GIF non-transparan dari wiki tetap tampil bersih.
+const CINNA_CREW = {
+    cinnamoroll: 'https://static.wikia.nocookie.net/cinnamoroll/images/4/4e/Cinn.png/revision/latest?cb=20201015030428',
+    mocha: 'https://static.wikia.nocookie.net/cinnamoroll/images/c/c7/Cinnamoroll-Mocha-cinnamoroll-2346053-360-129.gif/revision/latest?cb=20130617072959',
+    chiffon: 'https://static.wikia.nocookie.net/cinnamoroll/images/f/f4/Chiffon-cinnamoroll-2346022-211-149.gif/revision/latest?cb=20130617073736',
+    espresso: 'https://static.wikia.nocookie.net/cinnamoroll/images/8/8b/Espresso-cinnamoroll-2355272-234-208.jpg/revision/latest?cb=20140813071527',
+    cappuccino: 'https://static.wikia.nocookie.net/cinnamoroll/images/a/a4/1172726161a3711050717b393091045l.jpg/revision/latest?cb=20130617073606',
+} as const;
+
+// Varian gerak masuk bagian (reveal saat scroll).
+const sectionReveal = {
+    initial: { opacity: 0, y: 42 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: '-60px' },
+    transition: { type: 'spring', stiffness: 140, damping: 18 },
+} as const;
 
 // Props 'submittedData' diterima dari InvitationRender
 export default function SoftBlueTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }: TemplateProps) {
@@ -76,17 +96,70 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
                 <Star className="absolute bottom-40 left-10 text-[#FFD1DC] w-8 h-8 animate-twinkle delay-700 opacity-80" fill="currentColor" />
             </div>
 
+            {/* KARAKTER MELAYANG di tepi layar (setelah undangan dibuka) */}
+            <div className={`pointer-events-none fixed inset-0 z-30 overflow-hidden transition-opacity duration-1000 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                <motion.img
+                    src={CINNA_CREW.cinnamoroll}
+                    alt="Cinnamoroll"
+                    className="absolute top-24 left-3 w-16 rounded-full border-4 border-white bg-white shadow-md"
+                    animate={{ y: [0, -14, 0], rotate: [-6, 4, -6] }}
+                    transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <motion.img
+                    src={CINNA_CREW.chiffon}
+                    alt="Chiffon"
+                    className="absolute top-1/2 right-2 w-14 rounded-full border-4 border-white bg-white shadow-md"
+                    animate={{ y: [0, 12, 0], rotate: [8, -4, 8] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+                />
+                <motion.img
+                    src={CINNA_CREW.espresso}
+                    alt="Espresso"
+                    className="absolute bottom-32 left-4 w-14 rounded-full border-4 border-white bg-white shadow-md"
+                    animate={{ y: [0, -10, 0], rotate: [4, -8, 4] }}
+                    transition={{ duration: 4.6, repeat: Infinity, ease: 'easeInOut', delay: 1.4 }}
+                />
+            </div>
+
             {/* OPENING SCREEN */}
             <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-[#C7E7FF] transition-all duration-1000 ease-[cubic-bezier(0.7,0,0.3,1)] ${isOpen ? '-translate-y-full rounded-b-[100px]' : 'translate-y-0 rounded-none'}`}>
                 <div className="bg-white p-8 rounded-[3rem] shadow-[0_10px_40px_rgba(199,231,255,0.8)] text-center max-w-sm w-full relative animate-float">
                     <div className="absolute -top-6 left-1/2 -translate-x-1/2"><Cloud size={48} className="text-white fill-white drop-shadow-md" /></div>
-                    <p className="font-body text-sm text-[#8D6E63] tracking-widest uppercase mb-4 mt-4">The Wedding Of</p>
+
+                    {/* Cinnamoroll menyapa dari atas kartu */}
+                    <motion.img
+                        src={CINNA_CREW.cinnamoroll}
+                        alt="Cinnamoroll"
+                        className="mx-auto -mt-2 mb-2 w-24 h-24 rounded-full border-4 border-[#C7E7FF] bg-white object-cover shadow-md"
+                        animate={{ y: [0, -8, 0], rotate: [-4, 4, -4] }}
+                        transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+
+                    <p className="font-body text-sm text-[#8D6E63] tracking-widest uppercase mb-4">The Wedding Of</p>
                     <h1 className="font-cute text-4xl md:text-5xl text-[#5D4037] mb-6 leading-tight">{groom} <br /> <span className="text-[#FFB7B2] text-3xl">&</span> <br /> {bride}</h1>
                     <div className="bg-[#FFF4E6] rounded-2xl p-4 mb-8">
                         <p className="font-body text-xs text-[#8D6E63] mb-1">Dear Special Guest,</p>
                         <h3 className="font-cute text-xl text-[#5D4037]">{guestName || "Teman Baik"}</h3>
                     </div>
                     <button onClick={handleOpen} className="bg-[#81D4FA] text-white font-cute font-bold text-lg py-3 px-10 rounded-full shadow-lg hover:scale-105 hover:bg-[#4FC3F7] transition-all flex items-center justify-center gap-2 mx-auto">Open Invitation <Sparkles size={20} /></button>
+
+                    {/* Barisan teman kecil di dasar kartu */}
+                    <div className="mt-6 flex items-end justify-center gap-3">
+                        {[
+                            { src: CINNA_CREW.mocha, delay: 0 },
+                            { src: CINNA_CREW.chiffon, delay: 0.5 },
+                            { src: CINNA_CREW.cappuccino, delay: 1 },
+                        ].map((c, i) => (
+                            <motion.img
+                                key={i}
+                                src={c.src}
+                                alt="Teman Cinnamoroll"
+                                className="h-12 w-12 rounded-full border-2 border-[#C7E7FF] bg-white object-cover shadow-sm"
+                                animate={{ y: [0, -6, 0] }}
+                                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: c.delay }}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -110,20 +183,75 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
                     </div>
 
                     <div className="mt-8 flex justify-center"><ArrowDown className="text-[#81D4FA] animate-bounce" /></div>
+
+                    {/* Parade karakter di bawah hero */}
+                    <motion.div {...sectionReveal} className="mt-8 flex items-end justify-center gap-4">
+                        {[
+                            { src: CINNA_CREW.cinnamoroll, label: 'Cinnamoroll', size: 'w-20 h-20' },
+                            { src: CINNA_CREW.mocha, label: 'Mocha', size: 'w-16 h-16' },
+                            { src: CINNA_CREW.chiffon, label: 'Chiffon', size: 'w-16 h-16' },
+                            { src: CINNA_CREW.espresso, label: 'Espresso', size: 'w-14 h-14' },
+                            { src: CINNA_CREW.cappuccino, label: 'Cappuccino', size: 'w-14 h-14' },
+                        ].map((c, i) => (
+                            <motion.img
+                                key={i}
+                                src={c.src}
+                                alt={c.label}
+                                title={c.label}
+                                className={`${c.size} rounded-full border-4 border-white bg-white object-cover shadow-md`}
+                                animate={{ y: [0, -10, 0], rotate: [0, i % 2 === 0 ? 6 : -6, 0] }}
+                                transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}
+                            />
+                        ))}
+                    </motion.div>
                 </section>
 
                 {/* 2. COUPLE */}
                 <section className="bg-white/60 backdrop-blur-sm rounded-[3rem] p-8 shadow-sm">
                     <h2 className="font-cute text-3xl text-center mb-8 text-[#5D4037]">The Couple</h2>
                     <div className="space-y-8">
-                        <div className="flex items-center gap-4">
-                            <div className="w-24 h-24 rounded-full border-4 border-[#C7E7FF] overflow-hidden shrink-0"><img src={photos.groom} className="w-full h-full object-cover" /></div>
+                        <motion.div {...sectionReveal} className="flex items-center gap-4">
+                            <div className="relative shrink-0">
+                                <motion.img
+                                    src={photos.groom}
+                                    alt={groom}
+                                    className="w-24 h-24 rounded-full border-4 border-[#C7E7FF] object-cover shadow-md"
+                                    whileHover={{ scale: 1.08 }}
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                                {/* Maskot kecil menempel di sudut foto */}
+                                <motion.img
+                                    src={CINNA_CREW.cinnamoroll}
+                                    alt="Cinnamoroll"
+                                    className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full border-2 border-white bg-white object-cover shadow"
+                                    animate={{ rotate: [0, 10, 0] }}
+                                    transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                            </div>
                             <div><h3 className="font-cute text-2xl text-[#5D4037]">{groom}</h3><p className="font-body text-xs text-[#8D6E63] mt-1">Putra Bpk/Ibu <br /> {data?.groom_parents}</p></div>
-                        </div>
-                        <div className="flex items-center gap-4 flex-row-reverse text-right">
-                            <div className="w-24 h-24 rounded-full border-4 border-[#FFD1DC] overflow-hidden shrink-0"><img src={photos.bride} className="w-full h-full object-cover" /></div>
+                        </motion.div>
+                        <motion.div {...sectionReveal} className="flex items-center gap-4 flex-row-reverse text-right">
+                            <div className="relative shrink-0">
+                                <motion.img
+                                    src={photos.bride}
+                                    alt={bride}
+                                    className="w-24 h-24 rounded-full border-4 border-[#FFD1DC] object-cover shadow-md"
+                                    whileHover={{ scale: 1.08 }}
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+                                />
+                                {/* Maskot kecil menempel di sudut foto */}
+                                <motion.img
+                                    src={CINNA_CREW.mocha}
+                                    alt="Mocha"
+                                    className="absolute -bottom-2 -left-2 w-10 h-10 rounded-full border-2 border-white bg-white object-cover shadow"
+                                    animate={{ rotate: [0, -10, 0] }}
+                                    transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                                />
+                            </div>
                             <div><h3 className="font-cute text-2xl text-[#5D4037]">{bride}</h3><p className="font-body text-xs text-[#8D6E63] mt-1">Putri Bpk/Ibu <br /> {data?.bride_parents}</p></div>
-                        </div>
+                        </motion.div>
                     </div>
                 </section>
 
@@ -131,6 +259,13 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
                 <section>
                     <div className="bg-[#FFF4E6] rounded-[2.5rem] p-8 shadow-sm border-2 border-white relative">
                         <Cloud size={60} className="absolute -top-8 -left-4 text-white fill-white drop-shadow-sm opacity-80" />
+                        <motion.img
+                            src={CINNA_CREW.chiffon}
+                            alt="Chiffon"
+                            className="absolute -top-10 right-2 w-16 h-16 rounded-full border-4 border-white bg-white object-cover shadow-md"
+                            animate={{ y: [0, -8, 0], rotate: [0, 8, 0] }}
+                            transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+                        />
                         <h2 className="font-cute text-3xl text-center mb-6">Save The Date</h2>
                         <div className="flex justify-center mb-6"><span className="bg-[#FFE082] text-[#5D4037] px-4 py-2 rounded-full font-cute text-lg shadow-sm">{formattedDate}</span></div>
 
@@ -153,7 +288,14 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
                 </section>
 
                 {/* 4. COUNTDOWN */}
-                <section className="text-center">
+                <motion.section {...sectionReveal} className="text-center relative">
+                    <motion.img
+                        src={CINNA_CREW.cinnamoroll}
+                        alt="Cinnamoroll"
+                        className="absolute -top-8 right-4 w-14 h-14 rounded-full border-4 border-white bg-white object-cover shadow-md"
+                        animate={{ y: [0, -9, 0], rotate: [0, -8, 0] }}
+                        transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut' }}
+                    />
                     <h2 className="font-cute text-2xl mb-6 text-[#5D4037]">Counting Down ✨</h2>
                     <div className="flex justify-center gap-3">
                         <TimeBox val={timeLeft.days} label="Hari" color="bg-[#FFD1DC]" />
@@ -161,7 +303,7 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
                         <TimeBox val={timeLeft.minutes} label="Mnt" color="bg-[#C7E7FF]" />
                         <TimeBox val={timeLeft.seconds} label="Dtk" color="bg-[#E1BEE7]" />
                     </div>
-                </section>
+                </motion.section>
 
                 {/* --- 5. RSVP & UCAPAN --- */}
                 <section className="bg-white rounded-[3rem] p-8 shadow-lg border-t-8 border-[#C7E7FF]">
@@ -332,6 +474,22 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
                         <Gift size={32} className="text-white" />
                     </div>
 
+                    {/* Cappuccino & Espresso berjaga di sisi kado */}
+                    <motion.img
+                        src={CINNA_CREW.cappuccino}
+                        alt="Cappuccino"
+                        className="absolute top-2 left-4 w-14 h-14 rounded-full border-4 border-white bg-white object-cover shadow-md"
+                        animate={{ y: [0, -6, 0] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <motion.img
+                        src={CINNA_CREW.espresso}
+                        alt="Espresso"
+                        className="absolute top-2 right-4 w-14 h-14 rounded-full border-4 border-white bg-white object-cover shadow-md"
+                        animate={{ y: [0, -6, 0] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.7 }}
+                    />
+
                     {/* Wrapper Konten (Margin Top agar tidak tertutup Icon) */}
                     <div className="mt-6">
                         <h2 className="font-cute text-2xl mb-2">Wedding Gift</h2>
@@ -373,6 +531,25 @@ export default function SoftBlueTheme({ groom, bride, date, guestName, data, onR
                 {/* 8. CLOSING */}
                 <footer className="text-center py-12 relative">
                     <Cloud size={100} className="mx-auto text-white fill-white drop-shadow-sm opacity-60 mb-4 animate-pulse" />
+                    {/* Seluruh crew berbaris pamit */}
+                    <div className="mb-6 flex items-end justify-center gap-3">
+                        {[
+                            { src: CINNA_CREW.cinnamoroll, size: 'w-16 h-16', delay: 0 },
+                            { src: CINNA_CREW.mocha, size: 'w-14 h-14', delay: 0.4 },
+                            { src: CINNA_CREW.chiffon, size: 'w-14 h-14', delay: 0.8 },
+                            { src: CINNA_CREW.espresso, size: 'w-12 h-12', delay: 1.2 },
+                            { src: CINNA_CREW.cappuccino, size: 'w-12 h-12', delay: 1.6 },
+                        ].map((c, i) => (
+                            <motion.img
+                                key={i}
+                                src={c.src}
+                                alt="Karakter Cinnamoroll"
+                                className={`${c.size} rounded-full border-4 border-white bg-white object-cover shadow-md`}
+                                animate={{ y: [0, -12, 0], rotate: [0, i % 2 === 0 ? 8 : -8, 0] }}
+                                transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: c.delay }}
+                            />
+                        ))}
+                    </div>
                     <h2 className="font-cute text-3xl text-[#5D4037] relative z-10">{groom} & {bride}</h2>
                     <p className="font-body text-sm text-[#8D6E63] relative z-10">Thank you for everything! ❤️</p>
                 </footer>

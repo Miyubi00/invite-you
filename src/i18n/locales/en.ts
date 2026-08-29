@@ -70,7 +70,7 @@ export const en: TranslationDictionary = {
     heroTitlePrefix: "Share Your Special Moments with an",
     heroTitleHighlight: "Elegant & Modern",
     heroTitleSuffix: "Digital Invitation",
-    heroDesc: "LoVerse helps you create breathtaking digital wedding invitations complete with realtime RSVP, romantic music, and guestbook in minutes starting from Rp10k.",
+    heroDesc: "LoVerse helps you create breathtaking digital wedding invitations complete with realtime RSVP, romantic music, and guestbook in minutes starting from {price}.",
     heroCtaCatalog: "Explore Themes",
     heroCtaOrder: "Create Invitation Now",
     heroRating: "4.9 / 5.0 from {count}+ Happy Couples",
@@ -87,7 +87,7 @@ export const en: TranslationDictionary = {
     aboutDesc: "An all-in-one digital wedding platform designed for seamless event management and delight for your guests.",
     features: {
       f1Title: "Exclusive & Elegant Design",
-      f1Desc: "26+ professional themes responsive on all smartphones, tablets, and desktop devices.",
+      f1Desc: "27+ professional themes responsive on all smartphones, tablets, and desktop devices.",
       f2Title: "Real-time RSVP & Guestbook",
       f2Desc: "Guest attendance and warm wishes are recorded in your dashboard with one-click Excel export.",
       f3Title: "24/7 Self-Editing Access",

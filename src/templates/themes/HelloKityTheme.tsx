@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import {
     Heart, MapPin, Calendar, Clock, Gift,
     Music, Play, Pause, Sparkles, Copy, Star, Check, Quote, MessageSquare, Send, CheckCircle2
@@ -11,6 +12,12 @@ import { useOpenInvitation } from '../shared/useOpenInvitation';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
 import { useToast } from '../../components/GlobalToast';
 import { useTranslation } from '../../i18n';
+
+// --- KARAKTER SANRIO (aset PNG transparan dari hellokitty.fandom.com) ---
+const KITTY_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/5/52/Sanrio_Characters_Hello_Kitty_Image026.png/revision/latest?cb=20250110105831';
+const MIMMY_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/5/52/Sanrio_Characters_Mimmy_Infobox.png/revision/latest?cb=20251102193607';
+const DANIEL_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/0/05/Sanrio_Characters_Dear_Daniel_Image008.png/revision/latest?cb=20170522214217';
+const MELODY_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/2/23/Sanrio_Characters_My_Melody_Image030.png/revision/latest?cb=20170407005355';
 
 export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }: TemplateProps) {
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -92,18 +99,53 @@ export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, o
         .chat-scroll::-webkit-scrollbar-thumb { background-color: #FFB6D5; border-radius: 20px; }
       `}</style>
 
-            {/* --- BACKGROUND DECOR --- */}
+            {/* --- BACKGROUND DECOR (karakter melayang + hati) --- */}
             <div className="fixed inset-0 bg-polka pointer-events-none z-0"></div>
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
                 <Heart className="absolute top-10 left-10 text-[#FFB6D5] w-8 h-8 animate-float opacity-70" fill="currentColor" />
                 <Star className="absolute bottom-20 right-10 text-[#FACC15] w-6 h-6 animate-spin-slow opacity-70" fill="currentColor" />
                 <Heart className="absolute top-1/2 right-4 text-[#FFD6E8] w-12 h-12 animate-float delay-100 opacity-50" fill="currentColor" />
+                {/* Karakter Sanrio kecil melayang di tepi layar */}
+                {[
+                    { src: KITTY_IMG, top: '14%', left: '2%', size: 64, delay: 0 },
+                    { src: MELODY_IMG, top: '38%', right: '1%', size: 56, delay: 1.2 },
+                    { src: DANIEL_IMG, bottom: '24%', left: '3%', size: 52, delay: 0.6 },
+                    { src: MIMMY_IMG, top: '6%', right: '6%', size: 48, delay: 1.8 },
+                ].map(({ src, size, delay, ...pos }, i) => (
+                    <motion.img
+                        key={i}
+                        src={src}
+                        alt=""
+                        width={size}
+                        height={size}
+                        className="absolute rounded-full bg-white/85 object-contain p-1 shadow-[0_3px_10px_rgba(255,111,145,0.25)]"
+                        style={{ ...pos, width: size, height: size }}
+                        animate={{ y: [0, -14, 0], rotate: [0, 4, -4, 0] }}
+                        transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay }}
+                    />
+                ))}
             </div>
 
             {/* --- OPENING SCREEN --- */}
             <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-[#FFD6E8] transition-all duration-1000 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] ${isOpen ? '-translate-y-full rounded-b-[50px]' : 'translate-y-0 rounded-none'}`}>
                 <div className="bg-white p-8 rounded-[40px] shadow-[0_10px_0_rgba(255,182,213,0.5)] text-center max-w-sm w-full relative border-4 border-white">
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-20"><KawaiiBow className="text-[#FF6F91] w-full drop-shadow-md" /></div>
+                    <motion.div
+                        initial={{ scale: 0.85, opacity: 0, y: 30 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 16, delay: 0.15 }}
+                    >
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-20"><KawaiiBow className="text-[#FF6F91] w-full drop-shadow-md" /></div>
+                        {/* Hello Kitty mengintip dari kanan-atas kartu sambil melambai */}
+                        <motion.img
+                            src={KITTY_IMG}
+                            alt="Hello Kitty"
+                            width={88}
+                            height={88}
+                            className="absolute -top-14 -right-6 w-[88px] h-[88px] object-contain drop-shadow-md z-10"
+                            animate={{ rotate: [0, 6, -6, 0], y: [0, -5, 0] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                    </motion.div>
                     <div className="mt-8 mb-6"><div className="w-32 h-32 mx-auto rounded-full border-4 border-[#FFB6D5] p-1 bg-white overflow-hidden shadow-sm"><img src={photos.cover} className="w-full h-full object-cover rounded-full" /></div></div>
                     <h1 className="font-kawaii text-3xl text-[#5D4037] mb-2 leading-none">{groom} <span className="text-[#FF6F91]">&</span> {bride}</h1>
                     <p className="font-body text-[#8D6E63] text-sm bg-[#FFF7FB] inline-block px-4 py-1 rounded-full mb-8">We’re getting married! 💕</p>
@@ -124,9 +166,23 @@ export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, o
                         <div>
                             {/* Wrapper khusus Gambar & Badge agar posisi akurat */}
                             <div className="relative inline-block">
-                                <div className="w-24 h-24 mx-auto rounded-full border-[5px] border-[#C7E7FF] overflow-hidden shadow-sm">
+                                <motion.div
+                                    className="w-24 h-24 mx-auto rounded-full border-[5px] border-[#C7E7FF] overflow-hidden shadow-sm"
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                                >
                                     <img src={photos.groom} className="w-full h-full object-cover" />
-                                </div>
+                                </motion.div>
+                                {/* Dear Daniel mendampingi foto mempelai pria */}
+                                <motion.img
+                                    src={DANIEL_IMG}
+                                    alt="Dear Daniel"
+                                    width={44}
+                                    height={44}
+                                    className="absolute -right-10 -top-2 w-11 h-11 object-contain drop-shadow-sm"
+                                    animate={{ rotate: [0, -6, 6, 0] }}
+                                    transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
+                                />
                                 {/* Badge menempel pada wrapper gambar */}
                                 <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#C7E7FF] text-[#5D4037] px-3 py-0.5 rounded-full text-xs font-bold font-kawaii shadow-sm whitespace-nowrap">
                                     GROOM
@@ -164,6 +220,16 @@ export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, o
                 <section className="px-2">
                     <div className="bg-[#FFF9C4] p-6 rounded-[30px] rounded-tl-none relative shadow-sm border-2 border-white">
                         <Quote className="text-[#FBC02D] w-8 h-8 mb-2 opacity-50" />
+                        {/* Mimmy mengintip dari sudut kanan-atas bubble kutipan */}
+                        <motion.img
+                            src={MIMMY_IMG}
+                            alt="Mimmy"
+                            width={56}
+                            height={56}
+                            className="absolute -top-8 -right-3 w-14 h-14 object-contain drop-shadow-md"
+                            animate={{ rotate: [0, 8, -4, 0], y: [0, -4, 0] }}
+                            transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+                        />
                         <p className="font-kawaii text-lg text-[#F57F17] leading-relaxed text-center italic">"{quote}"</p>
                         <p className="font-body text-xs font-bold text-[#F9A825] text-right mt-3 uppercase">— {quoteSrc}</p>
                         <div className="absolute -left-2 top-0 w-4 h-4 bg-[#FFF9C4] transform rotate-45 border-l-2 border-b-2 border-white"></div>
@@ -173,6 +239,16 @@ export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, o
                 {/* 3. EVENT DETAILS */}
                 <section className="relative">
                     <div className="absolute -top-4 -right-2 transform rotate-12"><KawaiiBow className="text-[#FFB6D5] w-12" /></div>
+                    {/* My Melody mengintip dari kiri-bawah kartu acara */}
+                    <motion.img
+                        src={MELODY_IMG}
+                        alt="My Melody"
+                        width={72}
+                        height={72}
+                        className="absolute -bottom-7 -left-3 w-[72px] h-[72px] object-contain drop-shadow-md z-10"
+                        animate={{ rotate: [0, -8, 6, 0], y: [0, -6, 0] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                    />
                     <div className="bg-[#FFF4E6] rounded-[30px] p-6 shadow-sm border-2 border-white">
                         <h2 className="font-kawaii text-2xl text-center text-[#5D4037] mb-6">Save The Date! 📅</h2>
                         <div className="space-y-4">
@@ -198,7 +274,17 @@ export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, o
 
                 {/* 4. COUNTDOWN */}
                 <section className="text-center">
-                    <div className="bg-[#E1F5FE] inline-block px-6 py-2 rounded-full mb-6 border-2 border-white shadow-sm">
+                    <div className="bg-[#E1F5FE] inline-flex items-center gap-2 px-6 py-2 rounded-full mb-6 border-2 border-white shadow-sm">
+                        {/* Kitty mini ikut menghitung mundur */}
+                        <motion.img
+                            src={KITTY_IMG}
+                            alt="Hello Kitty"
+                            width={36}
+                            height={36}
+                            className="w-9 h-9 object-contain"
+                            animate={{ rotate: [0, 10, -10, 0] }}
+                            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                        />
                         <h2 className="font-kawaii text-xl text-[#0277BD]">Counting Down! ⏳</h2>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
@@ -313,7 +399,19 @@ export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, o
 
                 {/* 7. GIFT SECTION */}
                 <section className="bg-white rounded-[30px] p-6 shadow-md border-b-4 border-[#FFD6E8] text-center">
-                    <div className="w-16 h-16 bg-[#FFF9C4] rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm"><Gift size={32} className="text-[#FBC02D]" /></div>
+                    <div className="relative w-fit mx-auto">
+                        <div className="w-16 h-16 bg-[#FFF9C4] rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-sm"><Gift size={32} className="text-[#FBC02D]" /></div>
+                        {/* My Melody menjaga kadonya dari sudut kanan */}
+                        <motion.img
+                            src={MELODY_IMG}
+                            alt="My Melody"
+                            width={52}
+                            height={52}
+                            className="absolute -right-12 top-0 w-[52px] h-[52px] object-contain drop-shadow-md"
+                            animate={{ y: [0, -6, 0], rotate: [0, 6, -6, 0] }}
+                            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                    </div>
                     <h2 className="font-kawaii text-2xl text-[#5D4037] mb-2">Wedding Gift</h2>
                     <div className="space-y-3">
                         {banks.map((bank, i) => (
@@ -327,7 +425,33 @@ export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, o
 
                 {/* 8. CLOSING */}
                 <footer className="text-center py-10 relative">
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"><Heart size={60} className="text-[#FFCDD2] fill-[#FFCDD2] animate-pop" /></div>
+                    {/* Kitty & Daniel berdampingan mengucapkan terima kasih */}
+                    <div className="flex items-end justify-center gap-3 mb-2">
+                        <motion.img
+                            src={DANIEL_IMG}
+                            alt="Dear Daniel"
+                            width={64}
+                            height={64}
+                            className="w-16 h-16 object-contain drop-shadow-md"
+                            animate={{ y: [0, -8, 0], rotate: [0, -5, 5, 0] }}
+                            transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                        <motion.div
+                            animate={{ scale: [1, 1.15, 1] }}
+                            transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                            <Heart size={44} className="text-[#FFCDD2] fill-[#FFCDD2]" />
+                        </motion.div>
+                        <motion.img
+                            src={KITTY_IMG}
+                            alt="Hello Kitty"
+                            width={64}
+                            height={64}
+                            className="w-16 h-16 object-contain drop-shadow-md"
+                            animate={{ y: [0, -8, 0], rotate: [0, 5, -5, 0] }}
+                            transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+                        />
+                    </div>
                     <h2 className="font-kawaii text-2xl text-[#5D4037] mt-4">{groom} & {bride}</h2>
                     <p className="font-body text-sm text-[#8D6E63]">Thank you so much! 🎀</p>
                 </footer>

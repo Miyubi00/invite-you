@@ -53,6 +53,20 @@ const THEME_LOADERS: Record<string, ThemeLoader> = {
   'binder-book': () => import('./themes/BinderTheme'),
   'art-gallery': () => import('./themes/ArtTheme'),
   'art-block': () => import('./themes/ArtBlockTheme'),
+  'emerald-royale': () => import('./themes/EmeraldRoyaleTheme'),
+  'sage-terracotta': () => import('./themes/SageTerracottaTheme'),
+  'zine-raw': () => import('./themes/ZineRawTheme'),
+  'roblox': () => import('./themes/RobloxTheme'),
+  'spiderman': () => import('./themes/SpidermanTheme'),
+  'motion-flow': () => import('./themes/MotionFlowTheme'),
+  'pop-card': () => import('./themes/PopCardFiestaTheme'),
+  'lantern-night': () => import('./themes/LanternNightTheme'),
+  'sakura-breeze': () => import('./themes/SakuraBreezeTheme'),
+  'board-game': () => import('./themes/BoardGameTheme'),
+  'ocean-vows': () => import('./themes/OceanVowsTheme'),
+  'chiikawa': () => import('./themes/ChiikawaTheme'),
+  'neumorph': () => import('./themes/NeumorphTheme'),
+  'claymorphism': () => import('./themes/ClaymorphismTheme'),
 };
 
 /** Daftar slug yang punya komponen tema terdaftar. */

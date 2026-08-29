@@ -13,6 +13,77 @@
   --color-brand-text: #712E1E;
   --color-brand-muted: #888870;
   --color-brand-primary: #E59A59;
+
+  /* Palet milik tema Motion Flow (independen dari warna halaman di atas) */
+  --color-mf-deep: #3D1832;      /* Plum gelap — latar gelap amplop/countdown   */
+  --color-mf-cream: #FFEDDF;     /* Ivory hangat — teks di atas gelap           */
+  --color-mf-ink: #2B1122;       /* Ink — teks utama di latar terang            */
+  --color-mf-muted: #A28EA6;     /* Mauve redup — label/teks sekunder           */
+  --color-mf-rose: #D65A73;      /* Rose — aksen utama tema                     */
+
+  /* Palet milik tema Pop Card Fiesta (independen dari warna halaman di atas) */
+  --color-pc-cream: #FFF6E9;     /* Krem permen — latar utama                   */
+  --color-pc-ink: #33224B;       /* Ungu tua — teks utama/kartu kontras         */
+  --color-pc-coral: #FF5D73;     /* Coral — aksen utama                         */
+  --color-pc-sun: #FFC93C;       /* Kuning matahari — aksen sekunder            */
+  --color-pc-mint: #2EC4B6;      /* Mint — aksen segar (sukses)                 */
+
+  /* Palet milik tema Lantern Night (independen dari warna halaman di atas) */
+  --color-ln-night: #191033;     /* Indigo malam — latar utama                  */
+  --color-ln-deep: #100A26;      /* Indigo tergelap — kartu/amplop              */
+  --color-ln-glow: #FFC15E;      /* Amber lentera — aksen utama bercahaya       */
+  --color-ln-plum: #8A4E7D;      /* Plum lembut — aksen sekunder                */
+  --color-ln-mist: #E8E6FF;      /* Lavender pucat — teks terang                */
+
+  /* Sakura Breeze (klon world-map CloudSky berpalet taman sakura).     */
+  --color-sk-blossom: #FFF0F5;   /* Pink pucat — latar utama langit taman       */
+  --color-sk-blush: #FFC9DC;     /* Blush — ujung gradasi & bunga jauh          */
+  --color-sk-deep: #59223F;      /* Plum tua — teks utama                       */
+  --color-sk-rose: #F25CA2;      /* Rose — aksen utama tombol/ikon              */
+  --color-sk-leaf: #57B894;      /* Hijau daun — aksen lokasi/sukses            */
+  --color-sk-gold: #E9B44C;      /* Emas — kutipan/kado                         */
+
+  /* Palet milik tema Dice Voyage / board game (independen & mencolok)  */
+  --color-bg-cream: #FFF6E0;     /* Krem papan permainan — latar utama          */
+  --color-bg-ink: #221B45;       /* Biru-tinta gelap — teks & garis papan       */
+  --color-bg-tomato: #FF4D3D;    /* Merah tomat menyala — aksen utama           */
+  --color-bg-teal: #00B8A9;      /* Teal elektrik — aksen sekunder              */
+  --color-bg-mustard: #FFC53D;   /* Kuning mustard — aksen tersier/highlight    */
+
+  /* Palet milik tema Ocean Vows (parallax laut dalam)                 */
+  --color-ow-deep: #04202C;      /* Palung tergelap — latar utama              */
+  --color-ow-mid: #0B4A57;       /* Kedalaman — kartu/amplop                   */
+  --color-ow-surface: #7BD8E6;   /* Permukaan aqua — aksen terang              */
+  --color-ow-coral: #FF7A59;     /* Karang coral — aksen utama mencolok        */
+  --color-ow-foam: #D7F5EC;      /* Buih — teks utama di atas gelap            */
+  --color-ow-sand: #FFE2A8;      /* Pasir emas — aksen sekunder/garis          */
+
+  /* Palet milik tema Chiikawa Days (slide deck horizontal, tanpa scroll) */
+  --color-cw-cream: #FFF9EC;     /* Krem lembut — latar utama                 */
+  --color-cw-mint: #E0F2EE;      /* Mint seafoam — kartu & aksen terang       */
+  --color-cw-blue: #8ECBE0;      /* Biru langit (khas Chiikawa) — aksen utama */
+  --color-cw-pink: #F9BCCB;      /* Pink Usagi — aksen                 */
+  --color-cw-yellow: #FFE27A;    /* Kuning Hachiware — highlight              */
+  --color-cw-ink: #5C4633;       /* Cokelat tinta — teks utama                */
+  --color-cw-coral: #F2797E;     /* Coral — aksen tombol                      */
+
+  /* Palet milik tema Neumorph Soft UI (monokrom lavender + aksen violet) */
+  --color-nm-base: #E4E6F2;      /* Permukaan dasar — latar utama              */
+  --color-nm-shadow: #B9BBD4;    /* Bayangan gelap kanan-bawah                 */
+  --color-nm-light: #FFFFFF;     /* Bayangan terang kiri-atas                  */
+  --color-nm-ink: #4A4568;       /* Tinta ungu-abu — teks utama                */
+  --color-nm-accent: #7C6FF0;    /* Violet — aksen utama tombol/highlight      */
+  --color-nm-accent2: #F27BA5;   /* Rose lembut — aksen sekunder               */
+
+  /* Palet milik tema Claymorphism (clay puffy pastel candy)             */
+  --color-cl-bg: #EDE7FF;        /* Lilac lembut — latar utama tanam liur      */
+  --color-cl-ink: #4A3F71;       /* Ungu tua — teks utama                      */
+  --color-cl-shadow: #C3B6F2;    /* Bayangan luar besar khas clay              */
+  --color-cl-accent: #8A6CFF;    /* Periwinkle — aksen utama tombol            */
+  --color-cl-berry: #FF8FA3;     /* Pink candy — aksen sekunder                */
+  --color-cl-sun: #FFC94D;       /* Kuning mentega — highlight                 */
+  --color-cl-mint: #A8E6CF;      /* Mint — aksen sukses/lokasi                 */
+  --color-cl-sky: #9BD7FF;       /* Biru langit — aksen galeri/countdown       */
 }
 
 /* Shimmer keyframe untuk skeleton variant "wave" */

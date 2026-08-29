@@ -60,6 +60,20 @@ export const MASTER_TEMPLATES: MasterTemplate[] = [
   { id: 24, slug: 'binder-book', name: 'Binder Book', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/binder-book.webp` },
   { id: 25, slug: 'art-gallery', name: 'Art Gallery', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/art-gallery.webp` },
   { id: 26, slug: 'art-block', name: 'Art Block', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/art-block.webp` },
+  { id: 27, slug: 'emerald-royale', name: 'Emerald Royale', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/emerald-royale.webp` },
+  { id: 28, slug: 'sage-terracotta', name: 'Sage Terracotta', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/sage-terracotta.webp` },
+  { id: 29, slug: 'zine-raw', name: 'Zine Raw', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/zine-raw.webp` },
+  { id: 30, slug: 'roblox', name: 'Roblox World', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/roblox.webp` },
+  { id: 31, slug: 'spiderman', name: 'Spider-Verse', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/spiderman.webp` },
+  { id: 33, slug: 'motion-flow', name: 'Motion Flow', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/motion-flow.webp` },
+  { id: 34, slug: 'pop-card', name: 'Pop Card Fiesta', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/pop-card.webp` },
+  { id: 35, slug: 'lantern-night', name: 'Lantern Night', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/lantern-night.webp` },
+  { id: 36, slug: 'sakura-breeze', name: 'Sakura Breeze', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/sakura-breeze.webp` },
+  { id: 37, slug: 'board-game', name: 'Board Game', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/board-game.webp` },
+  { id: 38, slug: 'ocean-vows', name: 'Ocean Vows', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/ocean-vows.webp` },
+  { id: 39, slug: 'chiikawa', name: 'Chiikawa Days', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/chiikawa.webp` },
+  { id: 40, slug: 'neumorph', name: 'Soft Neumorph', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/neumorph.webp` },
+  { id: 41, slug: 'claymorphism', name: 'Clay Puffy', category: 'RSVP', price: 15000, image: `${THEME_IMG_BASE}/claymorphism.webp` },
 ];
 
 // --- HELPER UNTUK DASHBOARD (Mencari list Basic) ---

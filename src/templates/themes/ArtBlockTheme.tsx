@@ -4,7 +4,7 @@ import {
 
     Play, Pause, MapPin, Calendar, Clock,
 
-    Gift, Star, Zap, Heart,
+    Gift, Star, Heart,
 
     CheckCircle2
 
@@ -170,49 +170,7 @@ const CoverSection = ({  data, date, groom, bride, guestName  }: { data?: Templa
 
         </div>
 
-        <Marquee text="READ ALL ABOUT IT • THE LOVE STORY OF THE YEAR • DON'T MISS OUT •" />
-
-    </section>
-
-);
-
-
-
-const StorySection = ({  data  }: { data?: TemplateData })  => (
-
-    <section className="py-20 px-6 bg-[#FDFBF7] text-black border-b-4 border-black relative overflow-hidden">
-
-        <div className="max-w-4xl mx-auto">
-
-            <SectionTitle title="Feature Story" subtitle="How it all began" />
-
-
-
-            <div className="columns-1 md:columns-2 gap-8 text-justify font-serif text-lg leading-relaxed space-y-4">
-
-                <p className="first-letter:text-7xl first-letter:font-display first-letter:float-left first-letter:mr-3 first-letter:mt-[-10px] first-letter:text-red-500">
-
-                    {data?.quote ? data.quote : "Every love story is beautiful, but ours is my favorite. It all started with a simple hello, and now we are here, ready to embark on a lifetime adventure together."}
-
-                </p>
-
-                <p>
-
-                    We invite you to join us as we celebrate our love, laughter, and happily ever after. This isn't just a wedding; it's a festival of our journey.
-
-                </p>
-
-                <div className="w-full h-px bg-black my-4"></div>
-
-                <p className="font-bold text-sm uppercase tracking-widest text-right">— {data?.quote_src || "The Couple"}</p>
-
-            </div>
-
-        </div>
-
-        <Star className="absolute top-10 left-10 text-yellow-400 w-12 h-12 animate-spin-slow border-2 border-black rounded-full p-1" />
-
-        <Zap className="absolute bottom-10 right-10 text-blue-500 w-16 h-16 transform -rotate-12" fill="currentColor" />
+        <Marquee text="READ ALL ABOUT IT • THE WEDDING OF THE YEAR • DON'T MISS OUT •" />
 
     </section>
 
@@ -881,8 +839,6 @@ export default function RetroMagazineTheme({
             {/* Sections (Rendered with Props) */}
 
             <CoverSection data={data} date={date} groom={groom} bride={bride} guestName={guestName} />
-
-            <StorySection data={data} />
 
             <ProfileSection data={data} groom={groom} bride={bride} />
 

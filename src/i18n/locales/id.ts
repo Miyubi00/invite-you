@@ -68,7 +68,7 @@ export const id = {
     heroTitlePrefix: "Bagikan Momen Bahagiamu dengan",
     heroTitleHighlight: "Undangan Digital",
     heroTitleSuffix: "Elegan & Modern",
-    heroDesc: "LoVerse membantu kamu membuat undangan pernikahan digital yang memukau, lengkap dengan RSVP realtime, musik romantis, dan buku tamu dalam hitungan menit mulai Rp10 ribu.",
+    heroDesc: "LoVerse membantu kamu membuat undangan pernikahan digital yang memukau, lengkap dengan RSVP realtime, musik romantis, dan buku tamu dalam hitungan menit mulai {price}.",
     heroCtaCatalog: "Lihat Koleksi Tema",
     heroCtaOrder: "Buat Undangan Sekarang",
     heroRating: "4.9 / 5.0 dari {count}+ Pasangan Bahagia",
@@ -85,7 +85,7 @@ export const id = {
     aboutDesc: "Platform undangan digital all-in-one yang dirancang untuk memberikan kemudahan bagi calon pengantin dan kenyamanan bagi tamu.",
     features: {
       f1Title: "Desain Eksklusif & Elegan",
-      f1Desc: "26+ pilihan tema profesional yang responsif di berbagai perangkat smartphone, tablet, maupun komputer.",
+      f1Desc: "27+ pilihan tema profesional yang responsif di berbagai perangkat smartphone, tablet, maupun komputer.",
       f2Title: "RSVP & Buku Tamu Realtime",
       f2Desc: "Konfirmasi kehadiran dan ucapan doa dari para tamu tercatat rapi di dashboard dengan fitur export ke Excel.",
       f3Title: "Akses Edit Mandiri 24/7",

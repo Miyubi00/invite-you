@@ -182,11 +182,11 @@ export default function PlayfulPastelTheme({ groom, bride, date, guestName, data
                     </div>
                 </section>
 
-                {/* 3. LOVE STORY & PROFILES */}
+                {/* 3. COUPLE PROFILES */}
                 <section className="py-10 px-6 max-w-3xl mx-auto">
                     <div className="text-center mb-12">
                         <h2 className="font-blob text-3xl text-[#818CF8] inline-block relative">
-                            Our Love Story
+                            The Happy Couple
                             <span className="absolute -bottom-2 left-0 w-full h-3 bg-[#FDE047] -z-10 opacity-50 rounded-full"></span>
                         </h2>
                     </div>
