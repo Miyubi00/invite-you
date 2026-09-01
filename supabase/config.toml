@@ -4,3 +4,8 @@
 
 [functions.telegram-webhook]
 verify_jwt = false
+
+# og-meta dipanggil Vercel (rewrite /wedding/:slug & /demo/:slug) sebagai
+# crawler preview WA/Twitter — tidak membawa Authorization Supabase.
+[functions.og-meta]
+verify_jwt = false

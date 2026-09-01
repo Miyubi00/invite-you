@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/wedding/:slug",
+      "destination": "https://ghhfcxlqxeaythbdofua.supabase.co/functions/v1/og-meta?mode=wedding&slug=:slug"
+    },
+    {
+      "source": "/demo/:slug",
+      "destination": "https://ghhfcxlqxeaythbdofua.supabase.co/functions/v1/og-meta?mode=demo&slug=:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
