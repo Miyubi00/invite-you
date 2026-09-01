@@ -85,7 +85,7 @@ async function fetchInvitation(slug) {
   const SUPABASE_URL = (process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '')
   const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || ''
   if (!SUPABASE_URL || !ANON_KEY) return null
-  const select = encodeURIComponent('groom_name,bride_name,wedding_date,event_details,payment_status')
+  const select = encodeURIComponent('groom_name,bride_name,wedding_date,event_details,payment_status,template_slug')
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/public_invitations?slug=eq.${encodeURIComponent(slug)}&select=${select}`,
     {
@@ -141,9 +141,15 @@ export default async function handler(req, res) {
         if (typeof ed === 'string') {
           try { ed = JSON.parse(ed) } catch { ed = {} }
         }
+        // Rantai thumbnail: cover → foto pengantin → screenshot tema → default.
+        // Hanya terima string yang benar-benar URL gambar (buang '' / null).
         const cover = [ed.cover_photo, ed.groom_photo, ed.bride_photo]
-          .find((v) => typeof v === 'string' && v.length > 0)
-        if (typeof cover === 'string') image = cover
+          .find((v) => typeof v === 'string' && v.startsWith('http'))
+        if (cover) {
+          image = cover
+        } else if (typeof inv.template_slug === 'string' && DEMO_THUMBS.has(inv.template_slug)) {
+          image = `${origin}/${encodeURIComponent(inv.template_slug)}.png`
+        }
         canonical = `${origin}/wedding/${encodeURIComponent(slug)}`
       }
     } else if (mode === 'demo' && slug) {
