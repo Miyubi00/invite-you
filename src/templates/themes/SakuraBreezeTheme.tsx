@@ -15,7 +15,8 @@
 //        • Pulau masuk satu-per-satu dengan spring stagger.
 //        • Cover: nama mempelai pop per-huruf + blob bernapas.
 //        • Countdown angka jelly keluar-masuk (AnimatePresence).
-//        • Lightbox galeri transisi shared-element (layoutId).
+//        • Lightbox galeri fade+spring (tanpa layoutId agar stabil di
+//          dalam canvas peta yang di-transform CSS).
 //        • Semua tombol/kartu punya whileHover/whileTap spring.
 // Palet: blossom #FFF0F5, blush #FFC9DC, deep #59223F,
 //        rose #F25CA2, leaf #57B894, gold #E9B44C.
@@ -26,7 +27,7 @@
 //                i18n, framer-motion.
 // ============================================================
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import {
@@ -90,7 +91,7 @@ export default function SakuraBreezeTheme({ groom, bride, date, data, onRsvpSubm
     const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
     const [pinchDist, setPinchDist] = useState<number | null>(null);
 
-    // Lightbox galeri (tambahan motion: transisi shared-element).
+    // Lightbox galeri (fade + spring — tanpa layoutId, lihat catatan di lightbox).
     const [lightbox, setLightbox] = useState<string | null>(null);
 
     // Letupan kelopak saat kartu diklik.
@@ -227,6 +228,27 @@ export default function SakuraBreezeTheme({ groom, bride, date, data, onRsvpSubm
             scale: initialScale
         });
     };
+
+    // --- WHEEL ZOOM (scroll mouse / trackpad) ---
+    // React memasang listener 'wheel' sebagai passive, sehingga
+    // e.preventDefault() tidak bisa dipanggil dari prop onWheel —
+    // karena itu listener native non-passive dipasang manual via ref.
+    const wheelZoomRef = useRef<(e: WheelEvent) => void>(() => {});
+    wheelZoomRef.current = (e: WheelEvent) => {
+        if (!isOpen) return;
+        e.preventDefault();
+        // deltaY negatif (scroll atas) = zoom in, positif (scroll bawah) = zoom out.
+        const factor = Math.exp(-e.deltaY * 0.0015);
+        zoomToPoint(transform.scale * factor, e.clientX, e.clientY);
+    };
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const handler = (e: WheelEvent) => wheelZoomRef.current(e);
+        el.addEventListener('wheel', handler, { passive: false });
+        return () => el.removeEventListener('wheel', handler);
+    }, []);
 
     const handleRsvpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -499,7 +521,6 @@ export default function SakuraBreezeTheme({ groom, bride, date, data, onRsvpSubm
                                 {photos.gallery.slice(0, 4).map((url, i) => (
                                     <motion.div
                                         key={i}
-                                        layoutId={`sk-photo-${i}`}
                                         onClick={(e) => { e.stopPropagation(); setLightbox(url); }}
                                         whileHover={{ scale: 1.07 }}
                                         className="aspect-square rounded-xl overflow-hidden bg-sk-blossom shadow-sm cursor-zoom-in"
@@ -882,7 +903,13 @@ export default function SakuraBreezeTheme({ groom, bride, date, data, onRsvpSubm
                 </motion.button>
             </div>
 
-            {/* --- LIGHTBOX (shared-element dari grid galeri) --- */}
+            {/* --- LIGHTBOX (fade + spring) ---
+                 Catatan: TIDAK memakai layoutId/shared-element karena thumbnail
+                 berada di dalam canvas peta yang di-transform CSS
+                 (translate3d + scale). Proyeksi layout framer-motion salah
+                 mengukur bounding box di dalam CSS scale, menyebabkan gambar
+                 "membesar" liar dan bisa bergeser/menghilang dari kartunya
+                 saat peta di-zoom. Transisi fade+spring biasa aman. */}
             <AnimatePresence>
                 {lightbox && (
                     <motion.div
@@ -893,9 +920,14 @@ export default function SakuraBreezeTheme({ groom, bride, date, data, onRsvpSubm
                         className="fixed inset-0 z-[120] bg-sk-deep/80 backdrop-blur-sm flex items-center justify-center p-8"
                     >
                         <motion.img
-                            layoutId={`sk-photo-${photos.gallery.indexOf(lightbox)}`}
+                            key={lightbox}
+                            initial={{ opacity: 0, scale: 0.86 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
                             src={lightbox}
                             alt="Foto galeri diperbesar"
+                            onClick={(e) => e.stopPropagation()}
                             className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border-4 border-white"
                         />
                         <motion.p

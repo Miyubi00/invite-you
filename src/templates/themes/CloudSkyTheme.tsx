@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
     MapPin, Calendar, Clock, Music, Heart,
     Gift, Play, Pause, Navigation, Copy, Image as ImageIcon, Cloud,
@@ -160,6 +160,27 @@ export default function SkyWorldMapTheme({ groom, bride, date, data, onRsvpSubmi
             scale: initialScale
         });
     };
+
+    // --- WHEEL ZOOM (scroll mouse / trackpad) ---
+    // React memasang listener 'wheel' sebagai passive, sehingga
+    // e.preventDefault() tidak bisa dipanggil dari prop onWheel —
+    // karena itu listener native non-passive dipasang manual via ref.
+    const wheelZoomRef = useRef<(e: WheelEvent) => void>(() => {});
+    wheelZoomRef.current = (e: WheelEvent) => {
+        if (!isOpen) return;
+        e.preventDefault();
+        // deltaY negatif (scroll atas) = zoom in, positif (scroll bawah) = zoom out.
+        const factor = Math.exp(-e.deltaY * 0.0015);
+        zoomToPoint(transform.scale * factor, e.clientX, e.clientY);
+    };
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const handler = (e: WheelEvent) => wheelZoomRef.current(e);
+        el.addEventListener('wheel', handler, { passive: false });
+        return () => el.removeEventListener('wheel', handler);
+    }, []);
 
     const handleRsvpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
