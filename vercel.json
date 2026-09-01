@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/wedding/:slug",
-      "destination": "https://ghhfcxlqxeaythbdofua.supabase.co/functions/v1/og-meta?mode=wedding&slug=:slug"
+      "destination": "/api/og?mode=wedding&slug=:slug"
     },
     {
       "source": "/demo/:slug",
-      "destination": "https://ghhfcxlqxeaythbdofua.supabase.co/functions/v1/og-meta?mode=demo&slug=:slug"
+      "destination": "/api/og?mode=demo&slug=:slug"
     },
     {
       "source": "/(.*)",

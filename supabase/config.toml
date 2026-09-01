@@ -1,11 +1,7 @@
-# Supabase local config
+﻿# Supabase local config
 # verify_jwt = false untuk webhook Telegram (Telegram tidak kirim Authorization Supabase)
 # ai-chat tetap butuh JWT (dipanggil via supabase.functions.invoke dengan anon key)
 
 [functions.telegram-webhook]
 verify_jwt = false
 
-# og-meta dipanggil Vercel (rewrite /wedding/:slug & /demo/:slug) sebagai
-# crawler preview WA/Twitter — tidak membawa Authorization Supabase.
-[functions.og-meta]
-verify_jwt = false
