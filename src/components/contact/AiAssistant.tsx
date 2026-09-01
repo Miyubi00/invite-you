@@ -9,7 +9,8 @@
 // Keterikatan : hooks/useAiChat, i18n, lucide-react, react-icons
 // ============================================================
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { AlertTriangle, Bot, Headset, MessageCircle, RotateCcw, Send, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useTranslation } from '../../i18n';
@@ -26,6 +27,82 @@ const SUGGESTION_KEYS = [
   'contact.ai.suggestionPayment',
   'contact.ai.suggestionDiff',
 ] as const;
+
+// ------------------------------------------------------------
+// Render teks pesan dengan tautan yang bisa diklik:
+//  - [label](url)                     -> teks "label" jadi tautan biru bergaris bawah.
+//     TOLERAN: kurung tutup ')' boleh hilang atau ada tanda baca sebelum ')';
+//     url tetap dikenali sampai spasi / ')' berikutnya.
+//  - https://… & wa.me/…              -> tautan; URL milik loverse.my.id/situs ini
+//                                        dipakai Link SPA (pindah halaman tanpa reload)
+//  - /demo/<slug> & /wedding/<slug>   -> Link react-router (tanpa reload)
+// Semua tautan tampil biru & bergaris bawah agar terlihat bisa diklik.
+// ------------------------------------------------------------
+const MESSAGE_LINK_RE =
+  /\[([^\]\n]+)\]\(([^)\s]+)|https?:\/\/[^\s<>"']+|\/(?:demo|wedding)\/[a-z0-9_-]+|\bwa\.me\/[0-9]+/;
+
+function messageLink(href: string, label: string, key: number) {
+  const cleanHref = href.replace(/[.,;:!?…)\]]+$/, '');
+  const linkClass =
+    'font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800 hover:bg-blue-50 rounded-sm break-all transition-colors cursor-pointer';
+  let internalTo: string | null = null;
+  if (cleanHref.startsWith('/')) {
+    internalTo = cleanHref;
+  } else {
+    try {
+      const url = new URL(cleanHref);
+      if (url.hostname === window.location.hostname || url.hostname === 'loverse.my.id') {
+        internalTo = url.pathname + url.search + url.hash;
+      }
+    } catch {
+      /* bukan URL absolut — dibuka di tab baru */
+    }
+  }
+  if (internalTo !== null) {
+    return (
+      <Link key={key} to={internalTo} className={linkClass}>
+        {label}
+      </Link>
+    );
+  }
+  return (
+    <a
+      key={key}
+      href={cleanHref.startsWith('http') ? cleanHref : `https://${cleanHref}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={linkClass}
+    >
+      {label}
+    </a>
+  );
+}
+
+function MessageText({ text }: { text: string }) {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  const re = new RegExp(MESSAGE_LINK_RE.source, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(<span key={nodes.length}>{text.slice(lastIndex, match.index)}</span>);
+    }
+    if (match[1] !== undefined && match[2] !== undefined) {
+      nodes.push(messageLink(match[2], match[1], nodes.length));
+      // Kurung tutup ')' markdown tidak ikut regex karena [^)\s]+ berhenti di ')';
+      // konsumsi agar ')' tidak ter-render sebagai teks. (Kasus ')' hilang: tidak ada yang dikonsumsi.)
+      lastIndex = match.index + match[0].length;
+      if (text[lastIndex] === ')') lastIndex++;
+    } else {
+      nodes.push(messageLink(match[0], match[0], nodes.length));
+      lastIndex = match.index + match[0].length;
+    }
+  }
+  if (lastIndex < text.length) {
+    nodes.push(<span key={nodes.length}>{text.slice(lastIndex)}</span>);
+  }
+  return <>{nodes}</>;
+}
 
 export default function AiAssistant({ waNumber }: AiAssistantProps) {
   const { t } = useTranslation();
@@ -208,7 +285,7 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
                   <Headset className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div className="max-w-[85%] sm:max-w-[75%] bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm shadow-xs whitespace-pre-wrap break-words leading-relaxed">
-                  {msg.content}
+                  <MessageText text={msg.content} />
                 </div>
               </div>
             );
@@ -222,7 +299,9 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
                 </div>
                 <div className="max-w-[85%] sm:max-w-[75%] bg-white border border-emerald-200 text-stone-800 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm shadow-xs whitespace-pre-wrap break-words leading-relaxed">
                   <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Admin</span>
-                  <p className="mt-1">{msg.content}</p>
+                  <p className="mt-1">
+                    <MessageText text={msg.content} />
+                  </p>
                 </div>
               </div>
             );
@@ -258,7 +337,7 @@ export default function AiAssistant({ waNumber }: AiAssistantProps) {
                 <Bot className="w-3.5 h-3.5 text-[#FFD5AF]" />
               </div>
               <div className="max-w-[85%] sm:max-w-[75%] bg-white border border-[#EBDFCE] text-stone-700 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm shadow-xs whitespace-pre-wrap break-words leading-relaxed">
-                {msg.content}
+                <MessageText text={msg.content} />
               </div>
             </div>
           );

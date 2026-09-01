@@ -41,6 +41,8 @@ const SYSTEM_RULES = `Anda adalah "LoVerse AI", asisten layanan pelanggan platfo
 
 ATURAN:
 - Jawab singkat, ramah, dan jelas (maksimal ±120 kata) dalam Bahasa Indonesia atau bahasa yang dipakai user.
+
+- HARGA — PALING SERING DITANYA: jika menyebut harga, WAJIB salin PERSIS angka & satuan yang tertulis di [Katalog Tema] (contoh: "Rp15.000" atau "Rp10.000"). Dilarang mengubah, menambah, mengurangi, atau menebak angka harga; jika tidak yakin dengan harga, sebutkan saja "sesuai katalog di website", jangan mengarang angka. Begitu pula kategori(Basic/RSVP) dan nama tema wajib persis sesuai katalog.
 - HANYA gunakan fakta dari KNOWLEDGE BASE di bawah. Jangan pernah mengarang harga, fitur, atau kebijakan.
 - Jangan menyebut bahwa Anda adalah model AI Google/Gemini; Anda adalah asisten LoVerse.
 - Jangan gunakan emoji.
@@ -56,54 +58,88 @@ JIKA DI LUAR KNOWLEDGE BASE:
 - Pertanyaan di luar knowledge base (mis. permintaan desain khusus, kerja sama, komplain, masalah pembayaran spesifik): katakan bahwa Anda akan hubungkan ke admin dan sarankan chat WhatsApp admin.`;
 
 // Fallback: dipakai hanya jika tabel templates tidak bisa dibaca.
+// Daftar & harga di sini harus selalu sinkron dengan isi tabel `templates`
+// (sumber saat ini: src/lib/constants.ts MASTER_TEMPLATES + migration
+// 20260829120000_register_new_themes.sql) — 40 tema, 13 Basic + 27 RSVP.
 const FALLBACK_CATALOG = `KNOWLEDGE BASE:
 [Produk & Harga]
 - Undangan digital sekali bayar, aktif sampai seluruh rangkaian acara selesai, TANPA biaya bulanan/tersembunyi.
-- Kategori Basic: Rp10.000 (13 tema). Kategori RSVP & Interaktif: Rp15.000 (13 tema). Total 26 tema.
-- Perbedaan utama: fitur RSVP interaktif & Buku Tamu (dengan export Excel) hanya aktif pada tema kategori RSVP.
+- Kategori Basic: Rp10.000 per tema (13 tema).
+- Kategori RSVP: Rp15.000 per tema (27 tema).
+- Total 40 tema.
+- Perbedaan utama: fitur RSVP interaktif & Buku Tamu (dengan export Excel) hanya aktif pada tema di luar kategori Basic.
 - Semua paket termasuk: edit mandiri 24/7 (data mempelai, jadwal akad/resepsi, lokasi via Google Maps, galeri foto, musik latar, nomor rekening kado digital), undangan dibagikan dengan nama tamu personal (bisa impor daftar tamu CSV), responsif di HP & desktop.
 
-[Katalog Tema — 26 tema, slug untuk link demo /demo/<slug>]
-Kategori Basic (Rp10.000, tanpa fitur RSVP):
-- Rustic Floral (rustic-floral): floral hangat, kesan klasik-romantis. Paling sering dipilih.
-- Modern Dark (modern-dark): gelap elegan, modern.
-- Botanical Gold (botanical-gold): botanis + aksen emas, mewah.
-- Monochrome (monochrome): hitam-putih minimalis.
-- Navy Gold (navy-gold): biru navy + emas, formal.
-- Bohaemin (bohaemin): boho santai, earthy.
-- Rustic Boho (rustic-boho): perpaduan rustic & boho.
-- Elegant Pastel (elegant-pastel): pastel lembut, feminin.
-- Japanese (japanese): estetika Jepang, tenang.
-- Javanese (javanese): nuansa Jawa tradisional.
-- Lilac (lilac): ungu lilac lembut.
-- Cyberpunk Neon (cyberpunk): neon futuristik, unik.
-- Instagram Feed (insta): tampilan feed Instagram, kekinian.
+[Katalog Tema — 40 tema, slug untuk link demo /demo/<slug>]
+Kategori Basic (Rp10.000 per tema, tanpa fitur RSVP):
+- Rustic Floral (rustic-floral): floral hangat, kesan klasik-romantis. Paling sering dipilih. Harga Rp10.000.
+- Modern Dark (modern-dark): gelap elegan, modern. Harga Rp10.000.
+- Botanical Gold (botanical-gold): botanis + aksen emas, mewah. Harga Rp10.000.
+- Monochrome (monochrome): hitam-putih minimalis. Harga Rp10.000.
+- Navy Gold (navy-gold): biru navy + emas, formal. Harga Rp10.000.
+- Bohaemin (bohaemin): boho santai, earthy. Harga Rp10.000.
+- Rustic Boho (rustic-boho): perpaduan rustic & boho. Harga Rp10.000.
+- Elegant Pastel (elegant-pastel): pastel lembut, feminin. Harga Rp10.000.
+- Japanese (japanese): estetika Jepang, tenang. Harga Rp10.000.
+- Javanese (javanese): nuansa Jawa tradisional. Harga Rp10.000.
+- Lilac (lilac): ungu lilac lembut. Harga Rp10.000.
+- Cyberpunk Neon (cyberpunk): neon futuristik, unik. Harga Rp10.000.
+- Instagram Feed (insta): tampilan feed Instagram, kekinian. Harga Rp10.000.
 
-Kategori RSVP & Interaktif (Rp15.000, termasuk fitur RSVP & buku tamu):
-- Cinnamon Blue (cinamon): biru-hangat, rapi.
-- Playful Pop (playful-pop): ceria, playful, warna pop.
-- Bubble Chat (static-canvas): gaya chat bubble, interaktif.
-- Iphone (iphone): tampilan antarmuka iPhone.
-- 8bit Retro (bit): piksel game retro.
-- Comic (comic): gaya komik, seru.
-- Diary Book (diary): buku harian, personal.
-- Cloudy Sky (cloud-sky): langit awan, lembut.
-- Hello Kitty Pink (hello-kitty): pink lucu bergaya karakter.
-- Android Mobile (mobile): tampilan antarmuka Android.
-- Binder Book (binder-book): binder/buku cincin.
-- Art Gallery (art-gallery): galeri seni, artistik.
-- Art Block (art-block): blok seni modern.`;
+Kategori RSVP (Rp15.000 per tema, termasuk fitur RSVP & buku tamu):
+- Cinnamon Blue (cinamon): biru-hangat, rapi. Harga Rp15.000.
+- Playful Pop (playful-pop): ceria, playful, warna pop. Harga Rp15.000.
+- Bubble Chat (static-canvas): gaya chat bubble, interaktif. Harga Rp15.000.
+- Iphone (iphone): tampilan antarmuka iPhone. Harga Rp15.000.
+- 8bit Retro (bit): piksel game retro. Harga Rp15.000.
+- Comic (comic): gaya komik, seru. Harga Rp15.000.
+- Diary Book (diary): buku harian, personal. Harga Rp15.000.
+- Cloudy Sky (cloud-sky): langit awan, lembut. Harga Rp15.000.
+- Hello Kitty Pink (hello-kitty): pink lucu bergaya karakter. Harga Rp15.000.
+- Android Mobile (mobile): tampilan antarmuka Android. Harga Rp15.000.
+- Binder Book (binder-book): binder/buku cincin. Harga Rp15.000.
+- Art Gallery (art-gallery): galeri seni, artistik. Harga Rp15.000.
+- Art Block (art-block): blok seni modern. Harga Rp15.000.
+- Emerald Royale (emerald-royale): hijau zamrud mewah, elegan formal. Harga Rp15.000.
+- Sage Terracotta (sage-terracotta): sage & terracotta earthy, hangat dan tenang. Harga Rp15.000.
+- Zine Raw (zine-raw): gaya zine mentah, artistik dan unik. Harga Rp15.000.
+- Roblox World (roblox): gaya game Roblox, playful untuk pasangan muda. Harga Rp15.000.
+- Spider-Verse (spiderman): gaya komik Spider-Verse, berani dan kekinian. Harga Rp15.000.
+- Motion Flow (motion-flow): animasi scroll halus dan dinamis, modern. Harga Rp15.000.
+- Pop Card Fiesta (pop-card): kartu pop-up ceria, penuh warna. Harga Rp15.000.
+- Lantern Night (lantern-night): lentera malam bercahaya, romantis hangat. Harga Rp15.000.
+- Sakura Breeze (sakura-breeze): sakura Jepang lembut, musim semi. Harga Rp15.000.
+- Board Game (board-game): papan permainan interaktif dengan dadu dan petak petualangan. Harga Rp15.000.
+- Ocean Vows (ocean-vows): nuansa laut dengan amplop botol, tenang dan romantis. Harga Rp15.000.
+- Chiikawa Days (chiikawa): cute japstyle bergerak seperti slide deck, lucu dan menggemaskan. Harga Rp15.000.
+- Soft Neumorph (neumorph): neumorphism lembut, minimalis kontemporer. Harga Rp15.000.
+- Clay Puffy (claymorphism): 3D lembut ala tanah liat, playful dan modern. Harga Rp15.000.`;
 
 const KB_GUIDE = `[Panduan Rekomendasi Tema]
+- Setiap tema punya deskripsi lengkap di KNOWLEDGE BASE (tampilan, warna, gaya, interaksi). Gunakan informasi tersebut untuk menjelaskan atau membandingkan tema, jangan mengarang.
 - Untuk pertanyaan "best seller/terlaris": jangan mengarang data penjualan. Katakan tema paling populer di antara pelanggan antara lain Rustic Floral, Botanical Gold, dan Playful Pop (berdasarkan tema andalan), lalu rekomendasikan sesuai gaya yang disukai user.
-- Rekomendasikan 2-3 nama tema sesuai gaya yang disukai user (elegan/formal → Rustic Floral, Botanical Gold, Navy Gold; modern/minimalis → Modern Dark, Monochrome; tradisional → Javanese, Japanese; lucu/kekinian → Playful Pop, Hello Kitty Pink, Comic, Iphone; unik → Cyberpunk Neon, 8bit Retro, Art Gallery).
-- Ingatkan: butuh fitur RSVP/buku tamu → harus pilih kategori RSVP. Sarankan mencoba demo gratis tiap tema di /demo/<slug> sebelum membeli.
+- Rekomendasikan 2-3 nama tema sesuai gaya yang disukai user:
+  * elegan/formal → Rustic Floral, Botanical Gold, Navy Gold, Emerald Royale, Modern Dark.
+  * modern/minimalis → Modern Dark, Monochrome, Lilac, Neumorph.
+  * tradisional/adat → Javanese, Japanese, Sakura Breeze.
+  * boho/natural → Bohaemin, Rustic Boho, Sage Terracotta.
+  * lucu/kekinian → Playful Pop, Hello Kitty Pink, Chiikawa, Cinamon, Comic, Iphone, Mobile.
+  * game & unik → 8bit Retro, Cyberpunk Neon, Roblox, Spiderman, Board Game, Zine Raw.
+  * romantis/hangat → Lantern Night, Ocean Vows, Sakura Breeze, Cloud Sky, Art Gallery.
+- Jika user menyebut karakter/anime (Hello Kitty, Cinnamoroll, Chiikawa, Spider-Verse, Roblox, 8-bit), arahkan ke tema dengan karakter terkait: hello-kitty, cinamon, chiikawa, spiderman, roblox, bit.
+- FORMAT JAWABAN REKOMENDASI: berikan 2-3 tema. Untuk tiap tema tulis SINGKAT: nama tema (+kategori & harga dari katalog) → alasan 1 kalimat dari deskripsi → ajakan coba demo. Tutup dengan reminder RSVP (jika butuh fitur RSVP/buku tamu pilih kategori RSVP) dan tawarkan pencarian tema lain. Contoh:
+  - Rustic Floral (Basic, Rp10.000): floral hangat & klasik, paling populer. Langsung coba: https://loverse.my.id/demo/rustic-floral.
+  - Playful Pop (RSVP, Rp15.000): ceria dengan warna pop, cocok pasangan muda. Langsung coba: https://loverse.my.id/demo/playful-pop.
+  WAJIB pakai URL LENGKAP (https://loverse.my.id/demo/<slug>), jangan hanya /demo/<slug>. Jika ingin gaya "klik di sini", tulis [klik di sini](https://loverse.my.id/demo/<slug>) LALU WAJIB TUTUP dengan kurung ) — dan JANGAN menaruh tanda baca apa pun antara url dan kurung tutup. Contoh BENAR: [klik di sini](https://loverse.my.id/demo/cinamon). Contoh SALAH (jangan ditiru): [klik di sini](https://loverse.my.id/demo/cinamon. — kurung tutup hilang sehingga tautan rusak. SEBELUM MENGIRIM, periksa ulang setiap tautan: pastikan diawali [label]( dan diakhiri ).
+  Boleh beri 1 rekomendasi utama jika user sudah sebut preferensi spesifik.
+- Jika user eksplisit butuh fitur RSVP/buku tamu (mis. "mau ada absen tamu/buku tamu"), utamakan tema kategori RSVP saja.
+- Ingatkan: butuh fitur RSVP/buku tamu → harus pilih kategori RSVP. Sarankan mencoba demo gratis tiap tema di https://loverse.my.id/demo/<slug> sebelum membeli.
 
 [Pemesanan]
 1) Pilih tema di halaman Order (bisa diganti nanti lewat dashboard).
 2) Isi nama mempelai pria/wanita, tanggal pernikahan, email, dan nomor WhatsApp (lengkapi verifikasi captcha).
 3) Pilih metode pembayaran lalu bayar.
-4) Setelah lunas, undangan otomatis aktif: PIN 6 digit dikirim ke email, dashboard edit bisa dibuka, dan undangan live di link /wedding/nama-anda. Invoice PDF tersedia untuk diunduh.
+4) Setelah lunas, undangan otomatis aktif: PIN 6 digit dikirim ke email, dashboard edit bisa dibuka, dan undangan live di link https://loverse.my.id/wedding/nama-anda. Invoice PDF tersedia untuk diunduh.
 - Template bisa dicoba gratis lewat halaman Demo sebelum membeli.
 
 [Pembayaran via Midtrans]
@@ -134,50 +170,94 @@ interface CatalogRow {
   price: number | null;
 }
 
-// Deskripsi singkat per tema (opsional, dipakai untuk kualitas jawaban).
-// Tema tanpa deskripsi di sini memakai teks generik. Tambahkan saat
-// rilis tema baru — harga & ketersediaan tetap mengikuti database.
+// Deskripsi lengkap per tema. Dipakai untuk kualitas jawaban saat user
+// bertanya tentang tema tertentu (tampilan, warna, gaya, interaksi).
+// Tema tanpa deskripsi di sini memakai teks generik. Tambahkan saat rilis
+// tema baru — harga & ketersediaan tetap mengikuti database.
 const THEME_DESC: Record<string, string> = {
-  'rustic-floral': 'floral hangat, kesan klasik-romantis. Paling sering dipilih.',
-  'modern-dark': 'gelap elegan, modern.',
-  'botanical-gold': 'botanis + aksen emas, mewah.',
-  monochrome: 'hitam-putih minimalis.',
-  'navy-gold': 'biru navy + emas, formal.',
-  bohaemin: 'boho santai, earthy.',
-  'rustic-boho': 'perpaduan rustic & boho.',
-  'elegant-pastel': 'pastel lembut, feminin.',
-  japanese: 'estetika Jepang, tenang.',
-  javanese: 'nuansa Jawa tradisional.',
-  lilac: 'ungu lilac lembut.',
-  cyberpunk: 'neon futuristik, unik.',
-  insta: 'tampilan feed Instagram, kekinian.',
-  'static-canvas': 'gaya chat bubble, interaktif.',
-  iphone: 'tampilan antarmuka iPhone.',
-  bit: 'piksel game retro.',
-  comic: 'gaya komik, seru.',
-  diary: 'buku harian, personal.',
-  'cloud-sky': 'langit awan, lembut.',
-  'hello-kitty': 'pink lucu bergaya karakter.',
-  mobile: 'tampilan antarmuka Android.',
-  'binder-book': 'binder/buku cincin.',
-  'art-gallery': 'galeri seni, artistik.',
-  'art-block': 'blok seni modern.',
-  cinamon: 'biru-hangat, rapi.',
-  'playful-pop': 'ceria, playful, warna pop.',
-  'board-game': 'papan permainan interaktif dengan dadu dan petak petualangan.',
-  chiikawa: 'cute japstyle bergerak seperti slide deck, lucu dan menggemaskan.',
-  claymorphism: '3D lembut ala tanah liat, playful dan modern.',
-  'emerald-royale': 'hijau zamrud mewah, elegan formal.',
-  'lantern-night': 'lentera malam bercahaya, romantis hangat.',
-  'motion-flow': 'animasi scroll halus dan dinamis, modern.',
-  neumorph: 'neumorphism lembut, minimalis kontemporer.',
-  'ocean-vows': 'nuansa laut dengan amplop botol, tenang dan romantis.',
-  'pop-card': 'kartu pop-up ceria, penuh warna.',
-  roblox: 'gaya game Roblox, playful untuk pasangan muda.',
-  'sage-terracotta': 'sage & terracotta earthy, hangat dan tenang.',
-  'sakura-breeze': 'sakura Jepang lembut, musim semi.',
-  spiderman: 'gaya komik Spider-Verse, berani dan kekinian.',
-  'zine-raw': 'gaya zine mentah, artistik dan unik.',
+  // --- Basic (Rp10.000, tanpa fitur RSVP/buku tamu) ---
+  'rustic-floral':
+    'gaya klasik-romantis bernuansa hangat dengan latar krem (#F7F5F2), aksen cokelat maroon, dekorasi daun & bunga berguguran perlahan, serta huruf skrip Dancing Script yang anggun. Paling populer & paling sering dipilih.',
+  'modern-dark':
+    'tema gelap elegan (#0F0F0F) dengan aksen emas (#D4AF37), serif mewah Bodoni Moda, tekstur grain, kesan premium mewah ala majalah. Cocok untuk suasana formal yang berkelas.',
+  'botanical-gold':
+    'tema dark glassmorphism (biru tua #0f172a) bernuansa botanis dengan aksen emas/amber, efek kaca buram, dan huruf skrip Great Vibes. Mewah, hangat, dan modern dengan rincian daun.',
+  monochrome:
+    'minimalis hitam-putih ala editorial/foto jurnal. Foto cover ditampilkan grayscale, layout tegas dengan garis tebal, huruf serif Bodoni Moda. Kesan clean, sofistikated, dan timeless.',
+  'navy-gold':
+    'tema royal bergaya mewah: latar navy gelap (#0a0f1c) dengan teks emas gradien (Cinzel/Montserrat), kilau bintang berkelap-kelip, dan border emas bercahaya. Formal dan megah ala kerajaan.',
+  bohaemin:
+    'gaya boho santai dengan latar kertas krem (#f3f0e7) bertekstur, aksen cokelat hangat, garis tepi kertas sobek (torn-paper), dan sentuhan tanaman. Hangat, natural, earthy.',
+  'rustic-boho':
+    'perpaduan rustic & boho: latar sage kehijauan (#F0F4F1) dengan aksen emas (#C5A059), serif Playfair & Cinzel, nuansa tumbuhan. Elegan namun hangat dan natural.',
+  'elegant-pastel':
+    'gaya elegan bersih dengan latar putih & sentuhan accent hijau mint muda, serif Playfair Display. Lembut, feminin, cerah, dan bersahaja — cocok untuk suasana pastel yang manis.',
+  japanese:
+    'estetika Jepang: latar pink lembut (#fff0f3) dengan hujan kelopak bunga sakura yang jatuh perlahan, serif Bodoni Moda. Tenang, anggun, dan romantis ala budaya sakura.',
+  javanese:
+    'nuansa Jawa tradisional: latar krem gading dengan motif batik kawung, aksen emas, huruf Noto Serif Javanese, dan detail gunungan. Kental nuansa adat Jawa yang anggun.',
+  lilac:
+    'gaya minimalis Korea: latar krem lembut (#FDFCF8) bernuansa ungu lilac, huruf lucu Gamja Flower, efek sticker. Lembut, astetik, dan fashionable ala Korea.',
+  cyberpunk:
+    'futuristik ala terminal komputer: latar hitam pekat, neon cyan/pink/hijau, font Orbitron, efek scanline & booting. Unik, berani, dan sangat menonjol.',
+  insta:
+    'tampilan seperti feed Instagram: layout postingan, ikon like/comment/share, story highlight, dan navigasi ala aplikasi. Kekinian, akrab bagi pengguna media sosial.',
+
+  // --- RSVP (Rp15.000, termasuk RSVP interaktif & buku tamu) ---
+  cinamon:
+    'bertema Cinnamoroll: warna biru-hangat lembut, karakter Cinnamoroll & temannya dalam lingkaran putih, nuansa manis dan menggemaskan. Rapi, lucu, dan menyenangkan.',
+  'playful-pop':
+    'ceria & playful dengan latar kuning mentega (#FFFBEB), warna-warna pop, bentuk blob bulat, dan huruf Fredoka. Penuh semangat, cocok untuk pasangan muda yang ceria.',
+  'static-canvas':
+    'gaya chat bubble interaktif: seluruh undangan berupa gelembung obrolan (chat) yang bisa diklik — kapan nikah, lokasi, kado, galeri, RSVP. Sangat interaktif dan kekinian.',
+  iphone:
+    'tampilan seperti antarmuka iPhone/iOS dengan ikon aplikasi, layar home, dan nuansa iOS. Kekinian, rapi, dan familiar bagi pengguna Apple.',
+  bit:
+    'tema 8-bit retro ala game piksel: grafis pixel, efek suara tombol, nuansa game lawas dengan hati & koin. Seru, unik, dan nostalgia.',
+  comic:
+    'gaya komik: panel-panel komik bergaya, efek suara (onomatopoeia), garis tegas & warna-warni vibrant. Seru, dinamis, dan penuh cerita.',
+  diary:
+    'buku harian tulisan tangan: latar seperti halaman diary, huruf skrip tulisan tangan, foto bergaya polaroid, nuansa personal dan penuh kenangan.',
+  'cloud-sky':
+    'interaktif peta dunia langit: latar awan lembut dengan peta yang bisa di-zoom, digeser (drag/pinch) untuk menjelajahi lokasi. Lembut, tenang, dan unik.',
+  'hello-kitty':
+    'bertema Sanrio Hello Kitty: pink lucu, karakter Hello Kitty, Mimmy, My Melody & Dear Daniel, nuansa kawaii yang menggemaskan. Favorit pencinta Hello Kitty.',
+  mobile:
+    'tampilan seperti antarmuka Android/HP: status bar, ikon aplikasi, navigasi layar. Kekinian dan familiar bagi pengguna Android.',
+  'binder-book':
+    'gaya binder/buku ring: undangan disajikan seperti halaman-halaman binder bersekat cincin dengan halaman buku tamu. Artistik, rapi, dan personal.',
+  'art-gallery':
+    'galeri seni abstrak: latar bergaya lukisan, bentuk-bentuk seni color-block & gradasi artistik, nuansa museum. Artistik, unik, dan berkelas.',
+  'art-block':
+    'blok seni pop-art: gaya brutalist dengan blok warna tegas, badge & marquee gen Z, border hitam tebal, kesan seni jalanan. Berani, kekinian, dan mencolok.',
+  'emerald-royale':
+    'kemewahan kerajaan modern: deep emerald & champagne gold, ornamen crown, serif mewah. Mewah, formal, dan cocok untuk acara prestisius.',
+  'sage-terracotta':
+    'wabi-sabi earthy: palet sage hijau & terracotta tanah liat dengan tekstur linen, arch frame, gaya editorial. Hangat, tenang, dan natural elegan.',
+  'zine-raw':
+    'gaya zine/neo-brutalist anti-mainstream gen Z: kolase scrapbook, kertas sobek, washi tape, typography campur aduk, border tebal. Kreatif, unik, dan berani.',
+  roblox:
+    'dunia game Roblox: undangan tampak seperti lobi game, avatar blocky, logo Roblox & Robux, tombol "Tap to spawn". Playful dan akrab bagi gamer muda.',
+  spiderman:
+    'gaya Spider-Verse: halftone dots, glitch chromatic, panel komik, onomatopoeia dan logo spider. Berani, dinamis, dan penuh aksi ala film komik.',
+  'motion-flow':
+    'tema beranimasi intensif berbasis framer-motion: aurora background, parallax hero, marquee, countdown flip, tombol magnetik. Modern, hidup, dan penuh gerak.',
+  'pop-card':
+    'karnaval kartu pop-up: tumpukan kartu warna-warni, konfeti, flip 3D, accordion kartu. Ceria, interaktif, dan penuh warna.',
+  'lantern-night':
+    'malam lentera kertas: palet indigo gelap dengan aksen amber bercahaya, lentera berayun, percikan bara, kartu menyala. Romantis, hangat, dan magis.',
+  'sakura-breeze':
+    'taman sakura: klon Cloud Sky dengan palet blossom pink, hujan kelopak sakura ambient, letupan kelopak saat klik, animasi framer-motion tebal. Lembut, romantis, musim semi.',
+  'board-game':
+    'papan permainan: seluruh undangan berupa jalur petak bernomor (Start → Mempelai → Acara → RSVP), lempar dadu (tumble 3D), pion melompat, konfeti. Super interaktif dan seru.',
+  'ocean-vows':
+    'perjalanan laut dalam: efek parallax mendalam, gradasi palung laut & karang, kawanan ikan & gelembung, amplop-botol, gelombang SVG. Tenang, romantis, dan imersif.',
+  chiikawa:
+    'slide deck horizontal ala anime Chiikawa: navigasi geser kiri/kanan tanpa scroll, karakter Chiikawa/Hachiware/Usagi, palet krem-mint kawaii. Lucu dan menggemaskan.',
+  neumorph:
+    'neumorphism soft UI: seluruh antarmuka seperti dicetak dari plastik lembut lavender-abu, bayangan ganda terang-gelap, tanpa garis tegas. Minimalis, kontemporer, dan lembut.',
+  claymorphism:
+    'clay puffy 3D: semua permukaan seperti tanah liat mainan dengan clay shadow khas, blob warna candy (lilac, pink, mint), tombol squash & stretch. Playful, modern, dan menggemaskan.',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -197,9 +277,25 @@ async function fetchCatalog(): Promise<CatalogRow[] | null> {
     .from('templates')
     .select('name, slug, category, price')
     .eq('is_active', true)
-    .order('id', { ascending: true });
+    .order('name', { ascending: true });
   if (error || !data || data.length === 0) return null;
   return data as CatalogRow[];
+}
+
+function priceInfo(items: CatalogRow[]): { min: number; max: number; count: number } {
+  const prices = items.map((i) => Number(i.price) || 0).filter((p) => p > 0);
+  return {
+    min: prices.length ? Math.min(...prices) : 0,
+    max: prices.length ? Math.max(...prices) : 0,
+    count: prices.length,
+  };
+}
+
+function categoryPriceLabel(items: CatalogRow[]): string {
+  const { min, max, count } = priceInfo(items);
+  if (count === 0) return 'harga hubungi admin';
+  if (min === max) return `${fmtPrice(min)} per tema`;
+  return `${fmtPrice(min)} – ${fmtPrice(max)} per tema`;
 }
 
 function buildCatalogKB(rows: CatalogRow[]): string {
@@ -211,32 +307,29 @@ function buildCatalogKB(rows: CatalogRow[]): string {
   }
 
   const summary = [...groups.entries()]
-    .map(([cat, items]) => {
-      const prices = items.map((i) => Number(i.price) || 0).filter((p) => p > 0);
-      const label = prices.length ? fmtPrice(Math.min(...prices)) : 'hubungi admin';
-      return `- Kategori ${cat}: ${label} (${items.length} tema).`;
-    })
+    .map(([cat, items]) => `- Kategori ${cat}: ${categoryPriceLabel(items)} (${items.length} tema).`)
     .join('\n');
 
   const catalog = [...groups.entries()]
     .map(([cat, items]) => {
-      const prices = items.map((i) => Number(i.price) || 0).filter((p) => p > 0);
-      const priceLabel = prices.length ? fmtPrice(Math.min(...prices)) : 'harga hubungi admin';
       const catLabel = CATEGORY_LABELS[cat] ?? 'pilihan tema';
       const lines = items
         .map((i) => {
           const slug = i.slug || '';
           const desc = THEME_DESC[slug] ?? 'gaya tema undangan digital LoVerse.';
-          return `- ${i.name || slug} (${slug}): ${desc}`;
+          const price = Number(i.price) || 0;
+          const pricePart = price > 0 ? ` Harga ${fmtPrice(price)}.` : '';
+          return `- ${i.name || slug} (${slug}): ${desc}${pricePart}`;
         })
         .join('\n');
-      return `Kategori ${cat} (${priceLabel}, ${catLabel}):\n${lines}`;
+      return `Kategori ${cat} (${categoryPriceLabel(items)}, ${catLabel}):\n${lines}`;
     })
     .join('\n\n');
 
   return `KNOWLEDGE BASE:
 [Produk & Harga]
 - Undangan digital sekali bayar, aktif sampai seluruh rangkaian acara selesai, TANPA biaya bulanan/tersembunyi.
+- Harga per tema selalu dicantumkan di katalog di bawah; jawab harga berdasarkan harga satuan tema tersebut, bukan asumsi kategori.
 ${summary}
 - Total ${rows.length} tema.
 - Perbedaan utama: fitur RSVP interaktif & Buku Tamu (dengan export Excel) hanya aktif pada tema di luar kategori Basic.
