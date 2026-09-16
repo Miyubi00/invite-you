@@ -29,7 +29,13 @@ interface PaymentStatusResponse {
   payment_method?: string | null;
   snap_token: string | null;
   pin_code: string | null;
+  created_at: string | null;
 }
+
+// Batas waktu bayar (menit) — samakan dengan expiry/page_expiry Snap di
+// supabase/functions/create-order. Dipakai agar UI tidak menggantung
+// "menunggu pembayaran" setelah QR kedaluwarsa sementara DB/cron menyusul.
+const PAYMENT_EXPIRY_MINUTES = 15;
 
 export default function PaymentStatus() {
     const { t } = useTranslation();
@@ -37,6 +43,8 @@ export default function PaymentStatus() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [order, setOrder] = useState<PaymentStatusResponse | null>(null);
+    // Jam lokal untuk menghitung kedaluwarsa 15 menit di sisi klien.
+    const [now, setNow] = useState(() => Date.now());
 
     const orderId = searchParams.get('order_id');
     const isManualWhatsApp = !orderId;
@@ -65,6 +73,15 @@ export default function PaymentStatus() {
 
     const paymentStatus = order?.payment_status;
     const isTerminal = !!paymentStatus && paymentStatus !== 'pending';
+
+    // Detak tiap 15 detik agar tampilan kedaluwarsa flip tepat waktu
+    // meski polling sedang backoff. Polling tetap jalan (isTerminal false)
+    // sehingga webhook sukses yang telat masih bisa menyelamatkan tampilan.
+    useEffect(() => {
+        if (isTerminal) return;
+        const id = setInterval(() => setNow(Date.now()), 15000);
+        return () => clearInterval(id);
+    }, [isTerminal]);
 
     useEffect(() => {
         if (isManualWhatsApp || !orderId || isTerminal) return;
@@ -193,6 +210,16 @@ export default function PaymentStatus() {
     const isSuccess = order.payment_status === 'success';
     const isPending = order.payment_status === 'pending';
     const isFailed = ['failed', 'expired', 'deny', 'cancel'].includes(order.payment_status);
+    // QR/Snap kedaluwarsa 15 menit sejak order dibuat. Kalau DB masih pending
+    // (webhook expire hilang / cron belum jalan), UI langsung tampilkan
+    // status gagal agar tidak menggantung "menunggu pembayaran".
+    // Webhook sukses yang telat tetap menang karena polling terus jalan.
+    const expiredByTime =
+        isPending &&
+        !!order.created_at &&
+        now > new Date(order.created_at).getTime() + PAYMENT_EXPIRY_MINUTES * 60_000;
+    const showPending = isPending && !expiredByTime;
+    const showFailed = isFailed || expiredByTime;
 
     return (
         <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans w-full max-w-full overflow-x-hidden">
@@ -267,7 +294,7 @@ export default function PaymentStatus() {
                 )}
 
                 {/* --- PENDING --- */}
-                {isPending && (
+                {showPending && (
                     <div className="animate-fade-in-up">
                         <div className="w-20 h-20 sm:w-24 sm:h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-yellow-600 shadow-lg shadow-yellow-100 animate-pulse">
                             <Clock className="w-10 h-10 sm:w-12 sm:h-12" />
@@ -296,7 +323,7 @@ export default function PaymentStatus() {
                 )}
 
                 {/* --- FAILED --- */}
-                {isFailed && (
+                {showFailed && (
                     <div className="animate-fade-in-up">
                         <div className="w-20 h-20 sm:w-24 sm:h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-red-600 shadow-lg shadow-red-100">
                             <XCircle className="w-10 h-10 sm:w-12 sm:h-12" />

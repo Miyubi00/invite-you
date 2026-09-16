@@ -50,7 +50,7 @@ serve(async (req) => {
     const { data: order, error } = await admin
       .from('orders')
       .select(
-        'payment_status, groom_name, bride_name, slug, email, whatsapp, wedding_date, template_slug, price, event_details, snap_token, pin_code',
+        'payment_status, groom_name, bride_name, slug, email, whatsapp, wedding_date, template_slug, price, event_details, snap_token, pin_code, created_at',
       )
       .eq('midtrans_order_id', midtrans_order_id)
       .maybeSingle()
@@ -116,6 +116,10 @@ serve(async (req) => {
         template_name: templateName || 'Undangan Digital',
         price: finalPrice || 10070,
         payment_method: paymentMethodDisplay,
+        // Waktu pembuatan order (ISO) — frontend menghitung sendiri batas
+        // 15 menit (samakan dengan expiry/page_expiry Snap) agar UI bisa
+        // menampilkan status kedaluwarsa tepat waktu tanpa menunggu cron.
+        created_at: (order as { created_at?: string }).created_at ?? null,
         // Token bayar-ulang hanya relevan (dan hanya diberikan) saat pending.
         snap_token: isPending ? order.snap_token : null,
         // PIN hanya ditampilkan kepada pemegang capability saat lunas.

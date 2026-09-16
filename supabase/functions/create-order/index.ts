@@ -314,9 +314,19 @@ serve(async (req) => {
       },
       item_details: itemDetails,
       enabled_payments: enabledPayments,
-      custom_expiry: {
-        expiry_duration: 15,
+      // Snap API memakai `expiry` + `page_expiry`, BUKAN `custom_expiry`
+      // (custom_expiry hanya untuk Core API dan di-ignore oleh Snap).
+      // - `expiry`: masa berlaku pembayaran setelah user pilih channel (QRIS dll).
+      // - `page_expiry`: masa berlaku halaman Snap itu sendiri (default 24 jam).
+      // Tanpa keduanya, order yang popup-nya langsung ditutup akan tetap
+      // Pending berjam-jam dan tidak ada notifikasi expire.
+      expiry: {
         unit: 'minute',
+        duration: 15,
+      },
+      page_expiry: {
+        unit: 'minute',
+        duration: 15,
       },
     }
 
