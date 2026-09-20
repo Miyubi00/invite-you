@@ -63,7 +63,7 @@ export default function JavaneseTheme({ groom, bride, date, guestName, data }: T
 
         /* Texture Kertas */
         .texture-paper {
-            background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
+            background-image: url("https://r2.loverse.id/themes/assets/patterns/cream-paper.png");
             opacity: 0.8;
         }
 

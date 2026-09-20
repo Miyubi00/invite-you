@@ -249,7 +249,7 @@ const EventSection = ({  data, date  }: { data?: TemplateData; date?: string }) 
     const formattedResepsiDate = schedule.resepsiDate ? formatDate(schedule.resepsiDate, 'id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : fallbackDate;
     return (
 
-    <section className="py-20 px-4 bg-yellow-300 border-b-4 border-black bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+    <section className="py-20 px-4 bg-yellow-300 border-b-4 border-black bg-[url('https://r2.loverse.id/themes/assets/patterns/stardust.png')]">
 
         <div className="max-w-3xl mx-auto bg-white border-4 border-black p-8 shadow-[12px_12px_0px_black] transform rotate-1">
 
@@ -739,7 +739,7 @@ const BackCover = ({  groom, bride, date  }: { groom: string; bride: string; dat
 
             <div className="mt-12 bg-white text-black p-2 inline-block">
 
-                <div className="h-12 w-48 bg-[url('https://upload.wikimedia.org/wikipedia/commons/5/5d/UPC-A-036000291452.png')] bg-cover"></div>
+                <div className="h-12 w-48 bg-[url('https://r2.loverse.id/themes/assets/artblock/upc.png')] bg-cover"></div>
 
                 <p className="text-[10px] text-center font-mono mt-1">PRICELESS</p>
 

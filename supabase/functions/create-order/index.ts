@@ -166,6 +166,16 @@ serve(async (req) => {
       throw new Error('Template tidak ditemukan.')
     }
 
+    // Saklar server: pembayaran online hanya bila secret ENABLE_ONLINE_PAYMENTS
+    // tidak 'false'. Pasangan dari PRODUCTION_READY di frontend — request
+    // rekayasa langsung tetap ditolak walau UI menyembunyikan. Manual WA
+    // selalu diizinkan.
+    const onlineEnabled =
+      (Deno.env.get('ENABLE_ONLINE_PAYMENTS') ?? 'true').trim().toLowerCase() !== 'false';
+    if (!onlineEnabled && payment_method !== 'manual_whatsapp') {
+      throw new Error('Pembayaran online belum dibuka. Silakan pilih transfer manual via WhatsApp.')
+    }
+
     // --- Jalur MANUAL WhatsApp: tanpa Midtrans, hanya catat pending_orders.
     // Tetap lewat validasi + Turnstile + rate limit di atas (anti-spam),
     // menggantikan insert langsung dari browser yang melewati semuanya.

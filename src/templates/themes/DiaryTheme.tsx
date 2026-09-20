@@ -74,7 +74,7 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
         
         /* Paper Grain Effect */
         .bg-paper {
-            background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
+            background-image: url("https://r2.loverse.id/themes/assets/patterns/cream-paper.png");
             opacity: 0.6;
         }
 
@@ -113,7 +113,7 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
       {/* --- COVER PAGE (DIARY COVER) --- */}
       <div className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#8B5E3C] transition-transform duration-1000 ease-[cubic-bezier(0.7,0,0.3,1)] ${isOpen ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="absolute inset-4 border-2 border-[#6d4c33] rounded-lg border-dashed opacity-50 pointer-events-none"></div>
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/leather.png')] opacity-30 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-[url('https://r2.loverse.id/themes/assets/patterns/leather.png')] opacity-30 mix-blend-overlay"></div>
 
         <div className="relative z-10 bg-[#FAF7F2] p-8 md:p-12 max-w-sm w-[90%] shadow-2xl rotate-1 transform transition-transform hover:rotate-0 duration-500">
           <div className="border-4 border-double border-[#2B2B2B] p-6 text-center">
@@ -316,7 +316,7 @@ export default function HandwrittenDiaryTheme({ groom, bride, date, guestName, d
                     maxLength={100} // <-- Batas karakter
                     value={rsvpMessage}
                     onChange={(e) => setRsvpMessage(e.target.value)}
-                    className="w-full bg-[url('https://www.transparenttextures.com/patterns/lined-paper.png')] bg-white border border-gray-300 p-4 font-doodle text-xl h-32 focus:outline-none focus:border-[#8B5E3C] leading-loose"
+                    className="w-full bg-[url('https://r2.loverse.id/themes/assets/patterns/lined-paper.png')] bg-white border border-gray-300 p-4 font-doodle text-xl h-32 focus:outline-none focus:border-[#8B5E3C] leading-loose"
                     placeholder="Write something sweet..."
                   ></textarea>
 

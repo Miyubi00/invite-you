@@ -11,9 +11,10 @@
 // ============================================================
 
 import type { ReactNode } from "react";
-import { Building2, ChevronDown, QrCode, Smartphone } from "lucide-react";
+import { Building2, ChevronDown, Info, QrCode, Smartphone } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useTranslation } from "../../i18n";
+import { PRODUCTION_READY } from "../../lib/constants";
 import {
   EWALLET_OPTIONS,
   formatIDR,
@@ -238,7 +239,15 @@ export function PaymentMethodPicker({
   return (
     <SectionCard title={t("order.step3Title")}>
       <p className="text-xs text-stone-500 -mt-1 mb-3">{t("order.step3Desc")}</p>
+      {!PRODUCTION_READY && (
+        <p className="flex items-start gap-2 rounded-xl border border-[#EBDFCE] bg-[#FAF6EE] px-3 py-2.5 text-[11px] sm:text-xs text-[#8a6a55] mb-3">
+          <Info size={14} className="mt-0.5 shrink-0" />
+          <span>{t("order.preLaunchNotice")}</span>
+        </p>
+      )}
       <div className="space-y-3">
+        {!PRODUCTION_READY ? null : (
+        <>
         {/* 1. Other QRIS (Universal) */}
         <CategoryCard
           onClick={() => {
@@ -437,6 +446,9 @@ export function PaymentMethodPicker({
             </div>
           )}
         </div>
+
+        </>
+        )}
 
         {/* 4. Transfer Manual WhatsApp */}
         <CategoryCard

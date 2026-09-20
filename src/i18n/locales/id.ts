@@ -169,6 +169,7 @@ export const id = {
     whatsappPlaceholder: "81234567890",
     step3Title: "Metode Pembayaran",
     step3Desc: "Pilih metode pembayaran yang Anda inginkan.",
+    preLaunchNotice: "Pembayaran online segera hadir. Saat ini pembayaran via transfer manual WhatsApp.",
     methodQrisTitle: "Other QRIS",
     methodQrisSubtitle: "BCA, Mandiri, BRImo, BNI, GoPay, Dana, OVO, ShopeePay, dsb.",
     methodQrisBadge: "Instan Semua Bank & E-Wallet",

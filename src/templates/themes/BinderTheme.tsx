@@ -60,7 +60,7 @@ const PageCover = ({  groom, bride, date, guestName, onNext  }: { groom: string;
 
     <div className="h-full flex flex-col justify-center items-center text-center p-8 bg-[#8D6E63] text-[#FDFBF7] relative overflow-hidden select-none">
 
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("https://www.transparenttextures.com/patterns/leather.png")` }}></div>
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url("https://r2.loverse.id/themes/assets/patterns/leather.png")` }}></div>
 
         <div className="relative z-10 border-4 border-[#FDFBF7] p-8 md:p-12 max-w-lg mx-auto pointer-events-none"> {/* pointer-events-none pada konten agar swipe lancar */}
 
@@ -202,7 +202,7 @@ const PageEvent = ({  data, date  }: { data?: TemplateData; date?: string })  =>
     const formattedAkadDate = schedule.akadDate ? formatDate(schedule.akadDate, 'id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : fallbackDate;
     const formattedResepsiDate = schedule.resepsiDate ? formatDate(schedule.resepsiDate, 'id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : fallbackDate;
     return (
-    <div className="h-full p-8 md:p-12 bg-[#FFFDE7] select-none" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/notebook.png')" }}>
+    <div className="h-full p-8 md:p-12 bg-[#FFFDE7] select-none" style={{ backgroundImage: "url('https://r2.loverse.id/themes/assets/patterns/notebook.png')" }}>
 
         <h2 className="font-serif text-4xl text-[#5D4037] mb-8 text-center underline decoration-wavy decoration-[#8D6E63]">Event Schedule</h2>
 
@@ -370,7 +370,7 @@ const PageRsvp = ({  data, submittedData, onRsvpSubmit  }: { data?: TemplateData
 
     return (
 
-        <div className="h-full p-6 md:p-10 overflow-y-auto no-scrollbar bg-white" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/lined-paper.png')" }}>
+        <div className="h-full p-6 md:p-10 overflow-y-auto no-scrollbar bg-white" style={{ backgroundImage: "url('https://r2.loverse.id/themes/assets/patterns/lined-paper.png')" }}>
 
             <h2 className="font-hand text-3xl text-[#3E2723] mb-6 text-center select-none">Guest Book</h2>
 

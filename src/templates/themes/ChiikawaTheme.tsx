@@ -10,7 +10,7 @@
 //                spring 3D ala kartu kawaii.
 // Karakter     : ちいかわ (Chiikawa), ハチワレ (Hachiware), うさぎ
 //                (Usagi) — diambil dari CDN Chiikawa Fandom
-//                (static.wikia.nocookie.net) + logo resmi dari Wikimedia
+//                (di-mirror ke R2: themes/assets/chiikawa/)
 //                Commons. Tiap gambar punya fallback emoji yang aman
 //                bila gagal termuat (onError), jadi tema tak pernah rusak.
 // Warna        : palet MILIK TEMA sendiri di @theme src/index.css
@@ -59,10 +59,10 @@ const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 // ─── ASET KARAKTER CHIIKAWA (CDN stabil + hotlink) ─────────────
 const CHIIKAWA = {
-  logo: 'https://upload.wikimedia.org/wikipedia/commons/3/3e/ChiikawaLogo.png',
-  chiikawa: 'https://static.wikia.nocookie.net/chiikawa/images/2/2c/AdorableCutieChiikawa.png/revision/latest?cb=20240709065538',
-  hachiware: 'https://static.wikia.nocookie.net/chiikawa/images/6/61/SweetBabyHachiware2.png/revision/latest?cb=20260214172321',
-  usagi: 'https://static.wikia.nocookie.net/chiikawa/images/4/43/YahaUsagi.png/revision/latest?cb=20240709065537',
+  logo: 'https://r2.loverse.id/themes/assets/chiikawa/logo.png',
+  chiikawa: 'https://r2.loverse.id/themes/assets/chiikawa/chiikawa.png',
+  hachiware: 'https://r2.loverse.id/themes/assets/chiikawa/hachiware.png',
+  usagi: 'https://r2.loverse.id/themes/assets/chiikawa/usagi.png',
 };
 
 /** Gambar karakter dengan fallback emoji aman bila CDN gagal. */

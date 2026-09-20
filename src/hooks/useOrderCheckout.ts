@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "../components/GlobalToast";
 import { useTranslation } from "../i18n";
 import { ADMIN_WHATSAPP, type MasterTemplate } from "../lib/constants";
+import { PRODUCTION_READY } from "../lib/constants";
 import {
   EMAIL_RE,
   type OrderFormData,
@@ -67,6 +68,11 @@ export function useOrderCheckout({
   };
 
   const handleMidtransCheckout = async () => {
+    // Pertahanan lapis-2: UI menyembunyikan, tapi cegah juga pemanggilan langsung.
+    if (!PRODUCTION_READY) {
+      toast.warning(t("order.preLaunchNotice"));
+      return;
+    }
     if (!validateInputs()) return;
     if (!paymentMethod) {
       toast.warning(t("validation.paymentMethodRequired"));

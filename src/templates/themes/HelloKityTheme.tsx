@@ -14,10 +14,10 @@ import { useToast } from '../../components/GlobalToast';
 import { useTranslation } from '../../i18n';
 
 // --- KARAKTER SANRIO (aset PNG transparan dari hellokitty.fandom.com) ---
-const KITTY_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/5/52/Sanrio_Characters_Hello_Kitty_Image026.png/revision/latest?cb=20250110105831';
-const MIMMY_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/5/52/Sanrio_Characters_Mimmy_Infobox.png/revision/latest?cb=20251102193607';
-const DANIEL_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/0/05/Sanrio_Characters_Dear_Daniel_Image008.png/revision/latest?cb=20170522214217';
-const MELODY_IMG = 'https://static.wikia.nocookie.net/hellokitty/images/2/23/Sanrio_Characters_My_Melody_Image030.png/revision/latest?cb=20170407005355';
+  const KITTY_IMG = 'https://r2.loverse.id/themes/assets/hellokitty/kitty.png';
+  const MIMMY_IMG = 'https://r2.loverse.id/themes/assets/hellokitty/mimmy.png';
+  const DANIEL_IMG = 'https://r2.loverse.id/themes/assets/hellokitty/daniel.png';
+  const MELODY_IMG = 'https://r2.loverse.id/themes/assets/hellokitty/melody.png';
 
 export default function KawaiiPinkTheme({ groom, bride, date, guestName, data, onRsvpSubmit, submittedData }: TemplateProps) {
     const audioRef = useRef<HTMLAudioElement | null>(null);

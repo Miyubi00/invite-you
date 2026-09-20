@@ -48,7 +48,7 @@ const { isOpen, open, playing: isPlaying, toggle: toggleAudio } = useOpenInvitat
       {/* --- COVER (Full Screen Dark) --- */}
       <div className={`fixed inset-0 z-50 bg-[#05080f] flex flex-col items-center justify-center transition-opacity duration-1000 ${isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {/* Background Decor */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
+        <div className="absolute inset-0 bg-[url('https://r2.loverse.id/themes/assets/patterns/stardust.png')] opacity-20"></div>
         <div className="absolute top-10 left-10 text-amber-500/30 star"><Star size={24}/></div>
         <div className="absolute bottom-20 right-10 text-amber-500/30 star" style={{animationDelay: '1s'}}><Star size={32}/></div>
 

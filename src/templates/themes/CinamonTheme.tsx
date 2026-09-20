@@ -17,11 +17,11 @@ import { useTranslation } from '../../i18n';
 // Semua gambar dirender dalam lingkaran putih (CharacterBadge) agar
 // aset JPG/GIF non-transparan dari wiki tetap tampil bersih.
 const CINNA_CREW = {
-    cinnamoroll: 'https://static.wikia.nocookie.net/cinnamoroll/images/4/4e/Cinn.png/revision/latest?cb=20201015030428',
-    mocha: 'https://static.wikia.nocookie.net/cinnamoroll/images/c/c7/Cinnamoroll-Mocha-cinnamoroll-2346053-360-129.gif/revision/latest?cb=20130617072959',
-    chiffon: 'https://static.wikia.nocookie.net/cinnamoroll/images/f/f4/Chiffon-cinnamoroll-2346022-211-149.gif/revision/latest?cb=20130617073736',
-    espresso: 'https://static.wikia.nocookie.net/cinnamoroll/images/8/8b/Espresso-cinnamoroll-2355272-234-208.jpg/revision/latest?cb=20140813071527',
-    cappuccino: 'https://static.wikia.nocookie.net/cinnamoroll/images/a/a4/1172726161a3711050717b393091045l.jpg/revision/latest?cb=20130617073606',
+    cinnamoroll: 'https://r2.loverse.id/themes/assets/cinamon/cinnamoroll.png',
+    mocha: 'https://r2.loverse.id/themes/assets/cinamon/mocha.gif',
+    chiffon: 'https://r2.loverse.id/themes/assets/cinamon/chiffon.gif',
+    espresso: 'https://r2.loverse.id/themes/assets/cinamon/espresso.jpg',
+    cappuccino: 'https://r2.loverse.id/themes/assets/cinamon/cappuccino.jpg',
 } as const;
 
 // Varian gerak masuk bagian (reveal saat scroll).

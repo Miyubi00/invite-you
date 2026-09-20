@@ -171,6 +171,7 @@ export const en: TranslationDictionary = {
     whatsappPlaceholder: "81234567890",
     step3Title: "Payment Method",
     step3Desc: "Choose your preferred payment method.",
+    preLaunchNotice: "Online payments coming soon. Manual WhatsApp transfer only for now.",
     methodQrisTitle: "Other QRIS",
     methodQrisSubtitle: "BCA, Mandiri, BRImo, BNI, GoPay, Dana, OVO, ShopeePay, etc.",
     methodQrisBadge: "Instant All Banks & E-Wallets",

@@ -24,6 +24,13 @@ export interface TemplateOption {
   name: string;
 }
 
+// --- SAKLAR MODE PRODUKSI ---
+// false = pra-launch: HANYA transfer manual WhatsApp yang tampil/aktif.
+// true  = semua metode pembayaran online aktif.
+// Cara menyalakan: ubah jadi true + pastikan secret ENABLE_ONLINE_PAYMENTS
+// tidak 'false' (lihat .env.example), lalu deploy ulang.
+export const PRODUCTION_READY = false;
+
 // --- BASE URL GAMBAR TEMA (Cloudflare R2, WebP) ---
 // Gambar preview tema di-host di R2 lewat custom domain; konversi PNG->WebP sudah dilakukan.
 const THEME_IMG_BASE = 'https://r2.loverse.id/themes';

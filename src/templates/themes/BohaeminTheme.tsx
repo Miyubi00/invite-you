@@ -32,7 +32,7 @@ const { isOpen, open, playing: isPlaying, toggle: toggleAudio } = useOpenInvitat
         <div className="bg-[#f3f0e7] text-[#5c5552] min-h-screen font-serif relative overflow-x-hidden selection:bg-[#d4a373] selection:text-white">
 
             {/* Texture Overlay (Noise) */}
-            <div className="fixed inset-0 opacity-40 pointer-events-none z-0" style={{ backgroundImage: `url("https://www.transparenttextures.com/patterns/cream-paper.png")` }}></div>
+            <div className="fixed inset-0 opacity-40 pointer-events-none z-0" style={{ backgroundImage: `url("https://r2.loverse.id/themes/assets/patterns/cream-paper.png")` }}></div>
 
             <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
