@@ -26,12 +26,17 @@ const BULAN = [
 
 // Slug tema yang punya screenshot di R2 (og/demo/, dikonversi dari
 // themes/*.webp ke PNG agar aman untuk preview WhatsApp).
-// Daftar ini = isi folder og/demo di bucket.
+// Daftar ini = isi folder og/demo di bucket (40 tema).
 const DEMO_THUMBS = new Set([
-  'art-block', 'board-game', 'chiikawa', 'cinamon', 'claymorphism',
-  'emerald-royale', 'hello-kitty', 'lantern-night', 'motion-flow',
-  'neumorph', 'ocean-vows', 'pop-card', 'roblox', 'sage-terracotta',
-  'spiderman', 'zine-raw',
+  'art-block', 'art-gallery', 'binder-book', 'bit', 'board-game',
+  'bohaemin', 'botanical-gold', 'chiikawa', 'cinamon', 'claymorphism',
+  'cloud-sky', 'comic', 'cyberpunk', 'diary', 'elegant-pastel',
+  'emerald-royale', 'hello-kitty', 'insta', 'iphone', 'japanese',
+  'javanese', 'lantern-night', 'lilac', 'mobile', 'modern-dark',
+  'monochrome', 'motion-flow', 'navy-gold', 'neumorph', 'ocean-vows',
+  'playful-pop', 'pop-card', 'roblox', 'rustic-boho', 'rustic-floral',
+  'sage-terracotta', 'sakura-breeze', 'spiderman', 'static-canvas',
+  'zine-raw',
 ])
 
 // Basis thumbnail demo + gambar default di R2.
