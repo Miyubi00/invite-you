@@ -8,7 +8,7 @@
 
 import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HeartHandshake, LogIn, Home, CreditCard, UserCircle, LogOut, LayoutDashboard, Phone, ShieldCheck } from 'lucide-react';
+import { LogIn, Home, CreditCard, UserCircle, LogOut, LayoutDashboard, Phone, ShieldCheck } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from './shared/LanguageSwitcher';
 import { ADMIN_PATH } from '../lib/adminPath';
@@ -41,9 +41,10 @@ export default function Navbar() {
   };
 
   // --- LOGIKA PINTAR (CONFIG) ---
+  // Brand utama memakai logo image (lockup ikon + wordmark Cormorant).
   let navConfig: NavConfig = {
-    title: t('nav.brand'),
-    icon: <HeartHandshake className="w-5 h-5 md:w-8 md:h-8" />,
+    title: '',
+    icon: <img src="/logo.png" alt="LoVerse" className="h-6 w-auto md:h-8" />,
     mode: 'default'
   };
 

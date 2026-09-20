@@ -45,7 +45,7 @@ export function buildNewPinHtml(
   const logoUrl = resolveLogoUrl(appUrl);
 
   const body = `${heroIconHtml(appUrl, 'send', '#e6f6ec', 'pin baru', '&#128228;')}
-    <p style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;line-height:1.2;color:#4a1f14;">PIN Baru Anda</p>
+    <p class="section-title" style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;line-height:1.2;color:#4a1f14;">PIN Baru Anda</p>
     <p style="margin:12px auto 0;max-width:440px;color:#57493D;font-size:14px;line-height:1.6;">
       Halo <strong>${couple}</strong>, berikut PIN dashboard baru Anda.
       PIN lama sudah tidak berlaku lagi.
@@ -130,7 +130,7 @@ export function buildConfirmPinHtml(
   const logoUrl = resolveLogoUrl(appUrl);
 
   const body = `${heroIconHtml(appUrl, 'key-round', '#faf3e9', 'kunci', '&#128273;')}
-    <p style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;line-height:1.2;color:#4a1f14;">Permintaan PIN Baru</p>
+    <p class="section-title" style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;line-height:1.2;color:#4a1f14;">Permintaan PIN Baru</p>
     <p style="margin:12px auto 0;max-width:440px;color:#57493D;font-size:14px;line-height:1.6;">
       Halo <strong>${couple}</strong>, kami menerima permintaan kirim ulang
       PIN dashboard untuk undangan Anda.

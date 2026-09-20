@@ -133,10 +133,11 @@ export default async function handler(req, res) {
   const mode = req.query.mode === 'demo' ? 'demo' : 'wedding'
   const slug = String(req.query.slug ?? '').trim()
 
-  // Default (juga fallback bila DB gagal / undangan tidak ditemukan)
+  // Default (juga fallback bila DB gagal / undangan tidak ditemukan).
+  // Gambar default di-host di R2 (konsisten dengan aset lain), BUKAN public/.
   let title = 'LoVerse — Undangan Pernikahan Digital Elegan &amp; Modern'
   let description = 'Buat & bagikan undangan pernikahan digital yang elegan dan interaktif. Coba demo gratis sekarang.'
-  let image = `${origin}/emerald-royale.png`
+  let image = 'https://r2.loverse.id/og/OG-Image.png'
   let canonical = origin
 
   try {
@@ -170,7 +171,7 @@ export default async function handler(req, res) {
       const themeName = esc((await fetchTemplateName(slug)) || slug)
       title = `Demo Tema ${themeName} — LoVerse`
       description = `Coba demo gratis undangan digital bertema ${themeName}. Interaktif, lengkap, dan siap pakai.`
-      image = DEMO_THUMBS.has(slug) ? `${origin}/${encodeURIComponent(slug)}.png` : `${origin}/emerald-royale.png`
+      image = DEMO_THUMBS.has(slug) ? `${origin}/${encodeURIComponent(slug)}.png` : 'https://r2.loverse.id/og/OG-Image.png'
       canonical = `${origin}/demo/${encodeURIComponent(slug)}`
     }
   } catch (err) {

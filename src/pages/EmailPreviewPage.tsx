@@ -63,7 +63,7 @@ function EmailFooter() {
   return (
     <div className="mt-8 flex items-end justify-between border-t border-[#f0e2d0] pt-5 text-left">
       <div>
-        <p className="text-[16px] font-black text-[#8a6a55]">LoVerse</p>
+          <p className="text-[16px] font-semibold text-[#8a6a55] font-brand">LoVerse</p>
         <p className="text-[12px] text-[#b89a83]">Undangan Digital Pernikahan</p>
       </div>
       <div className="text-right">

@@ -19,7 +19,7 @@ import type { TemplateRow } from '../types/database';
 import { useTranslation } from '../i18n';
 import {
   Search, Eye, Edit3, Sparkles, MessageSquare,
-  Star, ShoppingBag, LayoutTemplate, ArrowRight, Heart,
+  Star, ShoppingBag, LayoutTemplate, ArrowRight,
   CheckCircle2, Music, Share2, ShieldCheck, HelpCircle, ChevronDown,
   Calendar, Users
 } from 'lucide-react';
@@ -881,8 +881,8 @@ export default function Landing() {
       {/* --- FOOTER --- */}
       <footer className="bg-[#712E1E] border-t border-white/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-7 flex flex-col sm:flex-row items-center justify-between gap-3 text-center">
-          <p className="text-[#FFD5AF] font-bold text-sm flex items-center gap-1.5">
-            <Heart size={15} fill="currentColor" /> LoVerse
+          <p className="flex items-center gap-1.5">
+            <img src="/logo.png" alt="LoVerse" className="h-6 w-auto" />
           </p>
           <p className="text-[#FFD5AF]/70 text-xs font-medium">
             {t('home.footerText', { year: new Date().getFullYear() })}

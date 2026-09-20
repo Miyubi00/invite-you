@@ -12,6 +12,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { generateUniquePin } from '../_shared/pin.ts'
+import { generateOrderId } from '../_shared/orderToken.ts'
 import { sendPinEmail } from '../_shared/resendEmail.ts'
 import { requireAdminMfa } from '../_shared/auth.ts'
 import { reportError } from '../_shared/monitoring.ts'
@@ -75,9 +76,36 @@ serve(async (req) => {
     }
 
     try {
-      // --- 3. Generate slug + PIN unik ---
+      // --- 3. Generate slug + PIN unik + No. Invoice LV-XXXXXXXX ---
+      // Pesanan manual WAJIB punya nomor invoice format SAMA seperti jalur
+      // Midtrans (LV- + 8 karakter), dicek unik ke orders.midtrans_order_id.
       const slug = generateSlug(pendingOrder.groom_name, pendingOrder.bride_name)
       const pin = await generateUniquePin(admin, pendingOrder.whatsapp)
+      let lvOrderId = ''
+      for (let i = 0; i < 5; i++) {
+        const candidate = generateOrderId()
+        const { count } = await admin
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('midtrans_order_id', candidate)
+        if (!count) {
+          lvOrderId = candidate
+          break
+        }
+      }
+      if (!lvOrderId) throw new Error('Gagal membuat nomor invoice.')
+
+      // Harga mengikuti katalog template (manual = tanpa fee).
+      // Fallback 60000 hanya bila template tak ditemukan (aman).
+      let manualPrice = 60000
+      const { data: tpl } = await admin
+        .from('templates')
+        .select('price')
+        .eq('slug', pendingOrder.template_slug)
+        .maybeSingle()
+      if (tpl && typeof tpl.price === 'number' && tpl.price > 0) {
+        manualPrice = tpl.price
+      }
 
       // --- 4. Aktifkan: pindahkan ke orders ---
       const { data: order, error: insertError } = await admin
@@ -91,7 +119,9 @@ serve(async (req) => {
           pin_code: pin,
           template_slug: pendingOrder.template_slug,
           slug,
+          midtrans_order_id: lvOrderId,
           payment_status: 'success',
+          price: manualPrice,
           event_details: {},
         })
         .select()
@@ -121,7 +151,7 @@ serve(async (req) => {
           groomName: pendingOrder.groom_name,
           brideName: pendingOrder.bride_name,
           pin,
-          orderId: order.id,
+          orderId: lvOrderId,
           whatsapp: order.whatsapp,
           weddingDate: order.wedding_date,
           templateName: order.template_slug,

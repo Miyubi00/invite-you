@@ -5,6 +5,7 @@
 
 import { PDFDocument, rgb, StandardFonts, type PDFImage } from 'npm:pdf-lib';
 import { INVOICE_ICON_PNG, INVOICE_SERIF_FONT_B64 } from './invoiceAssets.ts';
+import { BRAND_FONT_B64 } from './brandFont.ts';
 import { resolveLogoUrl, pdfLogoDimensions } from './brandLogo.ts';
 import {
   emailFooterHtml,
@@ -158,6 +159,13 @@ function fillRoundRect(
   }
 }
 
+/** Nomor invoice terpusat: LV-XXXXXX apa adanya, UUID -> INV-8hex pertama. */
+export function invoiceNumberFor(orderId: string | undefined): string {
+  const raw = (orderId || '').trim().toUpperCase();
+  if (/^LV-[A-Z0-9]{6,12}$/.test(raw)) return raw;
+  return `INV-${raw.replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'LOVERSE'}`;
+}
+
 /** Potong teks dengan '...' agar muat dalam lebar maksimum. */
 function truncatePdfText(text: string, font: any, size: number, maxWidth: number): string {
   if (font.widthOfTextAtSize(text, size) <= maxWidth) return text;
@@ -199,12 +207,16 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
     // Times Italic bawaan (tetap serif) bila gagal.
     const fontTimesItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
     let fontSerif: any = fontTimesItalic;
+    // Cormorant Garamond untuk teks brand "LoVerse" (fallback bila logo gagal).
+    let fontBrand: any = fontBold;
     try {
       const fk = await import('npm:@pdf-lib/fontkit');
       pdfDoc.registerFontkit(fk.default || fk);
       fontSerif = await pdfDoc.embedFont(base64ToBytes(INVOICE_SERIF_FONT_B64));
+      fontBrand = await pdfDoc.embedFont(base64ToBytes(BRAND_FONT_B64));
     } catch {
       fontSerif = fontTimesItalic;
+      fontBrand = fontBold;
     }
 
     // Palet menyamai preview /dev/invoice (InvoicePreviewPage.tsx).
@@ -223,15 +235,11 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
     const stoneGray = rgb(0.36, 0.33, 0.3);
     const softGray = rgb(0.45, 0.42, 0.38);
 
-    // Nomor invoice = ID pesanan APA ADANYA (mis. LV-QZZY3XAJ) supaya
-    // konsisten dengan yang ditampilkan di web. Fallback bila orderId
-    // kosong atau bukan format pendek (mis. activate-pending-order
-    // memakai UUID internal): INV- + 8 karakter terakhir.
-    const rawOrderId = (args.orderId || '').trim().toUpperCase();
-    const shortOrderId = /^LV-[A-Z0-9]{6,12}$/.test(rawOrderId);
-    const orderIdStr = shortOrderId
-      ? rawOrderId
-      : `INV-${rawOrderId ? rawOrderId.slice(-8) : 'LOVERSE'}`;
+    // Nomor invoice: ID pesanan APA ADANYA bila format pendek LV-XXXXXX
+    // (jalur Midtrans). Pesanan manual (activate-pending-order) memakai UUID
+    // internal -> tampilkan INV- + 8 hex PERTAMA (stabil & enak dibaca),
+    // bukan 8 karakter terakhir yang acak.
+    const orderIdStr = invoiceNumberFor(args.orderId);
     const issueDate = new Date().toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
@@ -284,8 +292,8 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
       page.drawText('LoVerse', {
         x: 40,
         y: 800,
-        size: 18,
-        font: fontBold,
+        size: 20,
+        font: fontBrand,
         color: creamText,
       });
       page.drawText('Undangan Pernikahan Digital', {
@@ -345,7 +353,12 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
     const kiriW = 252;
     const kananX = 303;
     const kananW = 252.28;
-    const paymentMethodLabel = (args.paymentMethod || 'Midtrans / Online').trim().toUpperCase();
+    // Label metode dipadatkan agar muat di kartu: transfer manual selalu
+    // tampil "TRANSFER MANUAL" (bukan "TRANSFER MANUAL (WHATSAPP CS)...").
+    const paymentMethodRaw = (args.paymentMethod || 'Midtrans / Online').trim();
+    const paymentMethodLabel = /manual|whatsapp|transfer/i.test(paymentMethodRaw)
+      ? 'TRANSFER MANUAL'
+      : paymentMethodRaw.toUpperCase();
 
     // --- KIRI: Ditagihkan Kepada ---
     fillRoundRect(page, {
@@ -359,7 +372,7 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
       borderWidth: 1,
     });
 
-    drawInvoiceIcon(page, iconImgs, 'user', kiriX + 12, kartuY - 10, 13);
+    drawInvoiceIcon(page, iconImgs, 'user', kiriX + 12, kartuY - 12, 13);
     page.drawText('DITAGIHKAN KEPADA', {
       x: kiriX + 30,
       y: kartuY - 21,
@@ -384,7 +397,7 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
     ];
     kiriRows.forEach((row, i) => {
       const ry = kartuY - 63 - i * 15;
-      drawInvoiceIcon(page, iconImgs, row.icon, kiriX + 12, ry + 10, 10);
+      drawInvoiceIcon(page, iconImgs, row.icon, kiriX + 12, ry + 8.5, 10);
       page.drawText(row.text, {
         x: kiriX + 27,
         y: ry,
@@ -406,7 +419,7 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
       borderWidth: 1,
     });
 
-    drawInvoiceIcon(page, iconImgs, 'file-text', kananX + 12, kartuY - 10, 13);
+    drawInvoiceIcon(page, iconImgs, 'file-text', kananX + 12, kartuY - 12, 13);
     page.drawText('INFORMASI PEMBAYARAN', {
       x: kananX + 30,
       y: kartuY - 21,
@@ -631,7 +644,7 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
       borderColor: creamBorder,
       borderWidth: 1,
     });
-    drawInvoiceIcon(page, iconImgs, 'info', bKiriX + 12, bTop - 10, 12);
+    drawInvoiceIcon(page, iconImgs, 'info', bKiriX + 12, bTop - 12.5, 12);
     page.drawText('Informasi dan Ketentuan Layanan', {
       x: bKiriX + 28,
       y: bTop - 21,
@@ -685,7 +698,7 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
       borderColor: creamBorder,
       borderWidth: 1,
     });
-    drawInvoiceIcon(page, iconImgs, 'heart', bKananX + 12, bTop - 10, 12);
+    drawInvoiceIcon(page, iconImgs, 'heart', bKananX + 12, bTop - 12.5, 12);
     page.drawText('Butuh bantuan? Hubungi kami:', {
       x: bKananX + 28,
       y: bTop - 21,
@@ -701,7 +714,7 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
     ];
     helpRows.forEach((row, i) => {
       const ry = bTop - 40 - i * 16;
-      drawInvoiceIcon(page, iconImgs, row.icon, bKananX + 12, ry + 10, 10);
+      drawInvoiceIcon(page, iconImgs, row.icon, bKananX + 12, ry + 8.5, 10);
       page.drawText(row.text, {
         x: bKananX + 27,
         y: ry,
@@ -809,8 +822,8 @@ export function buildHtml({ groomName, brideName, pin }: { groomName: string; br
   const logoUrl = resolveLogoUrl(appUrl);
 
   const body = `${heroIconHtml(appUrl, 'party-popper', '#faf3e9', 'selamat', '&#127881;')}
-    <p style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:bold;line-height:1.2;color:#4a1f14;">Terima kasih</p>
-    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:25px;line-height:1.3;color:#4a1f14;">telah menggunakan jasa kami!</p>
+    <p class="hero-title" style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:bold;line-height:1.2;color:#4a1f14;">Terima kasih</p>
+    <p class="hero-sub" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:25px;line-height:1.3;color:#4a1f14;">telah menggunakan jasa kami!</p>
     <p style="margin:12px auto 0;max-width:440px;color:#57493D;font-size:14px;line-height:1.6;">
       Pembayaran untuk undangan digital pernikahan
       <strong>${couple}</strong> telah kami terima dengan sukses.
@@ -856,7 +869,8 @@ export async function sendPinEmail(args: SendPinEmailArgs): Promise<SendEmailRes
     // Generate file Invoice PDF secara on-the-fly di RAM
     const pdfBase64 = await generateInvoicePdf(args);
     if (pdfBase64) {
-      const orderIdPart = (args.orderId || 'LOVERSE').slice(-8).toUpperCase();
+      // Nama file memakai nomor invoice yang SAMA dengan di dalam PDF.
+      const orderIdPart = invoiceNumberFor(args.orderId).replace(/[^A-Z0-9]/g, '');
       attachments.push({
         filename: `Invoice-LoVerse-${orderIdPart}.pdf`,
         content: pdfBase64,

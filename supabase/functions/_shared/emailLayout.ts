@@ -18,6 +18,10 @@ export const LOVERSE_INSTAGRAM = '@loverse.id';
 /** Tumpukan font serif email — padanan `font-serif` Tailwind di preview. */
 const SERIF = `Georgia,'Times New Roman',serif`;
 
+/** Font brand "Loverse" — Cormorant Garamond dulu, fallback serif sistem
+ * (klien email umumnya tak memuat webfont eksternal). */
+const BRAND = `'Cormorant Garamond',Georgia,'Times New Roman',serif`;
+
 /** Escape entitas HTML — nama mempelai & URL berasal dari input publik. */
 export function escapeEmailHtml(value: string): string {
   return value
@@ -32,7 +36,7 @@ export function escapeEmailHtml(value: string): string {
 export function emailLogoBlock(logoUrl: string): string {
   return (
     logoImgTag(logoUrl) ||
-    `<span style="color:#f5e6d5;font-size:22px;font-weight:bold;">Lo&hearts;Verse</span>`
+    `<span style="font-family:${BRAND};font-size:24px;font-weight:600;color:#f5e6d5;">Loverse</span>`
   );
 }
 
@@ -77,7 +81,7 @@ export function emailFooterHtml(appUrl: string): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
       <tr>
         <td style="vertical-align:bottom;">
-          <p style="margin:0;font-size:16px;font-weight:bold;color:#8a6a55;">LoVerse</p>
+          <p style="margin:0;font-family:${BRAND};font-size:20px;font-weight:600;color:#8a6a55;">LoVerse</p>
           <p style="margin:2px 0 0;font-size:12px;color:#b89a83;">Undangan Digital Pernikahan</p>
         </td>
         <td align="right" style="vertical-align:bottom;">
@@ -100,7 +104,7 @@ export function pinCellsHtml(pin: string): string {
   const cells = digits
     .map(
       (d) =>
-        `<td style="background-color:#fdf3e7;border-radius:8px;padding:12px 0;width:48px;text-align:center;color:#4a1f14;font-size:30px;font-weight:bold;">${escapeEmailHtml(d)}</td><td style="width:8px;"></td>`,
+        `<td class="pin-cell" style="background-color:#fdf3e7;border-radius:8px;padding:12px 0;width:48px;text-align:center;color:#4a1f14;font-size:30px;font-weight:bold;">${escapeEmailHtml(d)}</td><td class="pin-gap" style="width:8px;"></td>`,
     )
     .join('');
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 auto;"><tr>${cells}</tr></table>`;
@@ -138,18 +142,33 @@ export function helpCardHtml(appUrl: string): string {
   </div>`;
 }
 
-/** Kerangka luar email 600px di atas latar #F1E8DC. */
+/** Kerangka luar email 600px di atas latar #F1E8DC. Responsif: padding,
+ * heading & sel PIN mengecil di layar <=480px (tanpa mengubah desktop). */
 export function emailShellHtml(headerRow: string, bodyInner: string): string {
   return `<!DOCTYPE html>
 <html lang="id">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      @media only screen and (max-width: 480px) {
+        .email-outer-pad { padding: 20px 10px !important; }
+        .email-body-pad { padding: 24px 20px !important; }
+        .hero-title { font-size: 28px !important; }
+        .hero-sub { font-size: 20px !important; }
+        .section-title { font-size: 26px !important; }
+        .pin-cell { width: 38px !important; font-size: 24px !important; padding: 10px 0 !important; }
+        .pin-gap { width: 5px !important; }
+      }
+    </style>
+  </head>
   <body style="margin:0;padding:0;background-color:#F1E8DC;font-family:Arial,Helvetica,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F1E8DC;padding:32px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-outer-pad" style="background-color:#F1E8DC;padding:32px 16px;">
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:24px;border-collapse:separate;border-spacing:0;overflow:hidden;">
             ${headerRow}
             <tr>
-              <td style="padding:32px 40px;text-align:center;">
+              <td class="email-body-pad" style="padding:32px 40px;text-align:center;">
                 ${bodyInner}
               </td>
             </tr>
