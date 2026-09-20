@@ -24,13 +24,14 @@ const BULAN = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ]
 
-// Slug tema yang punya screenshot di R2 (og/demo/). Thumbs di-host di R2
-// agar konsisten dengan aset lain; art-block BELUM ada filenya sehingga
-// sengaja tidak masuk daftar (fallback ke gambar default).
+// Slug tema yang punya screenshot di R2 (og/demo/, dikonversi dari
+// themes/*.webp ke PNG agar aman untuk preview WhatsApp).
+// Daftar ini = isi folder og/demo di bucket.
 const DEMO_THUMBS = new Set([
-  'board-game', 'chiikawa', 'cinamon', 'claymorphism', 'emerald-royale',
-  'hello-kitty', 'lantern-night', 'motion-flow', 'neumorph', 'ocean-vows',
-  'pop-card', 'roblox', 'sage-terracotta', 'spiderman', 'zine-raw',
+  'art-block', 'board-game', 'chiikawa', 'cinamon', 'claymorphism',
+  'emerald-royale', 'hello-kitty', 'lantern-night', 'motion-flow',
+  'neumorph', 'ocean-vows', 'pop-card', 'roblox', 'sage-terracotta',
+  'spiderman', 'zine-raw',
 ])
 
 // Basis thumbnail demo + gambar default di R2.
