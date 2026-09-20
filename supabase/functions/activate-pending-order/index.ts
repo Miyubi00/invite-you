@@ -70,10 +70,13 @@ serve(async (req) => {
     // Hanya pemanggil yang berhasil menghapus (count=1) yang boleh
     // lanjut. Dua admin yang menekan tombol bersamaan => tepat satu
     // yang mendapat klaim; yang lain berhenti tanpa membuat duplikat.
+    // Guard status: pending yang sudah 'kedaluwarsa' (housekeeping 24 jam)
+    // TIDAK bisa diklaim lagi.
     const { count: claimed, error: claimError } = await admin
       .from('pending_orders')
       .delete({ count: 'exact' })
       .eq('id', pending_id)
+      .eq('status', 'menunggu_pembayaran')
 
     if (claimError) throw new Error(`Gagal mengklaim pesanan: ${claimError.message}`)
     if ((claimed ?? 0) === 0) {

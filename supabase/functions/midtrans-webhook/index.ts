@@ -32,6 +32,33 @@ function json(body: unknown, status: number): Response {
   })
 }
 
+type SupabaseAdmin = ReturnType<typeof createClient>;
+
+/**
+ * Jejak audit notifikasi Midtrans terverifikasi (trigger hanya mencatat
+ * perubahan DB; baris ini menyimpan konteks webhook-nya).
+ * Tidak pernah melempar — kegagalan audit tak boleh menggagalkan webhook.
+ */
+async function writeWebhookAudit(
+  admin: SupabaseAdmin,
+  action: string,
+  rowId: string,
+  details: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await admin.from('admin_audit_log').insert({
+      actor_email: null,
+      actor_kind: 'midtrans',
+      action,
+      table_name: 'orders',
+      row_id: rowId,
+      details,
+    })
+  } catch (err) {
+    console.error('[webhook] Gagal menulis audit:', err instanceof Error ? err.message : err)
+  }
+}
+
 serve(async (req) => {
   if (req.method !== 'POST') {
     return json({ error: 'Method not allowed' }, 405)
@@ -72,6 +99,14 @@ serve(async (req) => {
     )
     if (!mapped) {
       // pending / challenge / refund / unknown — ack tanpa mengubah state.
+      // Tetap diaudit agar "transaksi masuk" terpantau walau tak berdampak.
+      const adminIgnored = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      )
+      await writeWebhookAudit(adminIgnored, 'webhook_ignored', fields.orderId, {
+        transaction_status: (raw as Record<string, unknown>)?.transaction_status ?? null,
+      })
       return json({ ok: true, activated: false, ignored: true }, 200)
     }
 
@@ -96,6 +131,9 @@ serve(async (req) => {
     if (mapped === 'success') {
       if (order.payment_status === 'success') {
         // Webhook duplikat untuk pesanan yang sudah aktif.
+        await writeWebhookAudit(admin, 'webhook_duplicate', order.id, {
+          midtrans_order_id: fields.orderId,
+        })
         return json({ ok: true, activated: false, duplicate: true }, 200)
       }
 
@@ -117,6 +155,10 @@ serve(async (req) => {
         throw new Error(`Gagal mengaktifkan pesanan: ${updateError.message}`)
       }
       if ((count ?? 0) === 0) {
+        await writeWebhookAudit(admin, 'webhook_duplicate', order.id, {
+          midtrans_order_id: fields.orderId,
+          note: 'race: baris sudah teraktivasi duluan',
+        })
         return json({ ok: true, activated: false, duplicate: true }, 200)
       }
 
@@ -143,6 +185,13 @@ serve(async (req) => {
         })
       }
 
+      await writeWebhookAudit(admin, 'webhook_success', order.id, {
+        midtrans_order_id: fields.orderId,
+        transaction_status: (raw as Record<string, unknown>)?.transaction_status ?? null,
+        payment_type: (raw as Record<string, unknown>)?.payment_type ?? null,
+        email_sent: emailResult.ok,
+      })
+
       return json(
         { ok: true, activated: true, email_sent: emailResult.ok },
         200,
@@ -160,6 +209,11 @@ serve(async (req) => {
     if (failError) {
       throw new Error(`Gagal memperbarui status: ${failError.message}`)
     }
+
+    await writeWebhookAudit(admin, 'webhook_failed', order.id, {
+      midtrans_order_id: fields.orderId,
+      transaction_status: (raw as Record<string, unknown>)?.transaction_status ?? null,
+    })
 
     return json({ ok: true, activated: false }, 200)
   } catch (error) {

@@ -23,15 +23,78 @@ import { useTranslation } from "../i18n";
 import type { TurnstileWidgetRef } from "../components/ui/TurnstileWidget";
 import { MASTER_TEMPLATES, type MasterTemplate } from "../lib/constants";
 import { goBackOrHome } from "../lib/navigation";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
+import { OrderBackButton } from "../components/order/OrderBackButton";
 import { OrderDetailsForm } from "../components/order/OrderDetailsForm";
+import { OrderSteps } from "../components/order/OrderSteps";
 import { PaymentMethodPicker } from "../components/order/PaymentMethodPicker";
 import { OrderSummary } from "../components/order/OrderSummary";
 import {
+  OrderPayButton,
+  OrderPaymentCaptcha,
+} from "../components/order/OrderPaymentActions";
+import {
+  EMAIL_RE,
   type ExpandedCategory,
   type PaymentMethodType,
 } from "../components/order/constants";
 import { useOrderCheckout } from "../hooks/useOrderCheckout";
+
+// --- DRAFT OTOMATIS (localStorage) ---
+// Order expired/gagal → user tidak isi ulang dari nol: form + template +
+// metode terakhir tersimpan otomatis dan dipulihkan saat buka /order lagi.
+const DRAFT_KEY = "loverse-order-draft";
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
+
+interface OrderDraft {
+  formData: {
+    groom_name: string;
+    bride_name: string;
+    wedding_date: string;
+    whatsapp: string;
+    email: string;
+    template_slug: string;
+  };
+  paymentMethod: PaymentMethodType | null;
+  savedAt: number;
+}
+
+function loadDraft(): OrderDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const draft = JSON.parse(raw) as Partial<OrderDraft>;
+    if (!draft || typeof draft !== "object") return null;
+    if (typeof draft.savedAt !== "number" || Date.now() - draft.savedAt > DRAFT_TTL_MS) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    const f = draft.formData;
+    if (!f || typeof f !== "object") return null;
+    return {
+      formData: {
+        groom_name: typeof f.groom_name === "string" ? f.groom_name : "",
+        bride_name: typeof f.bride_name === "string" ? f.bride_name : "",
+        wedding_date: typeof f.wedding_date === "string" ? f.wedding_date : "",
+        whatsapp: typeof f.whatsapp === "string" ? f.whatsapp : "",
+        email: typeof f.email === "string" ? f.email : "",
+        template_slug: typeof f.template_slug === "string" ? f.template_slug : "",
+      },
+      paymentMethod: typeof draft.paymentMethod === "string" ? (draft.paymentMethod as PaymentMethodType) : null,
+      savedAt: draft.savedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    /* abaikan — storage penuh/diblokir bukan error fatal */
+  }
+}
 
 export default function OrderForm() {
   const { t } = useTranslation();
@@ -41,9 +104,17 @@ export default function OrderForm() {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  // Tidak ada metode pembayaran bawaan — user harus memilih sendiri (Step 03).
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethodType | null>(null);
+  // Draft tersimpan (sekali baca saat mount).
+  const [draft] = useState<OrderDraft | null>(loadDraft);
+  // Tidak ada metode pembayaran bawaan — user harus memilih sendiri (Step 03),
+  // kecuali ada draft tersimpan yang valid.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType | null>(() => {
+    const m = draft?.paymentMethod;
+    return typeof m === "string" &&
+      ["qris", "gopay", "shopeepay", "dana", "bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va", "whatsapp"].includes(m)
+      ? m
+      : null;
+  });
   const [expandedCategory, setExpandedCategory] =
     useState<ExpandedCategory | null>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
@@ -71,7 +142,7 @@ export default function OrderForm() {
               price: Number(dbItem.price),
               image: local
                 ? local.image
-                : "https://r2.loverse.my.id/themes/botanical-gold.webp",
+                : "https://r2.loverse.id/themes/botanical-gold.webp",
             };
           });
           setTemplateList(combined);
@@ -94,13 +165,27 @@ export default function OrderForm() {
     templateList[0] ||
     MASTER_TEMPLATES[0];
 
+  const urlTemplate =
+    urlSlug &&
+    (templateList.some((t) => t.slug === urlSlug) ||
+      MASTER_TEMPLATES.some((t) => t.slug === urlSlug))
+      ? urlSlug
+      : null;
+  const draftTemplate =
+    draft?.formData.template_slug &&
+    (templateList.some((t) => t.slug === draft.formData.template_slug) ||
+      MASTER_TEMPLATES.some((t) => t.slug === draft.formData.template_slug))
+      ? draft.formData.template_slug
+      : null;
+
   const initialFormState = {
-    groom_name: "",
-    bride_name: "",
-    wedding_date: "",
-    whatsapp: "",
-    email: "",
-    template_slug: defaultTemplate.slug,
+    groom_name: draft?.formData.groom_name ?? "",
+    bride_name: draft?.formData.bride_name ?? "",
+    wedding_date: draft?.formData.wedding_date ?? "",
+    whatsapp: draft?.formData.whatsapp ?? "",
+    email: draft?.formData.email ?? "",
+    // Prioritas: ?template= di URL > draft > default.
+    template_slug: urlTemplate ?? draftTemplate ?? defaultTemplate.slug,
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -111,6 +196,23 @@ export default function OrderForm() {
     selectedTemplate?.image ||
     MASTER_TEMPLATES.find((t) => t.slug === formData.template_slug)?.image;
 
+  // Simpan draft otomatis (debounce) setiap form/metode berubah.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        const draftToSave: OrderDraft = {
+          formData,
+          paymentMethod,
+          savedAt: Date.now(),
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftToSave));
+      } catch {
+        /* abaikan — storage penuh/diblokir bukan error fatal */
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData, paymentMethod]);
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -119,18 +221,6 @@ export default function OrderForm() {
     let val = e.target.value.replace(/\D/g, "");
     if (val.startsWith("0")) val = val.substring(1);
     setFormData({ ...formData, whatsapp: val });
-  };
-
-  const handleTemplateChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setFormData({ ...formData, template_slug: e.target.value });
-  };
-
-  const handleReset = () => {
-    setFormData(initialFormState);
-    setPaymentMethod(null);
-    setExpandedCategory(null);
-    setShowConfirm(false);
-    toast.success(t("order.toastResetSuccess"));
   };
 
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
@@ -151,20 +241,106 @@ export default function OrderForm() {
     paymentMethod,
     captchaToken,
     invalidateCaptcha,
+    clearDraft,
   });
+
+  // Wizard 3 langkah: 1 Data -> 2 Metode -> 3 Konfirmasi & Bayar.
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  const scrollTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goNextFromData = () => {
+    if (!formData.groom_name.trim() || !formData.bride_name.trim()) {
+      toast.warning(t("validation.coupleRequired"));
+      return;
+    }
+    if (!formData.wedding_date) {
+      toast.warning(t("validation.weddingDateRequired"));
+      return;
+    }
+    if (!formData.email.trim() || !EMAIL_RE.test(formData.email.trim())) {
+      toast.warning(t("validation.emailInvalid"));
+      return;
+    }
+    if (!formData.whatsapp.trim() || formData.whatsapp.length < 8) {
+      toast.warning(t("validation.whatsappInvalid"));
+      return;
+    }
+    setStep(2);
+    scrollTop();
+  };
+
+  const goNextFromMethod = () => {
+    if (!paymentMethod) {
+      toast.warning(t("validation.paymentMethodRequired"));
+      return;
+    }
+    setStep(3);
+    scrollTop();
+  };
+
+  const goBackStep = () => {
+    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
+    scrollTop();
+  };
+
+  // Reset formulir = kosongkan data + langsung fallback ke langkah 1
+  // (halaman isi data), karena langkah 2 & 3 tidak punya isi lagi setelah
+  // data/metode dikosongkan. Captcha ikut dibatalkan & halaman di-scroll ke atas.
+  const handleReset = () => {
+    setFormData({
+      groom_name: "",
+      bride_name: "",
+      wedding_date: "",
+      whatsapp: "",
+      email: "",
+      template_slug: defaultTemplate.slug,
+    });
+    setPaymentMethod(null);
+    setExpandedCategory(null);
+    setStep(1);
+    invalidateCaptcha();
+    setShowConfirm(false);
+    clearDraft();
+    toast.success(t("order.toastResetSuccess"));
+    scrollTop();
+  };
+
+  // --- NAVIGASI WIZARD (tombol kembali & lanjut seragam di footer step) ---
+  const wizardStepLabels = [
+    t("order.wizStep1"),
+    t("order.wizStep2"),
+    t("order.wizStep3"),
+  ];
+  // Langkah 1 -> kembali ke katalog/halaman sebelumnya.
+  // Langkah 2 & 3 -> kembali ke langkah sebelumnya di wizard.
+  const handleBack = () => (step > 1 ? goBackStep() : goBackOrHome(navigate));
+  const contextualBackLabel =
+    step > 1
+      ? t("order.backToStep", { step: wizardStepLabels[step - 2] })
+      : t("order.back");
+  const nextAction =
+    step === 1 ? goNextFromData : step === 2 ? goNextFromMethod : null;
+  // Langkah 1 & 2 memakai baris navigasi bawah: [Kembali] [Lanjut] sebaris.
+  // Langkah 3 tidak punya baris sendiri - verifikasi captcha, tombol bayar,
+  // dan tombol kembali menyatu di dalam kartu ringkasan (slot actions
+  // OrderSummary), tersusun atas-bawah agar label panjang tetap utuh.
 
   return (
     <div className="min-h-screen bg-[#F1E8DC] font-sans w-full max-w-full overflow-x-hidden">
-      <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 md:py-12 min-w-0">
+      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-5 sm:py-8 md:py-12 min-w-0">
         {/* --- HEADER --- */}
-        <div className="flex items-start justify-between gap-3 mb-5 sm:mb-8 md:mb-10 min-w-0">
+        <div className="flex items-start justify-between gap-3 mb-5 sm:mb-6 min-w-0">
           <div className="min-w-0">
             <button
               type="button"
-              onClick={() => goBackOrHome(navigate)}
+              onClick={handleBack}
               className="inline-flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-[#E59A59] transition"
             >
-              <ArrowLeft size={13} /> {t("order.back")}
+              <ArrowLeft size={13} />{" "}
+              {step > 1 ? t("order.btnBack") : t("order.back")}
             </button>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#712E1E] mt-1.5 sm:mt-2 truncate">
               {t("order.title")}
@@ -184,44 +360,85 @@ export default function OrderForm() {
           </button>
         </div>
 
-        {/* --- GRID UTAMA: FORM + SUMMARY --- */}
-        <div className="grid lg:grid-cols-[1fr_380px] gap-4 sm:gap-6 lg:gap-8 items-start w-full min-w-0 max-w-full">
-          {/* ===== KOLOM KIRI: FORM ===== */}
-          <div className="space-y-4 sm:space-y-5 order-1 w-full min-w-0 max-w-full">
-            <OrderDetailsForm
-              formData={formData}
-              templateList={templateList}
-              todayStr={todayStr}
-              onChange={handleChange}
-              onWhatsappChange={handleWhatsappChange}
-              onTemplateChange={handleTemplateChange}
-            />
-            <PaymentMethodPicker
-              basePrice={selectedTemplate.price}
-              paymentMethod={paymentMethod}
-              onSelect={setPaymentMethod}
-              expandedCategory={expandedCategory}
-              onExpand={setExpandedCategory}
-            />
-          </div>
+        {/* --- INDIKATOR PROGRES --- */}
+        <OrderSteps current={step} />
 
-          {/* ===== KOLOM KANAN: RINGKASAN & PEMBAYARAN ===== */}
-          <aside className="order-2 lg:sticky lg:top-6 space-y-4">
-            <OrderSummary
-              formData={formData}
-              selectedTemplate={selectedTemplate}
-              selectedImage={selectedImage}
-              paymentMethod={paymentMethod}
-              captchaToken={captchaToken}
-              setCaptchaToken={setCaptchaToken}
-              turnstileRef={turnstileRef}
-              loadingWA={loadingWA}
-              loadingMidtrans={loadingMidtrans}
-              onMidtransCheckout={handleMidtransCheckout}
-              onWhatsappCheckout={handleWhatsappCheckout}
+        {/* --- STEP 1: DATA --- */}
+        {step === 1 ? (
+          <OrderDetailsForm
+            formData={formData}
+            selectedTemplate={selectedTemplate}
+            selectedImage={selectedImage}
+            todayStr={todayStr}
+            onChange={handleChange}
+            onWhatsappChange={handleWhatsappChange}
+            onChangeTemplate={() => goBackOrHome(navigate)}
+          />
+        ) : null}
+
+        {/* --- STEP 2: METODE --- */}
+        {step === 2 ? (
+          <PaymentMethodPicker
+            basePrice={selectedTemplate.price}
+            paymentMethod={paymentMethod}
+            onSelect={setPaymentMethod}
+            expandedCategory={expandedCategory}
+            onExpand={setExpandedCategory}
+          />
+        ) : null}
+
+        {/* --- STEP 3: KONFIRMASI & BAYAR --- */}
+        {step === 3 ? (
+          <OrderSummary
+            formData={formData}
+            selectedTemplate={selectedTemplate}
+            selectedImage={selectedImage}
+            paymentMethod={paymentMethod}
+            // Semua elemen langkah 3 menyatu di dalam kartu, urut atas-bawah:
+            // verifikasi captcha -> tombol bayar -> tombol kembali.
+            actions={
+              <>
+                <OrderPaymentCaptcha
+                  setCaptchaToken={setCaptchaToken}
+                  turnstileRef={turnstileRef}
+                />
+                <OrderPayButton
+                  paymentMethod={paymentMethod}
+                  captchaToken={captchaToken}
+                  loadingWA={loadingWA}
+                  loadingMidtrans={loadingMidtrans}
+                  onMidtransCheckout={handleMidtransCheckout}
+                  onWhatsappCheckout={handleWhatsappCheckout}
+                />
+                <OrderBackButton
+                  onClick={handleBack}
+                  label={t("order.btnBack")}
+                  ariaLabel={contextualBackLabel}
+                  variant="block"
+                />
+              </>
+            }
+          />
+        ) : null}
+
+        {/* --- NAVIGASI BAWAH (langkah 1 & 2): [Kembali] [Lanjut] --- */}
+        {nextAction ? (
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mt-4 sm:mt-5">
+            <OrderBackButton
+              onClick={handleBack}
+              label={t("order.btnBack")}
+              ariaLabel={contextualBackLabel}
+              variant="block"
             />
-          </aside>
-        </div>
+            <button
+              type="button"
+              onClick={nextAction}
+              className="w-full min-h-11 px-3 py-3.5 sm:py-4 rounded-2xl font-bold text-sm sm:text-base bg-[#712E1E] text-white hover:bg-[#8E3B27] active:scale-[0.99] transition shadow-lg shadow-[#712E1E]/25 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E59A59]/40"
+            >
+              {t("order.btnNext")} <ArrowRight size={18} />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <ConfirmDialog

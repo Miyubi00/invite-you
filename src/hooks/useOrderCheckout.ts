@@ -27,6 +27,8 @@ interface UseOrderCheckoutArgs {
   paymentMethod: PaymentMethodType | null;
   captchaToken: string | null;
   invalidateCaptcha: () => void;
+  /** Hapus draft form tersimpan (dipanggil saat order berhasil dibuat). */
+  clearDraft: () => void;
 }
 
 export function useOrderCheckout({
@@ -35,6 +37,7 @@ export function useOrderCheckout({
   paymentMethod,
   captchaToken,
   invalidateCaptcha,
+  clearDraft,
 }: UseOrderCheckoutArgs) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -110,6 +113,7 @@ export function useOrderCheckout({
       const payment = data as {
         success: boolean;
         order_id: string;
+        order_token?: string;
         token?: string;
         redirect_url?: string;
       };
@@ -119,6 +123,13 @@ export function useOrderCheckout({
           t("toast.orderCreateFailed", { error: "Gagal membuat invoice" }),
         );
       }
+
+      // URL memakai token buram (order_token) agar id asli tidak bisa ditebak.
+      // Fallback ke order_id mentah bila secret belum diset di server.
+      const urlId = payment.order_token || payment.order_id;
+
+      // Order tercatat di server — draft lokal sudah tidak diperlukan.
+      clearDraft();
 
       if (
         payment.token &&
@@ -143,13 +154,13 @@ export function useOrderCheckout({
           },
           onClose: function () {
             toast.warning(t("toast.paymentPopupClosed"));
-            navigate(`/payment-status?order_id=${payment.order_id}`);
+            navigate(`/payment-status?order_id=${urlId}`);
           },
         });
       } else if (payment.redirect_url) {
         window.location.href = payment.redirect_url;
       } else {
-        navigate(`/payment-status?order_id=${payment.order_id}`);
+        navigate(`/payment-status?order_id=${urlId}`);
       }
     } catch (err) {
       console.error(err);
@@ -172,18 +183,44 @@ export function useOrderCheckout({
     try {
       const finalWhatsapp = `+62${formData.whatsapp}`;
 
-      const { error } = await supabase.from("pending_orders").insert([
-        {
-          groom_name: formData.groom_name,
-          bride_name: formData.bride_name,
+      // Catat pending LEWAT edge function (validasi + Turnstile + rate
+      // limit server-side). Insert langsung ke DB dari browser DILARANG
+      // karena melewati semua pengaman (anti-spam/flood).
+      const { data, error } = await supabase.functions.invoke("create-order", {
+        body: {
+          groom_name: formData.groom_name.trim(),
+          bride_name: formData.bride_name.trim(),
           wedding_date: formData.wedding_date,
           whatsapp: finalWhatsapp,
           email: formData.email.trim().toLowerCase(),
           template_slug: formData.template_slug,
+          payment_method: "manual_whatsapp",
+          captcha_token: captchaToken,
         },
-      ]);
+      });
 
-      if (error) throw error;
+      if (error) {
+        let errMessage = t("toast.orderCreateFailed", { error: "Unknown error" });
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = (await ctx.json()) as { error?: string };
+            if (body?.error) errMessage = body.error;
+          }
+        } catch {
+          /* fallback */
+        }
+        invalidateCaptcha();
+        throw new Error(errMessage);
+      }
+
+      if (!(data as { success?: boolean } | null)?.success) {
+        invalidateCaptcha();
+        throw new Error(t("toast.orderCreateFailed", { error: "Gagal membuat invoice" }));
+      }
+
+      // Pesanan manual tercatat — draft lokal sudah tidak diperlukan.
+      clearDraft();
 
       const message = `Halo Admin, saya ingin memesan Undangan Digital:
         *Data Mempelai:*

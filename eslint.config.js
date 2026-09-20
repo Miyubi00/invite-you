@@ -8,6 +8,14 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist', 'supabase/**']),
   {
+    // api/ berisi Vercel Function yang berjalan di runtime Node (bukan browser),
+    // jadi global Node seperti `process` harus dikenali agar tidak kena no-undef.
+    files: ['api/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     files: ['**/*.{js,jsx,ts,tsx}'],
     extends: [
       js.configs.recommended,

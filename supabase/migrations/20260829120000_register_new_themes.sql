@@ -23,7 +23,7 @@ VALUES
   ('claymorphism',   'Clay Puffy',      'RSVP', 15000, true),
   ('emerald-royale', 'Emerald Royale',  'RSVP', 15000, true),
   ('lantern-night',  'Lantern Night',   'RSVP', 15000, true),
-  ('motion-flow',    'Motion Flow',     'RSVP', 15000, true),
+  ('motion-flow',    'Motion Flow',     'RSVP', 15000, true), 
   ('neumorph',       'Soft Neumorph',   'RSVP', 15000, true),
   ('ocean-vows',     'Ocean Vows',      'RSVP', 15000, true),
   ('pop-card',       'Pop Card Fiesta', 'RSVP', 15000, true),

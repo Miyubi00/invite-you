@@ -4,8 +4,9 @@
 // Helper navigasi bersama: kembali ke halaman sebelumnya bila
 // ada riwayat (perilaku "back" — posisi scroll dipulihkan
 // browser), fallback ke beranda bila dibuka langsung via URL.
-// Dipakai di  : pages/OrderPage, pages/OrderSuccessPage,
-//               components/Navbar
+// Dipakai di  : pages/OrderPage, pages/OrderSuccessPage
+//               (navbar TIDAK memakai ini — tombol "Beranda" di sana
+//               harus benar-benar ke "/" agar tidak ping-pong riwayat)
 // Keterikatan : react-router-dom (NavigateFunction)
 // ============================================================
 

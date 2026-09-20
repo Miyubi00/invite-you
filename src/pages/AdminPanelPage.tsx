@@ -11,8 +11,10 @@ import AdminSidebar, { type MenuItem } from "../components/admin/AdminSidebar";
 import AdminLogin from "../components/admin/AdminLogin";
 import OrdersTab from "../components/admin/OrdersTab";
 import TemplatesTab from "../components/admin/TemplatesTab";
+import InboxTab from "../components/admin/InboxTab";
+import AuditTab from "../components/admin/AuditTab";
 import EditOrderModal from "../components/admin/EditOrderModal";
-import { ClipboardList, Clock, Palette, LogOut, Loader2, Menu } from "lucide-react";
+import { ClipboardList, Clock, Palette, Mail, ScrollText, LogOut, Loader2, Menu } from "lucide-react";
 import { useTranslation } from "../i18n";
 
 interface DialogState {
@@ -67,10 +69,20 @@ export default function AdminPanel() {
     await Promise.all([fetchData(), refreshOrders()]);
   }, [fetchData, refreshOrders]);
 
-  const [activeTab, setActiveTab] = useUrlTab(["orders", "whatsapp", "templates", "edit"], "orders");
+  const [activeTab, setActiveTab] = useUrlTab(["orders", "whatsapp", "templates", "inbox", "audit", "edit"], "orders");
   const [searchParams, setSearchParams] = useSearchParams();
   const urlOrderId = searchParams.get("order") ?? "";
   const [dialog, setDialog] = useState<DialogState>({ isOpen: false, title: "", message: "", isDanger: true, onConfirm: null });
+  const [inboxUnread, setInboxUnread] = useState(0);
+
+  useEffect(() => {
+    if (!session) return;
+    supabase
+      .from('inbound_emails')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_read', false)
+      .then(({ count }) => setInboxUnread(count ?? 0));
+  }, [session, activeTab]);
   const [editingOrder, setEditingOrder] = useState<OrderRow | null>(null);
   const [editFormData, setEditFormData] = useState<OrderEditForm>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -163,6 +175,8 @@ export default function AdminPanel() {
     { id: "orders", label: t('admin.menuOrders'), icon: ClipboardList, badge: ordersFilter.total > 0 ? ordersFilter.total : null },
     { id: "whatsapp", label: t('admin.menuWhatsapp'), icon: Clock, badge: pendingOrders.length },
     { id: "templates", label: t('admin.menuTemplates'), icon: Palette, badge: null },
+    { id: "inbox", label: t('admin.menuInbox'), icon: Mail, badge: inboxUnread > 0 ? inboxUnread : null },
+    { id: "audit", label: t('admin.menuAudit'), icon: ScrollText, badge: null },
   ];
 
   if (sessionLoading) {
@@ -273,6 +287,14 @@ export default function AdminPanel() {
                     toast={toast}
                     loading={loading}
                   />
+                )}
+
+                {activeTab === "inbox" && (
+                  <InboxTab toast={toast} onCountChange={setInboxUnread} />
+                )}
+
+                {activeTab === "audit" && (
+                  <AuditTab toast={toast} />
                 )}
 
                 {activeTab === "edit" && !editingOrder && (

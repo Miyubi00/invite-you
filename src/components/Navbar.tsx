@@ -12,7 +12,6 @@ import { HeartHandshake, LogIn, Home, CreditCard, UserCircle, LogOut, LayoutDash
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from './shared/LanguageSwitcher';
 import { ADMIN_PATH } from '../lib/adminPath';
-import { goBackOrHome } from '../lib/navigation';
 
 type NavMode = 'default' | 'home' | 'logout' | 'admin';
 
@@ -117,7 +116,11 @@ export default function Navbar() {
         {navConfig.mode === 'home' && (
           <button
             type="button"
-            onClick={() => goBackOrHome(navigate)}
+            // Benar-benar ke beranda — BUKAN navigate(-1). Dulu memakai
+            // goBackOrHome sehingga label "Beranda" perilakunya "mundur":
+            // dari /forgot-pin -> /login -> klik Beranda malah balik ke
+            // /forgot-pin (ping-pong riwayat).
+            onClick={() => navigate('/')}
             className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[#E59A59] text-white text-xs sm:text-sm font-bold hover:bg-[#d48b4b] transition flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
             <Home className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

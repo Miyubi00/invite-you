@@ -20,12 +20,16 @@ import { ADMIN_PATH } from './lib/adminPath';
 /* --- IMPORT LAYOUTS --- */
 import PublicLayout from './layouts/PublicLayout';
 import InvitationLayout from './layouts/InvitationLayout';
+import DevInvoicePreviewRoute from './pages/DevInvoicePreviewRoute';
+import DevEmailPreviewRoute from './pages/DevEmailPreviewRoute';
 
 /* --- PAGES (lazy loaded — code splitting per route) --- */
 const HomePage = lazy(() => import('./pages/HomePage'));
 const OrderPage = lazy(() => import('./pages/OrderPage'));
 const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'));
 const CustomerLoginPage = lazy(() => import('./pages/CustomerLoginPage'));
+const ForgotPinPage = lazy(() => import('./pages/ForgotPinPage'));
+const ForgotPinConfirmPage = lazy(() => import('./pages/ForgotPinConfirmPage'));
 const CustomerDashboardPage = lazy(() => import('./pages/CustomerDashboardPage'));
 const InvitationPage = lazy(() => import('./pages/InvitationPage'));
 const TemplateDemoPage = lazy(() => import('./pages/TemplateDemoPage'));
@@ -53,6 +57,8 @@ function App() {
                 <Route path="/order" element={<OrderPage />} />
                 <Route path="/order/success" element={<OrderSuccessPage />} />
                 <Route path="/login" element={<CustomerLoginPage />} />
+                <Route path="/forgot-pin" element={<ForgotPinPage />} />
+                <Route path="/forgot-pin/confirm" element={<ForgotPinConfirmPage />} />
 
                 <Route path="/payment-status" element={<PaymentStatusPage />} />
                 <Route path="/contact" element={<ContactPage />} />
@@ -62,6 +68,11 @@ function App() {
 
               {/* GROUP 2: TEMPLATE DEMO */}
               <Route path="/demo/:slug" element={<TemplateDemoPage />} />
+
+              {/* GROUP DEV: preview invoice — DevInvoicePreviewRoute me-render
+                  NotFoundPage bila bukan `npm run dev`, jadi aman di production. */}
+              <Route path="/dev/invoice" element={<DevInvoicePreviewRoute />} />
+              <Route path="/dev/email" element={<DevEmailPreviewRoute />} />
 
               {/* GROUP 3: UNDANGAN TAMU (Fullscreen) */}
               <Route element={<InvitationLayout />}>

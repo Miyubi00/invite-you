@@ -60,6 +60,12 @@ Desktop.ini
 *.sw?
 
 # ======================
+# Tests (local only — tidak ikut ke GitHub)
+# ======================
+**/*.test.ts
+**/*.test.tsx
+
+# ======================
 # Logs, Temp & Scraps
 # ======================
 logs/

@@ -70,7 +70,7 @@ export default function EmeraldRoyaleTheme({
     data?.quote ||
     'Dan di antara tanda-tanda kebesaran-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.';
   const quoteSrc = data?.quote_src || 'QS. Ar-Rum: 21';
-  const audioUrl = data?.audio_url || 'https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3';
+  const audioUrl = data?.audio_url || 'https://r2.loverse.id/defaults/audio/ee2e74c72c.mp3';
 
   const groomParents = data?.groom_parents || 'Bpk. Capulet & Ibu Capulet';
   const brideParents = data?.bride_parents || 'Bpk. Montague & Ibu Montague';

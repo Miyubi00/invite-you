@@ -1,7 +1,7 @@
 import { useState, useRef, type FormEvent, type ChangeEvent } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { setCustomerToken } from '../lib/customerClient';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/GlobalToast';
 import { Lock, LogIn, HeartHandshake, Eye, EyeOff, Phone } from 'lucide-react';
 import { useTranslation } from '../i18n';
@@ -39,7 +39,7 @@ export default function DashboardLogin() {
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
-  
+
   // State UX PIN
   const [showPin, setShowPin] = useState(false);
   const [pinValue, setPinValue] = useState('');
@@ -172,6 +172,12 @@ export default function DashboardLogin() {
                 </button>
               </div>
               <p className="text-[11px] sm:text-xs text-stone-500 mt-1.5 sm:mt-2">{t('login.pinHelp')}</p>
+              <Link
+                to="/forgot-pin"
+                className="mt-1 inline-block text-[11px] sm:text-xs font-bold text-[#E59A59] hover:text-[#d48b4b] transition"
+              >
+                {t('login.resendPinLink')}
+              </Link>
           </div>
 
           {/* Cloudflare Turnstile Captcha Widget */}
@@ -194,6 +200,7 @@ export default function DashboardLogin() {
           </button>
         </form>
       </div>
+
     </div>
   );
 }

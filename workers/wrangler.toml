@@ -1,0 +1,9 @@
+name = "loverse-inbound-email"
+main = "inbound-email-worker.mjs"
+compatibility_date = "2025-06-01"
+
+# Secrets (JANGAN tulis nilainya di sini — via `npx wrangler secret put`):
+#   SUPABASE_URL         -> https://<project>.supabase.co
+#   SUPABASE_ANON_KEY    -> samakan dengan VITE_SUPABASE_ANON_KEY (kunci publik;
+#                           wajib ada, tanpa ini gateway Supabase menolak 401)
+#   INBOUND_EMAIL_SECRET -> samakan dengan secret Supabase INBOUND_EMAIL_SECRET

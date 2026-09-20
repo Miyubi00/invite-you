@@ -89,6 +89,7 @@ interface CategoryCardProps {
   logos?: ReactNode;
   description?: ReactNode;
   price: ReactNode;
+  feeNote?: ReactNode;
   trailing?: ReactNode;
   radio?: ReactNode;
 }
@@ -103,6 +104,7 @@ function CategoryCard({
   logos,
   description,
   price,
+  feeNote,
   trailing,
   radio,
 }: CategoryCardProps) {
@@ -129,12 +131,17 @@ function CategoryCard({
           ) : null}
         </div>
       </div>
-      <div className="shrink-0 flex items-center gap-2 pt-0.5">
-        <span className="text-xs sm:text-sm font-black text-[#712E1E] whitespace-nowrap">
-          {price}
-        </span>
-        {trailing}
-        {radio}
+      <div className="shrink-0 flex flex-col items-end gap-0.5 pt-0.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm font-black text-[#712E1E] whitespace-nowrap">
+            {price}
+          </span>
+          {trailing}
+          {radio}
+        </div>
+        {feeNote ? (
+          <span className="text-[10px] text-stone-400 whitespace-nowrap">{feeNote}</span>
+        ) : null}
       </div>
     </div>
   );
@@ -147,6 +154,7 @@ interface SubOptionButtonProps {
   logoNode: ReactNode;
   description?: ReactNode;
   price: ReactNode;
+  feeNote?: ReactNode;
   radio: ReactNode;
 }
 
@@ -157,6 +165,7 @@ function SubOptionButton({
   logoNode,
   description,
   price,
+  feeNote,
   radio,
 }: SubOptionButtonProps) {
   return (
@@ -174,11 +183,16 @@ function SubOptionButton({
           </p>
         ) : null}
       </div>
-      <div className="shrink-0 flex items-center gap-2 pt-0.5">
-        <span className="font-bold text-[#712E1E] whitespace-nowrap">
-          {price}
-        </span>
-        {radio}
+      <div className="shrink-0 flex flex-col items-end gap-0.5 pt-0.5">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#712E1E] whitespace-nowrap">
+            {price}
+          </span>
+          {radio}
+        </div>
+        {feeNote ? (
+          <span className="text-[10px] text-stone-400 whitespace-nowrap">{feeNote}</span>
+        ) : null}
       </div>
     </button>
   );
@@ -215,8 +229,14 @@ export function PaymentMethodPicker({
   const ewalletOpen = isEwalletActive || expandedCategory === "ewallet";
   const vaOpen = isVaActive || expandedCategory === "va";
 
+  // Nominal biaya layanan per metode (total di kartu sudah termasuk ini).
+  const feeNoteFor = (method: PaymentMethodType) => {
+    const fee = getPaymentMethodFee(basePrice, method);
+    return fee > 0 ? t("order.feeIncluded", { fee: formatIDR(fee) }) : null;
+  };
+
   return (
-    <SectionCard step="03" title={t("order.step3Title")}>
+    <SectionCard title={t("order.step3Title")}>
       <p className="text-xs text-stone-500 -mt-1 mb-3">{t("order.step3Desc")}</p>
       <div className="space-y-3">
         {/* 1. Other QRIS (Universal) */}
@@ -247,6 +267,7 @@ export function PaymentMethodPicker({
           }
           description={t("order.methodQrisSubtitle")}
           price={qrisTotal}
+          feeNote={feeNoteFor("qris")}
           radio={<RadioDot selected={paymentMethod === "qris"} />}
         />
 
@@ -285,6 +306,7 @@ export function PaymentMethodPicker({
             }
             description={t("order.methodEwalletSubtitle")}
             price={ewalletTotal}
+            feeNote={feeNoteFor("gopay")}
             trailing={
               <ChevronDown
                 size={18}
@@ -323,6 +345,7 @@ export function PaymentMethodPicker({
                   price={formatIDR(
                     basePrice + getPaymentMethodFee(basePrice, option.id),
                   )}
+                  feeNote={feeNoteFor(option.id)}
                   radio={<RadioDot selected={paymentMethod === option.id} />}
                 />
               ))}
@@ -370,6 +393,7 @@ export function PaymentMethodPicker({
             }
             description={t("order.methodVaSubtitle")}
             price={vaTotal}
+            feeNote={feeNoteFor("bca_va")}
             trailing={
               <ChevronDown
                 size={18}
@@ -404,6 +428,7 @@ export function PaymentMethodPicker({
                   price={formatIDR(
                     basePrice + getPaymentMethodFee(basePrice, bank.id),
                   )}
+                  feeNote={feeNoteFor(bank.id)}
                   radio={
                     <RadioDot selected={paymentMethod === bank.id} size="sm" />
                   }

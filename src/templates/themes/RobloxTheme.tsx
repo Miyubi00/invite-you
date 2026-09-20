@@ -148,7 +148,7 @@ export default function RobloxTheme({
   const hasBridePhoto = Boolean(data?.bride_photo);
   const quote = data?.quote || 'Blok demi blok kita tumpuk, sampai menjadi menara yang tak bisa roboh.';
   const quoteSrc = data?.quote_src || '— Player 1 & Player 2';
-  const audioUrl = data?.audio_url || 'https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3';
+  const audioUrl = data?.audio_url || 'https://r2.loverse.id/defaults/audio/ee2e74c72c.mp3';
 
   const formattedDate = formatDate(date, 'id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const akadClock = (schedule.akadTime || '08:00').split(' ')[0].substring(0, 5);

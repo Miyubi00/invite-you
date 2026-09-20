@@ -12,9 +12,12 @@ const WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET') ?? '';
 function isAllowedUser(userId: number | string, chatId?: number | string): boolean {
   const raw = Deno.env.get('TELEGRAM_ALLOWED_USER_IDS') ?? '';
   const trimmed = raw.trim();
-  // Jika tidak dikonfigurasi, izinkan semua (fallback aman untuk single-admin private chat)
-  // Admin bisa set TELEGRAM_ALLOWED_USER_IDS untuk membatasi ke ID spesifik
-  if (!trimmed) return true;
+  // Fail-closed: tanpa daftar ID, TOLAK semua (sebelumnya allow-all).
+  // Set TELEGRAM_ALLOWED_USER_IDS di Supabase secrets bila pakai handover.
+  if (!trimmed) {
+    console.error('[telegram-webhook] TELEGRAM_ALLOWED_USER_IDS belum diset — menolak.');
+    return false;
+  }
   const ids = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
   if (ids.includes(String(userId))) return true;
   // Fallback: izinkan jika chatId cocok dengan ADMIN_CHAT_ID (untuk group)
@@ -43,11 +46,14 @@ serve(async (req) => {
   if (req.method === 'GET') return new Response('ok', { status: 200 });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  // Validasi webhook secret jika diset
-  if (WEBHOOK_SECRET) {
-    const got = req.headers.get('x-telegram-bot-api-secret-token') ?? '';
-    if (got !== WEBHOOK_SECRET) return new Response('Forbidden', { status: 403 });
+  // Validasi webhook secret — WAJIB diset (fail-closed). Tanpa secret,
+  // siapa pun bisa POST JSON Telegram palsu dan menginjeksi transcript.
+  if (!WEBHOOK_SECRET) {
+    console.error('[telegram-webhook] TELEGRAM_WEBHOOK_SECRET belum diset — menolak.');
+    return new Response('Forbidden', { status: 403 });
   }
+  const got = req.headers.get('x-telegram-bot-api-secret-token') ?? '';
+  if (got !== WEBHOOK_SECRET) return new Response('Forbidden', { status: 403 });
 
   let body: Record<string, unknown>;
   try {

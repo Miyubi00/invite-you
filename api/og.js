@@ -43,6 +43,19 @@ async function getIndexHtml(origin) {
   return html
 }
 
+/** Host aman untuk origin: cegah Host-header injection ke og:url. */
+function safeHost(rawHost) {
+  const host = String(rawHost || '').split(':')[0].toLowerCase()
+  if (
+    host === 'loverse.id' ||
+    /^[a-z0-9-]+\.loverse\.id$/.test(host) ||
+    host.endsWith('.vercel.app') ||
+    host === 'localhost'
+  ) {
+    return host
+  }
+  return 'loverse.id'
+}
 /** Escape karakter berbahaya untuk nilai atribut/meta HTML. */
 function esc(value) {
   return String(value ?? '')
@@ -116,7 +129,7 @@ async function fetchTemplateName(slug) {
 }
 
 export default async function handler(req, res) {
-  const origin = `https://${req.headers.host || 'loverse.my.id'}`
+  const origin = `https://${safeHost(req.headers.host)}`
   const mode = req.query.mode === 'demo' ? 'demo' : 'wedding'
   const slug = String(req.query.slug ?? '').trim()
 
@@ -142,9 +155,10 @@ export default async function handler(req, res) {
           try { ed = JSON.parse(ed) } catch { ed = {} }
         }
         // Rantai thumbnail: cover → foto pengantin → screenshot tema → default.
-        // Hanya terima string yang benar-benar URL gambar (buang '' / null).
+        // Validasi KETAT (anti stored-XSS via atribut content="..."): hanya
+        // URL http(s) tanpa spasi/quote/sudut. Hasil tetap di-escape.
         const cover = [ed.cover_photo, ed.groom_photo, ed.bride_photo]
-          .find((v) => typeof v === 'string' && v.startsWith('http'))
+          .find((v) => typeof v === 'string' && /^https?:\/\/[^\s"'<>]+$/i.test(v))
         if (cover) {
           image = cover
         } else if (typeof inv.template_slug === 'string' && DEMO_THUMBS.has(inv.template_slug)) {
@@ -165,7 +179,9 @@ export default async function handler(req, res) {
 
   try {
     const html = await getIndexHtml(origin)
-    const metaBlock = buildMetaBlock({ title, description, image, url: canonical })
+    // image & url mentah (URL, tanpa entitas) -> escape di sini.
+    // title & description SUDAH ter-escape saat dibentuk, jangan di-escape lagi.
+    const metaBlock = buildMetaBlock({ title, description, image: esc(image), url: esc(canonical) })
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600, stale-while-revalidate=300')
     res.status(200).send(injectMeta(html, title, metaBlock))

@@ -1,66 +1,84 @@
 // ============================================================
 // src/components/order/OrderDetailsForm.tsx
 // ------------------------------------------------------------
-// Step 01 (pilih desain/template) dan Step 02 (data mempelai, tanggal
-// acara, email & WhatsApp) pada form pemesanan /order.
+// Step 01 & 02 form pemesanan /order dalam SATU kartu: bagian "Pilih Desain"
+// (template terkunci dari katalog — ganti via tombol kembali) dan bagian
+// "Data Acara & Kontak" (mempelai, tanggal acara, email & WhatsApp) hanya
+// dipisah garis tipis di dalam kartu yang sama.
 // Dipakai di  : pages/OrderPage
 // Keterikatan : lib/constants, components/order/constants, SectionCard
 // ============================================================
 
 import type { ChangeEvent } from "react";
-import { Calendar, Mail, Palette, User } from "lucide-react";
+import { ArrowLeft, Calendar, Mail, User } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import type { MasterTemplate } from "../../lib/constants";
 import { useTranslation } from "../../i18n";
 import { INPUT_CLASS, type OrderFormData } from "./constants";
-import { SectionCard } from "./SectionCard";
+import { SectionCard, SectionHeading } from "./SectionCard";
 
 interface OrderDetailsFormProps {
   formData: OrderFormData;
-  templateList: MasterTemplate[];
+  selectedTemplate: MasterTemplate;
+  selectedImage?: string;
   todayStr: string;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onWhatsappChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onTemplateChange: (e: ChangeEvent<HTMLSelectElement>) => void;
+  onChangeTemplate: () => void;
 }
 
 export function OrderDetailsForm({
   formData,
-  templateList,
+  selectedTemplate,
+  selectedImage,
   todayStr,
   onChange,
   onWhatsappChange,
-  onTemplateChange,
+  onChangeTemplate,
 }: OrderDetailsFormProps) {
   const { t } = useTranslation();
 
   return (
-    <>
-      {/* 1. Pilih Desain */}
-      <SectionCard step="01" title={t("order.step1Title")}>
-        <div className="relative w-full min-w-0">
-          <Palette className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 pointer-events-none" />
-          <select
-            name="template_slug"
-            value={formData.template_slug}
-            onChange={onTemplateChange}
-            className={`${INPUT_CLASS} cursor-pointer text-xs sm:text-sm font-medium`}
+    /* Langkah 1 & 2 = SATU kartu: "Pilih Desain" dan "Data Acara & Kontak"
+       dipisah garis tipis di dalam kartu yang sama, bukan dua kartu. */
+    <SectionCard>
+      {/* 1. Template terkunci (dipilih dari katalog) */}
+      <SectionHeading title={t("order.step1Title")} />
+      <div className="flex items-center gap-3 sm:gap-4">
+        {selectedImage ? (
+          <img
+            src={selectedImage}
+            alt={selectedTemplate.name}
+            className="w-16 h-20 sm:w-20 sm:h-24 rounded-xl object-cover border border-[#EBDFCE] shrink-0"
+          />
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm sm:text-base font-extrabold text-[#712E1E] truncate">
+            {selectedTemplate.name}
+          </p>
+          <p className="text-[11px] sm:text-xs text-stone-400 truncate">
+            {selectedTemplate.category} • Rp{" "}
+            {selectedTemplate.price.toLocaleString("id-ID")}
+          </p>
+          <button
+            type="button"
+            onClick={onChangeTemplate}
+            className="mt-1.5 inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#E59A59] hover:text-[#d48b4b] transition"
           >
-            {templateList.map((tOpt) => (
-              <option key={tOpt.slug} value={tOpt.slug}>
-                {tOpt.name} — {tOpt.category} (Rp{" "}
-                {tOpt.price.toLocaleString("id-ID")})
-              </option>
-            ))}
-          </select>
+            <ArrowLeft size={12} /> {t("order.changeTemplate")}
+          </button>
         </div>
-        <p className="text-[11px] sm:text-xs text-stone-400 -mt-1">
-          {t("order.step1Desc")}
-        </p>
-      </SectionCard>
+      </div>
+      <p className="text-[11px] sm:text-xs text-stone-400 -mt-1">
+        {t("order.step1LockedDesc")}
+      </p>
 
-      {/* 2. Data Mempelai, Acara & Kontak */}
-      <SectionCard step="02" title={t("order.step2Title")}>
+      {/* 2. Data Mempelai, Acara & Kontak - bagian kedua, masih kartu yang sama */}
+      <div className="pt-4 sm:pt-5 border-t border-[#EBDFCE]">
+        <SectionHeading
+          title={t("order.step2Title")}
+          className="mb-3.5 sm:mb-4"
+        />
         <div className="space-y-3.5 sm:space-y-4 w-full min-w-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 w-full min-w-0">
             <div className="min-w-0 w-full">
@@ -155,7 +173,7 @@ export function OrderDetailsForm({
             </div>
           </div>
         </div>
-      </SectionCard>
-    </>
+      </div>
+    </SectionCard>
   );
 }

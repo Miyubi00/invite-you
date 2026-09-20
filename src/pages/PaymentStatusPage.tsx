@@ -2,11 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { ADMIN_WHATSAPP } from '../lib/constants';
-import { CheckCircle, XCircle, Clock, ArrowRight, RefreshCcw, Home, CreditCard, MessageSquare, Mail, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowRight, RefreshCcw, Home, CreditCard, MessageSquare } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { PaymentStatusSkeleton } from '../components/ui/SkeletonLoaders';
 import { useTranslation } from '../i18n';
-import { downloadClientInvoice } from '../lib/generateInvoicePdf';
 
 /**
  * Respons terbatas dari Edge Function `payment-status`.
@@ -17,6 +16,7 @@ import { downloadClientInvoice } from '../lib/generateInvoicePdf';
 interface PaymentStatusResponse {
   found: boolean;
   payment_status: string;
+  order_id: string | null;
   groom_name: string;
   bride_name: string;
   slug: string;
@@ -37,6 +37,59 @@ interface PaymentStatusResponse {
 // "menunggu pembayaran" setelah QR kedaluwarsa sementara DB/cron menyusul.
 const PAYMENT_EXPIRY_MINUTES = 15;
 
+const formatIDR = (value: number) =>
+    `Rp ${value.toLocaleString('id-ID')}`;
+
+/** Hitung mundur mm:ss menuju expiry. Berdetak tiap detik. */
+function ExpiryCountdown({ createdAt }: { createdAt: string }) {
+    const [nowMs, setNowMs] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setNowMs(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, []);
+    const remain = Math.max(
+        0,
+        new Date(createdAt).getTime() + PAYMENT_EXPIRY_MINUTES * 60_000 - nowMs,
+    );
+    const m = Math.floor(remain / 60000);
+    const s = Math.floor((remain % 60000) / 1000);
+    return <>{`${m}:${String(s).padStart(2, '0')}`}</>;
+}
+
+/** Kartu ringkasan order yang dipakai semua status. */
+function OrderSummary({ order }: { order: PaymentStatusResponse }) {
+    const { t } = useTranslation();
+    const total = typeof order.price === 'number' && order.price > 0 ? order.price : 0;
+    const rows: Array<[string, string]> = [
+        [t('paymentStatus.sumCouple'), `${order.groom_name} & ${order.bride_name}`],
+        [t('paymentStatus.sumTemplate'), order.template_name || 'Undangan Digital'],
+        [t('paymentStatus.sumMethod'), order.payment_method || 'QRIS'],
+    ];
+    return (
+        <div className="bg-[#FAF6EE] border border-[#EBDFCE] rounded-2xl p-4 text-left">
+            <dl className="space-y-2 text-xs sm:text-sm">
+                {rows.map(([label, value]) => (
+                    <div key={label} className="flex justify-between gap-3">
+                        <dt className="text-stone-400 shrink-0">{label}</dt>
+                        <dd className="font-bold text-[#712E1E] text-right truncate">{value}</dd>
+                    </div>
+                ))}
+                <div className="flex justify-between items-center gap-3 pt-2.5 mt-1 border-t border-[#EBDFCE]">
+                    <dt className="text-stone-400 shrink-0">{t('paymentStatus.sumTotal')}</dt>
+                    <dd className="font-black text-[#712E1E] text-right text-sm sm:text-base">
+                        {formatIDR(total)}
+                    </dd>
+                </div>
+            </dl>
+            {order.order_id ? (
+                <p className="mt-2.5 pt-2 border-t border-dashed border-[#EBDFCE] text-[10px] sm:text-[11px] text-stone-400 font-mono text-center select-all">
+                    {order.order_id}
+                </p>
+            ) : null}
+        </div>
+    );
+}
+
 export default function PaymentStatus() {
     const { t } = useTranslation();
     const [searchParams] = useSearchParams();
@@ -49,11 +102,13 @@ export default function PaymentStatus() {
     const orderId = searchParams.get('order_id');
     const isManualWhatsApp = !orderId;
 
+    // orderId di URL bisa berupa token terenkripsi (alur utama) atau id
+    // mentah (link lama / redirect bawaan Midtrans). Server yang resolve.
     const fetchOrderStatus = useCallback(async (showLoader = false) => {
         if (!orderId) return;
         if (showLoader) setLoading(true);
         const { data, error } = await supabase.functions
-            .invoke('payment-status', { body: { midtrans_order_id: orderId } });
+            .invoke('payment-status', { body: { order_token: orderId } });
 
         if (!error && data?.found) {
             setOrder(data as PaymentStatusResponse);
@@ -221,128 +276,127 @@ export default function PaymentStatus() {
     const showPending = isPending && !expiredByTime;
     const showFailed = isFailed || expiredByTime;
 
+    // Konfigurasi visual per status: pita gradien dan lingkaran ikon.
+    const statusTheme = isSuccess
+        ? {
+            band: 'from-emerald-400 via-emerald-500 to-teal-500',
+            iconWrap: 'bg-emerald-50 text-emerald-600 shadow-emerald-100',
+            Icon: CheckCircle,
+        }
+        : showFailed
+            ? {
+                band: 'from-rose-400 via-rose-500 to-red-500',
+                iconWrap: 'bg-rose-50 text-rose-600 shadow-rose-100',
+                Icon: XCircle,
+            }
+            : {
+                band: 'from-amber-300 via-[#E59A59] to-[#d48b4b]',
+                iconWrap: 'bg-amber-50 text-amber-600 shadow-amber-100',
+                Icon: Clock,
+            };
+
     return (
-        <div className="min-h-screen bg-[#F1E8DC] flex items-center justify-center p-3 sm:p-4 font-sans w-full max-w-full overflow-x-hidden">
-            <div className="max-w-md w-full bg-white rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 text-center border border-[#EBDFCE]">
+        <div className="min-h-screen bg-[#F1E8DC] font-sans w-full max-w-full overflow-x-hidden flex items-center justify-center p-3 sm:p-6 relative">
+            {/* dekorasi latar */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-[#E59A59]/15 blur-3xl" />
+                <div className="absolute -bottom-28 -right-20 w-80 h-80 rounded-full bg-[#712E1E]/10 blur-3xl" />
+            </div>
 
-                {/* --- SUCCESS --- */}
-                {isSuccess && (
-                    <div className="animate-fade-in-up">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-emerald-600 shadow-md shadow-emerald-100">
-                            <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10" />
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.successTitle')}</h1>
-                        <p className="text-stone-500 mb-6 text-xs sm:text-sm leading-relaxed">
-                            {t('paymentStatus.successDesc', { groom: order.groom_name, bride: order.bride_name })}
-                        </p>
+            <div className="relative max-w-md w-full bg-white rounded-3xl shadow-2xl shadow-stone-900/10 text-center border border-[#EBDFCE] overflow-hidden">
+                <div className={`h-2 bg-gradient-to-r ${statusTheme.band}`} />
 
-                        {/* KOTAK PIN */}
-                        {order.pin_code ? (
-                            <div className="bg-[#FAF6EE] p-4 sm:p-5 rounded-2xl mb-4 sm:mb-6 border-2 border-dashed border-[#E59A59] text-center">
-                                <span className="text-[10px] sm:text-xs font-bold text-stone-400 uppercase tracking-widest block mb-1">
-                                    {t('paymentStatus.pinLabel')}
-                                </span>
-                                <div className="text-3xl sm:text-4xl font-black text-[#712E1E] tracking-widest my-1 font-mono select-all">
-                                    {order.pin_code}
-                                </div>
-                                <p className="text-[10px] sm:text-[11px] text-stone-400 mt-1">
-                                    {t('paymentStatus.pinSecurityNote')}
+                <div className="p-6 sm:p-8">
+                    <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-lg ${statusTheme.iconWrap} ${showPending ? 'animate-pulse' : ''}`}>
+                        <statusTheme.Icon className="w-8 h-8 sm:w-10 sm:h-10" />
+                    </div>
+
+                    {/* --- SUCCESS --- */}
+                    {isSuccess && (
+                        <div className="animate-fade-in-up">
+                            <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.successTitle')}</h1>
+                            <p className="text-stone-500 mb-5 text-xs sm:text-sm leading-relaxed">
+                                {t('paymentStatus.successDesc', { groom: order.groom_name, bride: order.bride_name })}
+                            </p>
+
+                            <div className="mb-5">
+                                <OrderSummary order={order} />
+                            </div>
+
+                            <div className="bg-[#F7EEE3] p-3 sm:p-4 rounded-xl mb-6 border border-dashed border-[#E59A59]">
+                                <p className="text-xs text-[#712E1E] leading-relaxed text-center">
+                                    {t('paymentStatus.pinNote', { email: order.email || 'email' })}
                                 </p>
                             </div>
-                        ) : null}
 
-                        <div className="bg-[#F7EEE3] p-3 sm:p-4 rounded-xl mb-6 sm:mb-8 border border-dashed border-[#E59A59]">
-                            <p className="text-xs text-[#712E1E] leading-relaxed flex items-start gap-2">
-                                <Mail size={14} className="shrink-0 mt-0.5" />
-                                <span>
-                                    {t('paymentStatus.pinNote', { email: order.email || 'email' })}
-                                </span>
+                            <div className="flex flex-col gap-2.5">
+                                <button onClick={() => navigate('/login')} className="w-full py-3.5 bg-gradient-to-r from-[#712E1E] to-[#8f3d27] text-white rounded-xl font-bold text-sm sm:text-base hover:brightness-110 active:brightness-95 transition shadow-lg shadow-[#712E1E]/25 flex items-center justify-center gap-2">
+                                    {t('paymentStatus.btnDashboard')} <ArrowRight className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => navigate(`/wedding/${order.slug}`)} className="w-full py-3.5 bg-white border-2 border-[#712E1E]/20 text-[#712E1E] rounded-xl font-bold text-sm sm:text-base hover:border-[#712E1E] hover:bg-stone-50 transition">
+                                    {t('paymentStatus.btnViewInvitation')}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- PENDING --- */}
+                    {showPending && (
+                        <div className="animate-fade-in-up">
+                            <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.pendingTitle')}</h1>
+                            <p className="text-stone-400 mb-4 text-xs sm:text-sm">
+                                {t('paymentStatus.pendingDesc')}
                             </p>
-                        </div>
 
-                        <div className="flex flex-col gap-2.5 sm:gap-3">
-                            <button onClick={() => navigate('/login')} className="w-full py-3.5 sm:py-4 bg-[#712E1E] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-[#5a2418] transition shadow-lg flex items-center justify-center gap-2">
-                                {t('paymentStatus.btnDashboard')} <ArrowRight className="w-5 h-5" />
-                            </button>
-                            <button onClick={() => navigate(`/wedding/${order.slug}`)} className="w-full py-3.5 sm:py-4 bg-white border-2 border-[#712E1E] text-[#712E1E] rounded-xl font-bold text-sm sm:text-base hover:bg-stone-50 transition">
-                                {t('paymentStatus.btnViewInvitation')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (order) {
-                                        void downloadClientInvoice({
-                                            orderId: orderId || 'ONLINE',
-                                            groomName: order.groom_name,
-                                            brideName: order.bride_name,
-                                            email: order.email || undefined,
-                                            whatsapp: order.whatsapp || undefined,
-                                            weddingDate: order.wedding_date || undefined,
-                                            templateName: order.template_name || 'Undangan Digital',
-                                            price: typeof order.price === 'number' && order.price > 0 ? order.price : 10070,
-                                            paymentMethod: order.payment_method || 'QRIS',
-                                            pin: order.pin_code || undefined,
-                                        });
-                                    }
-                                }}
-                                className="w-full py-2.5 sm:py-3 bg-[#FAF6EE] border border-[#EBDFCE] text-[#712E1E] rounded-xl font-bold hover:bg-[#F3EBDF] transition flex items-center justify-center gap-2 text-xs sm:text-sm shadow-xs"
-                            >
-                                <FileText className="w-4 h-4" /> {t('paymentStatus.btnDownloadInvoice')}
-                            </button>
-                        </div>
-                    </div>
-                )}
+                            {order.created_at ? (
+                                <div className="inline-flex items-center gap-2 bg-stone-900 text-white rounded-full pl-3 pr-4 py-1.5 mb-4 text-xs sm:text-sm font-bold tabular-nums shadow-md">
+                                    <Clock className="w-4 h-4 text-amber-300" />
+                                    <ExpiryCountdown createdAt={order.created_at} />
+                                </div>
+                            ) : null}
 
-                {/* --- PENDING --- */}
-                {showPending && (
-                    <div className="animate-fade-in-up">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-yellow-600 shadow-lg shadow-yellow-100 animate-pulse">
-                            <Clock className="w-10 h-10 sm:w-12 sm:h-12" />
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.pendingTitle')}</h1>
-                        <p className="text-stone-400 mb-6 sm:mb-8 text-xs sm:text-sm">
-                            {t('paymentStatus.pendingDesc')}<br />
-                            <span className="text-[11px] sm:text-xs mt-2 block">
-                                {t('paymentStatus.pendingNote')}
-                            </span>
-                        </p>
+                            <div className="mb-5">
+                                <OrderSummary order={order} />
+                            </div>
 
-                        <div className="flex flex-col gap-2.5 sm:gap-3">
-                            <button
-                                type="button"
-                                onClick={handlePayAgain}
-                                className="w-full py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg shadow-xl transition transform hover:-translate-y-0.5 active:translate-y-0 bg-[#E59A59] text-white hover:bg-[#d48b4b] flex items-center justify-center gap-2"
-                            >
-                                <CreditCard className="w-5 h-5" /> {t('paymentStatus.btnPayNow')}
-                            </button>
-                            <button onClick={() => fetchOrderStatus()} className="w-full py-3.5 sm:py-4 bg-stone-100 text-stone-600 rounded-xl font-bold text-sm sm:text-base hover:bg-stone-200 transition flex items-center justify-center gap-2">
-                                <RefreshCcw className="w-4 h-4" /> {t('paymentStatus.btnCheckStatus')}
-                            </button>
+                            <div className="flex flex-col gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={handlePayAgain}
+                                    className="w-full py-3.5 sm:py-4 rounded-xl font-bold text-base shadow-xl shadow-[#E59A59]/30 transition transform hover:-translate-y-0.5 active:translate-y-0 bg-gradient-to-r from-[#E59A59] to-[#d48b4b] text-white hover:brightness-105 flex items-center justify-center gap-2"
+                                >
+                                    <CreditCard className="w-5 h-5" /> {t('paymentStatus.btnPayNow')}
+                                </button>
+                                <button onClick={() => fetchOrderStatus()} className="w-full py-3 bg-stone-100 text-stone-600 rounded-xl font-bold text-sm hover:bg-stone-200 active:bg-stone-300 transition flex items-center justify-center gap-2">
+                                    <RefreshCcw className="w-4 h-4" /> {t('paymentStatus.btnCheckStatus')}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* --- FAILED --- */}
-                {showFailed && (
-                    <div className="animate-fade-in-up">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 text-red-600 shadow-lg shadow-red-100">
-                            <XCircle className="w-10 h-10 sm:w-12 sm:h-12" />
-                        </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.failedTitle')}</h1>
-                        <p className="text-stone-400 mb-6 sm:mb-8 text-xs sm:text-sm">
-                            {t('paymentStatus.failedDesc')}
-                        </p>
+                    {/* --- FAILED --- */}
+                    {showFailed && (
+                        <div className="animate-fade-in-up">
+                            <h1 className="text-2xl sm:text-3xl font-black text-[#712E1E] mb-2">{t('paymentStatus.failedTitle')}</h1>
+                            <p className="text-stone-400 mb-5 text-xs sm:text-sm">
+                                {t('paymentStatus.failedDesc')}
+                            </p>
 
-                        <div className="flex flex-col gap-2.5 sm:gap-3">
-                            <button onClick={() => navigate('/order')} className="w-full py-3.5 sm:py-4 bg-[#712E1E] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-[#5a2418] transition shadow-lg">
-                                {t('paymentStatus.btnNewOrder')}
-                            </button>
-                            <button onClick={() => navigate('/')} className="w-full py-3.5 sm:py-4 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold text-sm sm:text-base hover:bg-stone-50 transition flex items-center justify-center gap-2">
-                                <Home className="w-4 h-4" /> {t('paymentStatus.btnHome')}
-                            </button>
+                            <div className="mb-5">
+                                <OrderSummary order={order} />
+                            </div>
+
+                            <div className="flex flex-col gap-2.5">
+                                <button onClick={() => navigate('/order')} className="w-full py-3.5 bg-gradient-to-r from-[#712E1E] to-[#8f3d27] text-white rounded-xl font-bold text-sm sm:text-base hover:brightness-110 active:brightness-95 transition shadow-lg shadow-[#712E1E]/25">
+                                    {t('paymentStatus.btnNewOrder')}
+                                </button>
+                                <button onClick={() => navigate('/')} className="w-full py-3 bg-white border border-stone-200 text-stone-500 rounded-xl font-bold text-sm hover:bg-stone-50 transition flex items-center justify-center gap-2">
+                                    <Home className="w-4 h-4" /> {t('paymentStatus.btnHome')}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

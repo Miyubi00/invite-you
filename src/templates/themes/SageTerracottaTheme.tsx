@@ -68,7 +68,7 @@ export default function SageTerracottaTheme({
   const schedule = resolveSchedule(data, date);
 
   const coverPhoto = data?.cover_photo || photos.cover;
-  const audioUrl = data?.audio_url || 'https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3';
+  const audioUrl = data?.audio_url || 'https://r2.loverse.id/defaults/audio/ee2e74c72c.mp3';
 
   const groomParents = data?.groom_parents || 'Putra dari Bpk. Hartono & Ibu Siti';
   const brideParents = data?.bride_parents || 'Putri dari Bpk. Wijaya & Ibu Dewi';

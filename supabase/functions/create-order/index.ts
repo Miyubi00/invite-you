@@ -5,6 +5,7 @@ import {
   resolveMidtransEnvironment,
   snapApiBaseUrl,
 } from '../_shared/midtrans.ts'
+import { encryptOrderId, generateOrderId } from '../_shared/orderToken.ts'
 import { normalizeWhatsapp } from '../_shared/whatsapp.ts'
 import { reportError } from '../_shared/monitoring.ts'
 
@@ -174,6 +175,33 @@ serve(async (req) => {
       throw new Error('Template tidak ditemukan.')
     }
 
+    // --- Jalur MANUAL WhatsApp: tanpa Midtrans, hanya catat pending_orders.
+    // Tetap lewat validasi + Turnstile + rate limit di atas (anti-spam),
+    // menggantikan insert langsung dari browser yang melewati semuanya.
+    if (payment_method === 'manual_whatsapp') {
+      const { data: pending, error: pendingError } = await admin
+        .from('pending_orders')
+        .insert({
+          groom_name: groom_name.trim(),
+          bride_name: bride_name.trim(),
+          wedding_date,
+          whatsapp: normalizedWa,
+          email,
+          template_slug,
+        })
+        .select('id')
+        .single()
+      if (pendingError || !pending) {
+        console.error('[create-order] Gagal mencatat pending manual:', pendingError)
+        throw new Error('Failed to create order')
+      }
+      await recordAttempt(admin, ip, true)
+      return new Response(
+        JSON.stringify({ success: true, pending_id: (pending as { id: string }).id }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      )
+    }
+
     // --- Ambil & bersihkan Server Key ---
     const rawKey = Deno.env.get('MIDTRANS_SERVER_KEY') || ''
     const midtransServerKey = rawKey.trim().replace(/^["']|["']$/g, '')
@@ -188,7 +216,20 @@ serve(async (req) => {
     )
     const midtransApiUrl = snapApiBaseUrl(midtransEnv)
 
-    const orderId = `undangan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    // --- ID order pendek & estetik (mis. LV-7K2P9XQZ), cek unik di DB ---
+    let orderId = ''
+    for (let i = 0; i < 5; i++) {
+      const candidate = generateOrderId()
+      const { count } = await admin
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('midtrans_order_id', candidate)
+      if (!count) {
+        orderId = candidate
+        break
+      }
+    }
+    if (!orderId) throw new Error('Failed to generate order id')
 
     // --- Hitung biaya layanan / admin fee sesuai metode pembayaran ---
     let adminFee = 0
@@ -371,10 +412,23 @@ serve(async (req) => {
     // Catat percobaan sukses (untuk statistik & konsumsi rate limit).
     await recordAttempt(admin, ip, true)
 
+    // Token buram untuk URL (?order_id=<token>) agar id asli tidak bisa
+    // ditebak. Tanpa PAYMENT_LINK_SECRET -> kirim id mentah (kompatibel).
+    let orderToken = orderId
+    const linkSecret = (Deno.env.get('PAYMENT_LINK_SECRET') || '').trim()
+    if (linkSecret) {
+      try {
+        orderToken = await encryptOrderId(orderId, linkSecret)
+      } catch (e) {
+        console.error('[create-order] Gagal enkripsi order token:', e)
+      }
+    }
+
     return new Response(
       JSON.stringify({
         snap_token: snapData.token,
         order_id: orderId,
+        order_token: orderToken,
         redirect_url: snapData.redirect_url,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },

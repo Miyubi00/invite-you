@@ -33,7 +33,7 @@ const SUGGESTION_KEYS = [
 //  - [label](url)                     -> teks "label" jadi tautan biru bergaris bawah.
 //     TOLERAN: kurung tutup ')' boleh hilang atau ada tanda baca sebelum ')';
 //     url tetap dikenali sampai spasi / ')' berikutnya.
-//  - https://… & wa.me/…              -> tautan; URL milik loverse.my.id/situs ini
+//  - https://… & wa.me/…              -> tautan; URL milik loverse.id/situs ini
 //                                        dipakai Link SPA (pindah halaman tanpa reload)
 //  - /demo/<slug> & /wedding/<slug>   -> Link react-router (tanpa reload)
 // Semua tautan tampil biru & bergaris bawah agar terlihat bisa diklik.
@@ -51,7 +51,7 @@ function messageLink(href: string, label: string, key: number) {
   } else {
     try {
       const url = new URL(cleanHref);
-      if (url.hostname === window.location.hostname || url.hostname === 'loverse.my.id') {
+      if (url.hostname === window.location.hostname || url.hostname === 'loverse.id') {
         internalTo = url.pathname + url.search + url.hash;
       }
     } catch {

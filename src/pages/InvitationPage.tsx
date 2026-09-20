@@ -53,19 +53,22 @@ export default function InvitationRender() {
 
         setOrderData(order);
 
-        const { data: rsvpData, error: rsvpError } = await supabase
-          .from('rsvps')
-          .select('*')
-          .eq('order_id', order.id)
-          .order('created_at', { ascending: false });
+        // Daftar ucapan lewat edge function (DB menolak SELECT publik agar
+        // tak bisa di-scrape lintas undangan). Sertakan session milik
+        // sendiri agar server menandai baris `is_mine`.
+        const sessionId = localStorage.getItem('rsvp_session_id') ?? '';
+        const { data: rsvpRes, error: rsvpError } = await supabase.functions.invoke('rsvp-list', {
+          body: { slug, session_id: sessionId },
+        });
 
-        if (!rsvpError && rsvpData) {
-          setRsvps(rsvpData);
+        const rsvpData = (rsvpRes as { rsvps?: RsvpRow[] } | null)?.rsvps as RsvpRow[] | undefined;
+        const rows = Array.isArray(rsvpData) ? rsvpData : [];
+        if (!rsvpError) {
+          setRsvps(rows);
         }
 
-        const sessionId = localStorage.getItem('rsvp_session_id');
-        if (sessionId && rsvpData) {
-          const found = rsvpData.find((r) => r.session_id === sessionId);
+        if (sessionId && !rsvpError) {
+          const found = rows.find((r) => r.is_mine);
           if (found) {
             setMyRsvp(found);
           }
@@ -97,23 +100,28 @@ export default function InvitationRender() {
         localStorage.setItem('rsvp_session_id', sessionId);
       }
 
-      const { data, error } = await supabase
-        .from('rsvps')
-        .insert({
-          order_id: orderData.id,
-          session_id: sessionId,
-          guest_name: guestName,
-          status: rsvpPayload.status,
-          pax: rsvpPayload.pax,
-          message: rsvpPayload.message,
-        })
-        .select()
-        .single();
+      // INSERT tanpa .select(): anon tak punya izin SELECT langsung
+      // (anti-scraping); daftar dimuat ulang lewat rsvp-list di bawah.
+      const { error } = await supabase.from('rsvps').insert({
+        order_id: orderData.id,
+        session_id: sessionId,
+        guest_name: guestName,
+        status: rsvpPayload.status,
+        pax: rsvpPayload.pax,
+        message: rsvpPayload.message,
+      });
 
       if (error) throw error;
 
-      setRsvps((prev) => [data, ...prev]);
-      setMyRsvp(data);
+      const { data: refreshed } = await supabase.functions.invoke('rsvp-list', {
+        body: { slug, session_id: sessionId },
+      });
+      const rows = (refreshed as { rsvps?: RsvpRow[] } | null)?.rsvps;
+      if (Array.isArray(rows)) {
+        setRsvps(rows);
+        const found = rows.find((r) => r.is_mine);
+        if (found) setMyRsvp(found);
+      }
     } catch (err) {
       console.error('RSVP Error:', err);
       toast.error(t('toast.rsvpSendFailed'));

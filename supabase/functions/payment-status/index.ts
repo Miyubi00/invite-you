@@ -1,14 +1,17 @@
 // supabase/functions/payment-status/index.ts
 // Status pembayaran untuk halaman /payment-status.
 //
-// Model kapabilitas: pemanggil harus menyertakan `midtrans_order_id`
-// (string acak yang hanya dibagikan ke pembayar lewat redirect URL
-// Midtrans). Sebagai gantinya fungsi mengembalikan kolom terbatas —
-// PIN hanya saat sukses, Snap token hanya saat pending (untuk
-// "Bayar Sekarang"). Tidak ada enumerasi pesanan.
+// Model kapabilitas BERTINGKAT (anti-enumerasi ID mentah):
+// - Token terenkripsi valid (dibuat create-order, hanya dipegang pembayar)
+//   -> respons PENUH (termasuk email/WhatsApp/PIN/snap sesuai status).
+// - ID mentah (redirect bawaan Midtrans / link lama) -> respons TERBATAS:
+//   status, nama, slug, template, harga, dan snap_token (agar bisa lanjut
+//   bayar). TANPA email/WhatsApp/PIN — ID mentah LV-XXXXXXXX hanya 40 bit
+//   sehingga tidak boleh menjadi kunci data sensitif.
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { decryptOrderId, resolveOrderId } from '../_shared/orderToken.ts'
 
 // Kunci origin via secret ALLOWED_ORIGIN (mis. https://domainanda.com).
 // Belum diset -> '*' agar development/sandbox tetap berfungsi.
@@ -32,14 +35,30 @@ serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   try {
-    const { midtrans_order_id } = await req.json()
+    const { midtrans_order_id, order_token } = await req.json()
 
-    if (
-      typeof midtrans_order_id !== 'string' ||
-      midtrans_order_id.length === 0 ||
-      midtrans_order_id.length > 255
-    ) {
-      return json({ error: 'midtrans_order_id wajib dikirim.' }, 400)
+    // Nilai ?order_id=... bisa berupa token terenkripsi (alur utama) atau
+    // id mentah (link lama & redirect bawaan Midtrans). Token valid ->
+    // respons penuh; id mentah -> respons terbatas (tanpa PII/PIN).
+    const linkSecret = (Deno.env.get('PAYMENT_LINK_SECRET') || '').trim() || undefined
+    const rawValue = order_token ?? midtrans_order_id
+    let resolvedId: string | null = null
+    let tokenValid = false
+    if (typeof rawValue === 'string' && rawValue) {
+      if (linkSecret) {
+        const decrypted = await decryptOrderId(rawValue, linkSecret)
+        if (decrypted) {
+          resolvedId = decrypted
+          tokenValid = true
+        }
+      }
+      if (!resolvedId) {
+        resolvedId = await resolveOrderId(rawValue, undefined)
+      }
+    }
+
+    if (!resolvedId) {
+      return json({ error: 'order_id wajib dikirim.' }, 400)
     }
 
     const admin = createClient(
@@ -50,9 +69,9 @@ serve(async (req) => {
     const { data: order, error } = await admin
       .from('orders')
       .select(
-        'payment_status, groom_name, bride_name, slug, email, whatsapp, wedding_date, template_slug, price, event_details, snap_token, pin_code, created_at',
+        'payment_status, groom_name, bride_name, slug, email, whatsapp, wedding_date, template_slug, price, event_details, snap_token, pin_code, created_at, midtrans_order_id',
       )
-      .eq('midtrans_order_id', midtrans_order_id)
+      .eq('midtrans_order_id', resolvedId)
       .maybeSingle()
 
     if (error) throw new Error(error.message)
@@ -106,11 +125,15 @@ serve(async (req) => {
       {
         found: true,
         payment_status: order.payment_status,
+        // Id asli (untuk tampilan/invoice). Di URL hanya token buram yang muncul.
+        order_id: (order as { midtrans_order_id?: string }).midtrans_order_id ?? null,
         groom_name: order.groom_name,
         bride_name: order.bride_name,
         slug: order.slug,
-        email: order.email ?? null,
-        whatsapp: order.whatsapp ?? null,
+        // PII + rahasia HANYA untuk pemegang token valid. ID mentah tidak
+        // boleh menjadi kunci email/WhatsApp/PIN (mudah ditebak).
+        email: tokenValid ? order.email ?? null : null,
+        whatsapp: tokenValid ? order.whatsapp ?? null : null,
         wedding_date: order.wedding_date ?? null,
         template_slug: order.template_slug ?? null,
         template_name: templateName || 'Undangan Digital',
@@ -121,9 +144,11 @@ serve(async (req) => {
         // menampilkan status kedaluwarsa tepat waktu tanpa menunggu cron.
         created_at: (order as { created_at?: string }).created_at ?? null,
         // Token bayar-ulang hanya relevan (dan hanya diberikan) saat pending.
+        // Tetap diberikan untuk id mentah agar redirect Midtrans bisa lanjut bayar;
+        // memakai token orang lain hanya merugikan penyerang (dia yang membayar).
         snap_token: isPending ? order.snap_token : null,
-        // PIN hanya ditampilkan kepada pemegang capability saat lunas.
-        pin_code: isSuccess ? order.pin_code : null,
+        // PIN hanya ditampilkan kepada pemegang token valid saat lunas.
+        pin_code: tokenValid && isSuccess ? order.pin_code : null,
       },
       200,
     )

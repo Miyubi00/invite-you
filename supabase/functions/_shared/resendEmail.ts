@@ -3,7 +3,19 @@
 // Dipanggil oleh midtrans-webhook (pembayaran otomatis) dan
 // activate-pending-order (aktivasi manual oleh admin).
 
-import { PDFDocument, rgb, StandardFonts } from 'npm:pdf-lib';
+import { PDFDocument, rgb, StandardFonts, type PDFImage } from 'npm:pdf-lib';
+import { INVOICE_ICON_PNG, INVOICE_SERIF_FONT_B64 } from './invoiceAssets.ts';
+import { resolveLogoUrl, pdfLogoDimensions } from './brandLogo.ts';
+import {
+  emailFooterHtml,
+  emailHeaderHtml,
+  emailShellHtml,
+  escapeEmailHtml,
+  helpCardHtml,
+  heroIconHtml,
+  iconImg,
+  pinBoxHtml,
+} from './emailLayout.ts';
 
 export interface SendPinEmailArgs {
   to: string;
@@ -25,16 +37,6 @@ export interface SendEmailResult {
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
-/** Escape entitas HTML — nama mempelai berasal dari input publik. */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function uint8ArrayToBase64(bytes: Uint8Array): string {
   let binary = '';
   const len = bytes.byteLength;
@@ -47,6 +49,142 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
 }
 
 /**
+ * Unduh logo lalu sematkan sebagai gambar PDF. Selalu mengembalikan null
+ * (tanpa throw) bila URL kosong, unduhan gagal, atau berkasnya bukan PNG
+ * valid — pemanggil memakai teks "LoVerse" sebagai cadangan.
+ */
+async function embedLogoPng(pdfDoc: PDFDocument, logoUrl: string): Promise<PDFImage | null> {
+  if (!logoUrl) return null;
+  try {
+    const res = await fetch(logoUrl);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await pdfDoc.embedPng(new Uint8Array(await res.arrayBuffer()));
+  } catch (err) {
+    console.error('[resendEmail] Gagal menyematkan logo ke PDF:', err);
+    return null;
+  }
+}
+
+/**
+ * Ikon invoice = PNG raster dari SVG Lucide ASLI (96px, transparan,
+ * stroke cokelat #712E1E / hijau badge) — di-embed dari base64 bawaan
+ * (invoiceAssets.ts) tanpa fetch, jadi sama persis dengan preview web.
+ * Kunci 'badge-check-green' = varian hijau untuk badge LUNAS.
+ */
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function embedInvoiceIcons(pdfDoc: PDFDocument): Promise<Map<string, PDFImage>> {
+  const map = new Map<string, PDFImage>();
+  for (const [key, b64] of Object.entries(INVOICE_ICON_PNG)) {
+    try {
+      map.set(key, await pdfDoc.embedPng(base64ToBytes(b64)));
+    } catch {
+      // Satu ikon gagal tidak boleh menggagalkan seluruh PDF.
+    }
+  }
+  return map;
+}
+
+/**
+ * Tempel ikon PNG di halaman PDF.
+ * @param yTop posisi ATAS ikon (koordinat PDF); size = lebar & tinggi.
+ */
+function drawInvoiceIcon(page: any, icons: Map<string, PDFImage>, name: string, x: number, yTop: number, size: number): void {
+  const img = icons.get(name);
+  if (!img) return;
+  try {
+    page.drawImage(img, { x, y: yTop - size, width: size, height: size });
+  } catch {
+    // Abaikan ikon yang gagal digambar.
+  }
+}
+
+/** Path SVG persegi rounded dalam kotak LOKAL (0,0,w,h, sumbu-y ke bawah
+ * seperti SVG asli) — dipakai karena pdf-lib tidak punya rounded rect.
+ * Sudut digambar dengan kurva Bezier kubik (bukan arc A) agar arah
+ * lengkungan pasti cembung keluar walau sumbu-y di-flip pdf-lib. */
+function roundRectPath(
+  w: number,
+  h: number,
+  r: number,
+  corners?: { tl?: boolean; tr?: boolean; br?: boolean; bl?: boolean },
+): string {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  const k = 0.5522847498 * rr;
+  const c = { tl: true, tr: true, br: true, bl: true, ...(corners || {}) };
+  const t = (v: number) => String(Math.round(v * 100) / 100);
+  let p = `M ${t(c.bl ? rr : 0)} ${t(h)}`;
+  p += ` L ${t(w - (c.br ? rr : 0))} ${t(h)}`;
+  if (c.br) p += ` C ${t(w - rr + k)} ${t(h)} ${t(w)} ${t(h - rr + k)} ${t(w)} ${t(h - rr)}`;
+  p += ` L ${t(w)} ${t(c.tr ? rr : 0)}`;
+  if (c.tr) p += ` C ${t(w)} ${t(rr - k)} ${t(w - rr + k)} 0 ${t(w - rr)} 0`;
+  p += ` L ${t(c.tl ? rr : 0)} 0`;
+  if (c.tl) p += ` C ${t(rr - k)} 0 0 ${t(rr - k)} 0 ${t(rr)}`;
+  p += ` L 0 ${t(h - (c.bl ? rr : 0))}`;
+  if (c.bl) p += ` C 0 ${t(h - rr + k)} ${t(rr - k)} ${t(h)} ${t(rr)} ${t(h)}`;
+  return p + ' Z';
+}
+
+/** Gambar kartu rounded (fill + border) meniru rounded-xl preview. */
+function fillRoundRect(
+  page: any,
+  opts: {
+    x: number; y: number; width: number; height: number; radius: number;
+    corners?: { tl?: boolean; tr?: boolean; br?: boolean; bl?: boolean };
+    color?: any; borderColor?: any; borderWidth?: number;
+  },
+): void {
+  try {
+    // Path lokal (0,0,w,h) dipetakan ke (x, yTop=y+h): drawSvgPath me-flip
+    // sumbu-y, jadi titik lokal atas (sy=0) tepat jatuh di atas kartu PDF.
+    page.drawSvgPath(roundRectPath(opts.width, opts.height, opts.radius, opts.corners), {
+      x: opts.x,
+      y: opts.y + opts.height,
+      scale: 1,
+      color: opts.color,
+      borderColor: opts.borderColor,
+      borderWidth: opts.borderWidth ?? 0,
+    });
+  } catch {
+    page.drawRectangle({
+      x: opts.x, y: opts.y, width: opts.width, height: opts.height,
+      color: opts.color, borderColor: opts.borderColor, borderWidth: opts.borderWidth ?? 0,
+    });
+  }
+}
+
+/** Potong teks dengan '...' agar muat dalam lebar maksimum. */
+function truncatePdfText(text: string, font: any, size: number, maxWidth: number): string {
+  if (font.widthOfTextAtSize(text, size) <= maxWidth) return text;
+  let cut = text.length;
+  while (cut > 4 && font.widthOfTextAtSize(text.slice(0, cut) + '...', size) > maxWidth) cut--;
+  return text.slice(0, cut) + '...';
+}
+
+/** Bungkus teks per kata agar muat dalam lebar maksimum. */
+function wrapPdfText(text: string, font: any, size: number, maxWidth: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (font.widthOfTextAtSize(t, size) <= maxWidth || !cur) {
+      cur = t;
+    } else {
+      lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.length > 0 ? lines : [text];
+}
+
+/**
  * Buat file PDF Invoice secara on-the-fly di memori tanpa memakan storage.
  */
 export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string | null> {
@@ -56,8 +194,44 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
 
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    // Serif italic untuk teks italic preview ("A Story for Forever", tagline):
+    // Gelasio Italic (mirip Georgia) bila fontkit tersedia, fallback
+    // Times Italic bawaan (tetap serif) bila gagal.
+    const fontTimesItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
+    let fontSerif: any = fontTimesItalic;
+    try {
+      const fk = await import('npm:@pdf-lib/fontkit');
+      pdfDoc.registerFontkit(fk.default || fk);
+      fontSerif = await pdfDoc.embedFont(base64ToBytes(INVOICE_SERIF_FONT_B64));
+    } catch {
+      fontSerif = fontTimesItalic;
+    }
 
-    const orderIdStr = (args.orderId || 'LOVERSE').slice(-8).toUpperCase();
+    // Palet menyamai preview /dev/invoice (InvoicePreviewPage.tsx).
+    const brown = rgb(0.443, 0.18, 0.118); // #712E1E
+    const creamCard = rgb(0.98, 0.965, 0.937); // #faf6ef
+    const creamBorder = rgb(0.92, 0.875, 0.81);
+    const goldTitle = rgb(0.725, 0.541, 0.42); // #b98a6b
+    const creamText = rgb(1, 0.835, 0.686); // #FFD5AF
+    const creamHeading = rgb(0.961, 0.902, 0.827); // #f5e6d3
+    const totalRow = rgb(0.953, 0.91, 0.847); // #f3e8d8
+    const badgeBg = rgb(0.863, 0.937, 0.886); // #dcefe2
+    const badgeGreen = rgb(0.18, 0.49, 0.31); // #2e7d4f
+    const badgeBorder = rgb(0.749, 0.91, 0.8);
+    const numBg = rgb(0.941, 0.875, 0.784); // #f0dfc8
+    const stoneDark = rgb(0.2, 0.2, 0.2);
+    const stoneGray = rgb(0.36, 0.33, 0.3);
+    const softGray = rgb(0.45, 0.42, 0.38);
+
+    // Nomor invoice = ID pesanan APA ADANYA (mis. LV-QZZY3XAJ) supaya
+    // konsisten dengan yang ditampilkan di web. Fallback bila orderId
+    // kosong atau bukan format pendek (mis. activate-pending-order
+    // memakai UUID internal): INV- + 8 karakter terakhir.
+    const rawOrderId = (args.orderId || '').trim().toUpperCase();
+    const shortOrderId = /^LV-[A-Z0-9]{6,12}$/.test(rawOrderId);
+    const orderIdStr = shortOrderId
+      ? rawOrderId
+      : `INV-${rawOrderId ? rawOrderId.slice(-8) : 'LOVERSE'}`;
     const issueDate = new Date().toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'long',
@@ -66,338 +240,554 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
 
     const priceNumber = typeof args.price === 'number' && args.price > 0 ? args.price : 60000;
     const formattedPrice = `Rp ${priceNumber.toLocaleString('id-ID')}`;
-    const appUrl = Deno.env.get('APP_URL') || 'https://loverse.my.id';
+    const appUrl = Deno.env.get('APP_URL') || 'https://loverse.id';
 
-    // 1. Header Banner
+    // Logo PNG (sumber sama dengan header email) disematkan ke banner.
+    const logoImage = await embedLogoPng(pdfDoc, resolveLogoUrl(appUrl));
+    // Ikon PNG bawaan (tanpa fetch) — di-embed sekali per dokumen.
+    const iconImgs = await embedInvoiceIcons(pdfDoc);
+
+    // 1. Header Banner — meniru preview: kiri logo stacked + tagline,
+    //    kanan INVOICE besar + BUKTI PEMBAYARAN + garis + domain.
     page.drawRectangle({
       x: 0,
-      y: 740,
+      y: 710,
       width: 595.28,
-      height: 101.89,
-      color: rgb(0.443, 0.18, 0.118), // #712E1E
+      height: 132,
+      color: brown,
     });
 
-    page.drawText('LoVerse', {
-      x: 40,
-      y: 792,
-      size: 24,
-      font: fontBold,
-      color: rgb(1, 0.835, 0.686), // #FFD5AF
-    });
-
-    page.drawText('Undangan Pernikahan Digital', {
-      x: 40,
-      y: 772,
-      size: 10,
-      font: fontRegular,
-      color: rgb(1, 0.835, 0.686),
-    });
-
-    page.drawText('INVOICE / BUKTI PEMBAYARAN', {
-      x: 340,
-      y: 792,
-      size: 12,
-      font: fontBold,
-      color: rgb(1, 1, 1),
-    });
-
-    page.drawText('loverse.my.id', {
-      x: 475,
-      y: 772,
-      size: 10,
-      font: fontRegular,
-      color: rgb(1, 0.835, 0.686),
-    });
-
-    // 2. Info Transaksi & Pembeli
-    // Kolom Kiri: Ditagihkan Kepada
-    page.drawText('DITAGIHKAN KEPADA:', {
-      x: 40,
-      y: 705,
-      size: 9,
-      font: fontBold,
-      color: rgb(0.55, 0.5, 0.46),
-    });
-
-    const coupleText = `${args.groomName} & ${args.brideName}`;
-    page.drawText(coupleText.length > 35 ? coupleText.slice(0, 35) + '...' : coupleText, {
-      x: 40,
-      y: 687,
-      size: 13,
-      font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
-    });
-
-    page.drawText(`WhatsApp : ${args.whatsapp || '-'}`, {
-      x: 40,
-      y: 669,
-      size: 10,
-      font: fontRegular,
-      color: rgb(0.34, 0.29, 0.24),
-    });
-
-    page.drawText(`Email    : ${args.to}`, {
-      x: 40,
-      y: 653,
-      size: 10,
-      font: fontRegular,
-      color: rgb(0.34, 0.29, 0.24),
-    });
-
-    if (args.weddingDate) {
-      page.drawText(`Tgl Acara: ${args.weddingDate}`, {
+    if (logoImage) {
+      const { height: logoHeight, ratio } = pdfLogoDimensions();
+      const logoWidth = ratio * logoHeight;
+      page.drawImage(logoImage, {
         x: 40,
-        y: 637,
+        y: 786,
+        width: logoWidth,
+        height: logoHeight,
+      });
+      page.drawText('Undangan Pernikahan Digital', {
+        x: 40,
+        y: 772,
         size: 10,
         font: fontRegular,
-        color: rgb(0.34, 0.29, 0.24),
+        color: creamText,
+      });
+      page.drawText('Abadikan Momen Spesial, Dalam Satu Cerita Indah', {
+        x: 40,
+        y: 758,
+        size: 9,
+        font: fontSerif,
+        color: creamText,
+      });
+    } else {
+      page.drawText('LoVerse', {
+        x: 40,
+        y: 800,
+        size: 18,
+        font: fontBold,
+        color: creamText,
+      });
+      page.drawText('Undangan Pernikahan Digital', {
+        x: 40,
+        y: 784,
+        size: 10,
+        font: fontRegular,
+        color: creamText,
+      });
+      page.drawText('Abadikan Momen Spesial, Dalam Satu Cerita Indah', {
+        x: 40,
+        y: 770,
+        size: 9,
+        font: fontSerif,
+        color: creamText,
       });
     }
 
-    // Kolom Kanan: Rincian Invoice
-    page.drawText('RINCIAN TRANSAKSI:', {
-      x: 350,
-      y: 705,
-      size: 9,
+    // Kanan: INVOICE (besar) + BUKTI PEMBAYARAN (kecil) + domain
+    const pdfRight = 555.28;
+    const invW = fontBold.widthOfTextAtSize('INVOICE', 22);
+    page.drawText('INVOICE', {
+      x: pdfRight - invW,
+      y: 800,
+      size: 22,
       font: fontBold,
-      color: rgb(0.55, 0.5, 0.46),
+      color: rgb(1, 1, 1),
     });
-
-    page.drawText(`No. Invoice : INV-${orderIdStr}`, {
-      x: 350,
-      y: 687,
+    const buktiW = fontBold.widthOfTextAtSize('BUKTI PEMBAYARAN', 10);
+    page.drawText('BUKTI PEMBAYARAN', {
+      x: pdfRight - buktiW,
+      y: 780,
       size: 10,
       font: fontBold,
-      color: rgb(0.2, 0.2, 0.2),
+      color: creamText,
     });
-
-    page.drawText(`Tanggal     : ${issueDate}`, {
-      x: 350,
-      y: 669,
+    // Garis pemisah kecil rata kanan seperti preview (w-12).
+    page.drawLine({
+      start: { x: pdfRight - 48, y: 772 },
+      end: { x: pdfRight, y: 772 },
+      thickness: 1.5,
+      color: creamText,
+    });
+    page.drawText('loverse.id', {
+      x: pdfRight - fontRegular.widthOfTextAtSize('loverse.id', 10),
+      y: 760,
       size: 10,
       font: fontRegular,
-      color: rgb(0.34, 0.29, 0.24),
+      color: creamText,
     });
 
-    page.drawText(`Metode      : ${args.paymentMethod || 'Midtrans / Online'}`, {
-      x: 350,
-      y: 653,
-      size: 10,
-      font: fontRegular,
-      color: rgb(0.34, 0.29, 0.24),
-    });
+    // 2. DUA KARTU INFO — meniru preview (bg cream, judul + ikon).
+    const kartuY = 680; // atas kartu
+    const kartuBottom = 540; // bawah kartu
+    const kartuTinggi = kartuY - kartuBottom;
+    const kiriX = 40;
+    const kiriW = 252;
+    const kananX = 303;
+    const kananW = 252.28;
+    const paymentMethodLabel = (args.paymentMethod || 'Midtrans / Online').trim().toUpperCase();
 
-    // Badge Lunas
-    page.drawRectangle({
-      x: 350,
-      y: 627,
-      width: 100,
-      height: 20,
-      color: rgb(0.906, 0.969, 0.925),
-      borderColor: rgb(0.749, 0.91, 0.8),
+    // --- KIRI: Ditagihkan Kepada ---
+    fillRoundRect(page, {
+      x: kiriX,
+      y: kartuBottom,
+      width: kiriW,
+      height: kartuTinggi,
+      radius: 10,
+      color: creamCard,
+      borderColor: creamBorder,
       borderWidth: 1,
     });
 
+    drawInvoiceIcon(page, iconImgs, 'user', kiriX + 12, kartuY - 10, 13);
+    page.drawText('DITAGIHKAN KEPADA', {
+      x: kiriX + 30,
+      y: kartuY - 21,
+      size: 9,
+      font: fontBold,
+      color: goldTitle,
+    });
+
+    const coupleText = truncatePdfText(`${args.groomName} & ${args.brideName}`, fontBold, 13, kiriW - 24);
+    page.drawText(coupleText, {
+      x: kiriX + 12,
+      y: kartuY - 45,
+      size: 13,
+      font: fontBold,
+      color: stoneDark,
+    });
+
+    const kiriRows: Array<{ icon: string; text: string }> = [
+      { icon: 'phone', text: truncatePdfText(`${args.whatsapp || '-'}`, fontRegular, 9.5, kiriW - 48) },
+      { icon: 'mail', text: truncatePdfText(`${args.to}`, fontRegular, 9.5, kiriW - 48) },
+      { icon: 'calendar-days', text: `Tgl. Acara: ${args.weddingDate || '-'}` },
+    ];
+    kiriRows.forEach((row, i) => {
+      const ry = kartuY - 63 - i * 15;
+      drawInvoiceIcon(page, iconImgs, row.icon, kiriX + 12, ry + 10, 10);
+      page.drawText(row.text, {
+        x: kiriX + 27,
+        y: ry,
+        size: 9.5,
+        font: fontRegular,
+        color: stoneGray,
+      });
+    });
+
+    // --- KANAN: Informasi Pembayaran ---
+    fillRoundRect(page, {
+      x: kananX,
+      y: kartuBottom,
+      width: kananW,
+      height: kartuTinggi,
+      radius: 10,
+      color: creamCard,
+      borderColor: creamBorder,
+      borderWidth: 1,
+    });
+
+    drawInvoiceIcon(page, iconImgs, 'file-text', kananX + 12, kartuY - 10, 13);
+    page.drawText('INFORMASI PEMBAYARAN', {
+      x: kananX + 30,
+      y: kartuY - 21,
+      size: 9,
+      font: fontBold,
+      color: goldTitle,
+    });
+
+    page.drawText('No. Invoice:', {
+      x: kananX + 12,
+      y: kartuY - 45,
+      size: 9.5,
+      font: fontRegular,
+      color: stoneGray,
+    });
+    const orderVal = truncatePdfText(orderIdStr, fontBold, 9.5, 130);
+    page.drawText(orderVal, {
+      x: kananX + kananW - 12 - fontBold.widthOfTextAtSize(orderVal, 9.5),
+      y: kartuY - 45,
+      size: 9.5,
+      font: fontBold,
+      color: stoneDark,
+    });
+
+    page.drawText('Tanggal:', {
+      x: kananX + 12,
+      y: kartuY - 61,
+      size: 9.5,
+      font: fontRegular,
+      color: stoneGray,
+    });
+    const dateVal = truncatePdfText(issueDate, fontRegular, 9.5, 140);
+    page.drawText(dateVal, {
+      x: kananX + kananW - 12 - fontRegular.widthOfTextAtSize(dateVal, 9.5),
+      y: kartuY - 61,
+      size: 9.5,
+      font: fontRegular,
+      color: stoneGray,
+    });
+
+    page.drawText('Metode:', {
+      x: kananX + 12,
+      y: kartuY - 77,
+      size: 9.5,
+      font: fontRegular,
+      color: stoneGray,
+    });
+    const pmVal = truncatePdfText(paymentMethodLabel, fontBold, 9.5, 140);
+    page.drawText(pmVal, {
+      x: kananX + kananW - 12 - fontBold.widthOfTextAtSize(pmVal, 9.5),
+      y: kartuY - 77,
+      size: 9.5,
+      font: fontBold,
+      color: stoneDark,
+    });
+
+    // Badge LUNAS full-width seperti preview (ikon + 2 baris teks).
+    const badgeX = kananX + 12;
+    const badgeW = kananW - 24;
+    const badgeH = 36;
+    const badgeY = kartuBottom + 10;
+    fillRoundRect(page, {
+      x: badgeX,
+      y: badgeY,
+      width: badgeW,
+      height: badgeH,
+      radius: 7,
+      color: badgeBg,
+      borderColor: badgeBorder,
+      borderWidth: 1,
+    });
+    drawInvoiceIcon(page, iconImgs, 'badge-check-green', badgeX + 10, badgeY + badgeH - 7, 22);
     page.drawText('LUNAS / PAID', {
-      x: 366,
-      y: 633,
-      size: 9,
+      x: badgeX + 40,
+      y: badgeY + 20,
+      size: 10,
       font: fontBold,
-      color: rgb(0.106, 0.478, 0.239),
+      color: badgeGreen,
+    });
+    page.drawText('Terima kasih atas kepercayaannya!', {
+      x: badgeX + 40,
+      y: badgeY + 8,
+      size: 8,
+      font: fontRegular,
+      color: badgeGreen,
     });
 
-    // 3. Tabel Item Produk
-    // Header Tabel
-    page.drawRectangle({
+    // 3. Tabel Produk — header cokelat seperti preview + kolom NO.
+    fillRoundRect(page, {
       x: 40,
-      y: 575,
+      y: 502,
       width: 515.28,
-      height: 26,
-      color: rgb(0.98, 0.965, 0.933),
-      borderColor: rgb(0.92, 0.875, 0.81),
-      borderWidth: 1,
+      height: 28,
+      radius: 8,
+      corners: { tl: true, tr: true, br: false, bl: false },
+      color: brown,
     });
 
-    page.drawText('DESKRIPSI PRODUK', {
+    page.drawText('NO', {
       x: 52,
-      y: 584,
+      y: 512,
       size: 9,
       font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
+      color: creamHeading,
     });
-
+    page.drawText('DESKRIPSI PRODUK', {
+      x: 84,
+      y: 512,
+      size: 9,
+      font: fontBold,
+      color: creamHeading,
+    });
     page.drawText('KATEGORI', {
       x: 330,
-      y: 584,
+      y: 512,
       size: 9,
       font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
+      color: creamHeading,
     });
-
-    page.drawText('JUMLAH (IDR)', {
-      x: 460,
-      y: 584,
+    const jumlahHead = 'JUMLAH (IDR)';
+    page.drawText(jumlahHead, {
+      x: 543 - fontBold.widthOfTextAtSize(jumlahHead, 9),
+      y: 512,
       size: 9,
       font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
+      color: creamHeading,
     });
 
     // Baris Produk
     page.drawRectangle({
       x: 40,
-      y: 525,
+      y: 452,
       width: 515.28,
       height: 50,
       color: rgb(1, 1, 1),
-      borderColor: rgb(0.92, 0.875, 0.81),
+      borderColor: creamBorder,
       borderWidth: 1,
     });
 
-    page.drawText('Undangan Digital Pernikahan (Aktif Selamanya)', {
+    page.drawText('1', {
       x: 52,
-      y: 555,
+      y: 480,
+      size: 10,
+      font: fontRegular,
+      color: softGray,
+    });
+    page.drawText('Undangan Digital Pernikahan', {
+      x: 84,
+      y: 483,
       size: 10,
       font: fontBold,
-      color: rgb(0.2, 0.2, 0.2),
+      color: stoneDark,
     });
-
-    page.drawText(`Desain Tema: ${args.templateName || 'Custom Template'}`, {
-      x: 52,
-      y: 539,
+    const themeLine = truncatePdfText(`Desain Tematik: ${args.templateName || 'Custom Template'}`, fontRegular, 9, 230);
+    page.drawText(themeLine, {
+      x: 84,
+      y: 469,
       size: 9,
       font: fontRegular,
-      color: rgb(0.55, 0.5, 0.46),
+      color: softGray,
     });
-
     page.drawText('Web Invitation', {
       x: 330,
-      y: 547,
+      y: 477,
       size: 9.5,
       font: fontRegular,
-      color: rgb(0.3, 0.3, 0.3),
+      color: stoneDark,
     });
-
     page.drawText(formattedPrice, {
-      x: 460,
-      y: 547,
+      x: 543 - fontBold.widthOfTextAtSize(formattedPrice, 10.5),
+      y: 477,
       size: 10.5,
       font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
+      color: stoneDark,
     });
 
-    // Baris Total
-    page.drawRectangle({
+    // Baris Total (cream gelap seperti preview)
+    fillRoundRect(page, {
       x: 40,
-      y: 490,
+      y: 417,
       width: 515.28,
       height: 35,
-      color: rgb(0.98, 0.965, 0.933),
-      borderColor: rgb(0.92, 0.875, 0.81),
+      radius: 8,
+      corners: { tl: false, tr: false, br: true, bl: true },
+      color: totalRow,
+      borderColor: creamBorder,
       borderWidth: 1,
     });
-
-    page.drawText('TOTAL PEMBAYARAN :', {
-      x: 310,
-      y: 503,
+    const totalLabel = 'TOTAL PEMBAYARAN';
+    page.drawText(totalLabel, {
+      x: 430 - fontBold.widthOfTextAtSize(totalLabel, 10),
+      y: 430,
       size: 10,
       font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
+      color: brown,
     });
-
     page.drawText(formattedPrice, {
-      x: 450,
-      y: 502,
+      x: 543 - fontBold.widthOfTextAtSize(formattedPrice, 12),
+      y: 429,
       size: 12,
       font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
+      color: brown,
     });
 
-    // 4. Kotak PIN Akses Dashboard
-    page.drawRectangle({
+    // 4. DUA KARTU BAWAH — ketentuan (kiri) + bantuan (kanan), seperti preview.
+    const bTop = 397;
+    const bBot = 277;
+    const bH = bTop - bBot;
+    const bKiriX = 40;
+    const bKiriW = 252;
+    const bKananX = 303;
+    const bKananW = 252.28;
+
+    // --- Kiri: Informasi dan Ketentuan Layanan ---
+    fillRoundRect(page, {
+      x: bKiriX,
+      y: bBot,
+      width: bKiriW,
+      height: bH,
+      radius: 10,
+      color: creamCard,
+      borderColor: creamBorder,
+      borderWidth: 1,
+    });
+    drawInvoiceIcon(page, iconImgs, 'info', bKiriX + 12, bTop - 10, 12);
+    page.drawText('Informasi dan Ketentuan Layanan', {
+      x: bKiriX + 28,
+      y: bTop - 21,
+      size: 8.5,
+      font: fontBold,
+      color: brown,
+    });
+    const terms = [
+      'Undangan digital Anda aktif secara otomatis dan dapat langsung dibagikan kepada para tamu undangan.',
+      'Perubahan data acara, jadwal, lokasi, foto, musik, dan fitur lainnya dapat dilakukan melalui dashboard kapan saja 24/7.',
+      'Simpan invoice resmi ini sebagai bukti pembayaran Anda yang sah.',
+    ];
+    let ty = bTop - 34;
+    terms.forEach((term, idx) => {
+      const lines = wrapPdfText(term, fontRegular, 7.5, bKiriW - 50);
+      const cy = ty - 5;
+      page.drawCircle({
+        x: bKiriX + 19,
+        y: cy,
+        size: 7,
+        color: numBg,
+      });
+      const num = String(idx + 1);
+      page.drawText(num, {
+        x: bKiriX + 19 - fontBold.widthOfTextAtSize(num, 7) / 2,
+        y: cy - 2.5,
+        size: 7,
+        font: fontBold,
+        color: brown,
+      });
+      lines.forEach((ln, li) => {
+        page.drawText(ln, {
+          x: bKiriX + 31,
+          y: ty - li * 9.5,
+          size: 7.5,
+          font: fontRegular,
+          color: stoneGray,
+        });
+      });
+      ty -= lines.length * 9.5 + 7;
+    });
+
+    // --- Kanan: Butuh bantuan? Hubungi kami ---
+    fillRoundRect(page, {
+      x: bKananX,
+      y: bBot,
+      width: bKananW,
+      height: bH,
+      radius: 10,
+      color: creamCard,
+      borderColor: creamBorder,
+      borderWidth: 1,
+    });
+    drawInvoiceIcon(page, iconImgs, 'heart', bKananX + 12, bTop - 10, 12);
+    page.drawText('Butuh bantuan? Hubungi kami:', {
+      x: bKananX + 28,
+      y: bTop - 21,
+      size: 8.5,
+      font: fontBold,
+      color: brown,
+    });
+    const helpRows: Array<{ icon: string; text: string }> = [
+      { icon: 'mail', text: 'mail@loverse.id' },
+      { icon: 'phone', text: '+62 851-7988-0092' },
+      { icon: 'instagram', text: '@loverse.id' },
+      { icon: 'globe', text: 'loverse.id' },
+    ];
+    helpRows.forEach((row, i) => {
+      const ry = bTop - 40 - i * 16;
+      drawInvoiceIcon(page, iconImgs, row.icon, bKananX + 12, ry + 10, 10);
+      page.drawText(row.text, {
+        x: bKananX + 27,
+        y: ry,
+        size: 8.5,
+        font: fontRegular,
+        color: stoneGray,
+      });
+    });
+
+    // 5. Kartu Terima kasih — seperti preview (aksen kiri + italic kanan).
+    const thY = 197;
+    const thH = 60;
+    fillRoundRect(page, {
       x: 40,
-      y: 385,
+      y: thY,
       width: 515.28,
-      height: 80,
-      color: rgb(0.98, 0.965, 0.933),
-      borderColor: rgb(0.898, 0.604, 0.349),
-      borderWidth: 1.5,
+      height: thH,
+      radius: 10,
+      color: creamCard,
+      borderColor: creamBorder,
+      borderWidth: 1,
     });
-
-    page.drawText('KODE PIN MASUK DASHBOARD ANDA:', {
-      x: 52,
-      y: 442,
-      size: 9,
-      font: fontBold,
-      color: rgb(0.55, 0.5, 0.46),
-    });
-
-    page.drawText(args.pin, {
-      x: 52,
-      y: 407,
-      size: 26,
-      font: fontBold,
-      color: rgb(0.443, 0.18, 0.118),
-    });
-
-    page.drawText('Gunakan WhatsApp & PIN ini untuk edit undangan di:', {
-      x: 230,
-      y: 430,
-      size: 9,
-      font: fontRegular,
-      color: rgb(0.34, 0.29, 0.24),
-    });
-
-    page.drawText(`${appUrl}/login`, {
-      x: 230,
-      y: 412,
-      size: 10.5,
-      font: fontBold,
-      color: rgb(0.898, 0.604, 0.349),
-    });
-
-    // 5. Footer & Ketentuan
     page.drawLine({
-      start: { x: 40, y: 190 },
-      end: { x: 555.28, y: 190 },
+      start: { x: 56, y: thY + 8 },
+      end: { x: 56, y: thY + thH - 8 },
+      thickness: 2,
+      color: rgb(0.898, 0.827, 0.722),
+    });
+    page.drawText('Terima kasih', {
+      x: 68,
+      y: thY + 38,
+      size: 13,
+      font: fontBold,
+      color: brown,
+    });
+    page.drawText('Telah mempercayakan momen spesial Anda kepada LoVerse.', {
+      x: 68,
+      y: thY + 25,
+      size: 8,
+      font: fontRegular,
+      color: softGray,
+    });
+    page.drawText('Semoga perjalanan cinta Anda selalu diberkahi.', {
+      x: 68,
+      y: thY + 15,
+      size: 8,
+      font: fontRegular,
+      color: softGray,
+    });
+    const story1 = 'A Story';
+    const story2 = 'for Forever';
+    const storyColor = rgb(0.851, 0.749, 0.643);
+    page.drawText(story1, {
+      x: 543 - fontSerif.widthOfTextAtSize(story1, 13),
+      y: thY + 36,
+      size: 13,
+      font: fontSerif,
+      color: storyColor,
+    });
+    page.drawText(story2, {
+      x: 543 - fontSerif.widthOfTextAtSize(story2, 13),
+      y: thY + 20,
+      size: 13,
+      font: fontSerif,
+      color: storyColor,
+    });
+
+    // 6. Footer bawah
+    page.drawLine({
+      start: { x: 40, y: 150 },
+      end: { x: 555.28, y: 150 },
       thickness: 1,
       color: rgb(0.9, 0.85, 0.8),
     });
 
-    page.drawText('Informasi & Ketentuan Layanan:', {
+    page.drawText('© 2026 LoVerse. Dokumen Bukti Pembayaran Digital Sah.', {
       x: 40,
-      y: 172,
-      size: 8.5,
-      font: fontBold,
-      color: rgb(0.4, 0.4, 0.4),
-    });
-
-    page.drawText('1. Undangan digital Anda aktif secara otomatis dan dapat langsung disebarkan kepada para tamu undangan.', {
-      x: 40,
-      y: 156,
+      y: 134,
       size: 8,
       font: fontRegular,
-      color: rgb(0.5, 0.5, 0.5),
+      color: rgb(0.65, 0.65, 0.65),
     });
 
-    page.drawText('2. Perubahan data acara, jadwal, lokasi peta, musik, dan foto dapat diperbarui mandiri kapan saja 24/7.', {
+    page.drawText('mail@loverse.id  |  +62 851-7988-0092  |  loverse.id', {
       x: 40,
-      y: 142,
-      size: 8,
-      font: fontRegular,
-      color: rgb(0.5, 0.5, 0.5),
-    });
-
-    page.drawText('3. Simpan invoice resmi ini sebagai arsip bukti pembayaran Anda yang sah.', {
-      x: 40,
-      y: 128,
-      size: 8,
-      font: fontRegular,
-      color: rgb(0.5, 0.5, 0.5),
-    });
-
-    page.drawText('© LoVerse. Dokumen Bukti Pembayaran Digital Sah.', {
-      x: 40,
-      y: 80,
+      y: 122,
       size: 8,
       font: fontRegular,
       color: rgb(0.65, 0.65, 0.65),
@@ -411,85 +801,42 @@ export async function generateInvoicePdf(args: SendPinEmailArgs): Promise<string
   }
 }
 
-function buildHtml({ groomName, brideName, pin }: Omit<SendPinEmailArgs, 'to'>): string {
-  const couple = `${escapeHtml(groomName)} &amp; ${escapeHtml(brideName)}`;
-  const appUrl = Deno.env.get('APP_URL') || '';
-  const loginSection = appUrl
-    ? `<a href="${appUrl}/login" style="color:#E59A59;font-weight:bold;">${appUrl}/login</a>`
-    : 'halaman <strong>Login Dashboard</strong> di website LoVerse';
+/** Template email PEMBAYARAN BERHASIL — meniru tab 1 EmailPreviewPage. */
+export function buildHtml({ groomName, brideName, pin }: { groomName: string; brideName: string; pin: string }): string {
+  const couple = `${escapeEmailHtml(groomName)} &amp; ${escapeEmailHtml(brideName)}`;
+  const appUrl = (Deno.env.get('APP_URL') || '').replace(/\/+$/, '');
+  const loginUrl = appUrl ? `${appUrl}/login` : '';
+  const logoUrl = resolveLogoUrl(appUrl);
 
-  return `<!DOCTYPE html>
-<html lang="id">
-  <body style="margin:0;padding:0;background-color:#F1E8DC;font-family:Arial,Helvetica,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F1E8DC;padding:32px 16px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #EBDFCE;">
-            <!-- Header -->
-            <tr>
-              <td style="background-color:#712E1E;padding:28px 32px;text-align:center;">
-                <h1 style="margin:0;color:#FFD5AF;font-size:22px;letter-spacing:1px;">Lo&hearts;Verse</h1>
-                <p style="margin:6px 0 0;color:#FFD5AF;opacity:.85;font-size:13px;">Undangan Digital Pernikahan</p>
-              </td>
-            </tr>
+  const body = `${heroIconHtml(appUrl, 'party-popper', '#faf3e9', 'selamat', '&#127881;')}
+    <p style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:bold;line-height:1.2;color:#4a1f14;">Terima kasih</p>
+    <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:25px;line-height:1.3;color:#4a1f14;">telah menggunakan jasa kami!</p>
+    <p style="margin:12px auto 0;max-width:440px;color:#57493D;font-size:14px;line-height:1.6;">
+      Pembayaran untuk undangan digital pernikahan
+      <strong>${couple}</strong> telah kami terima dengan sukses.
+    </p>
+    <p style="margin:4px 0 0;color:#8C8075;font-size:14px;">Undangan Anda kini aktif dan siap disebar ke para tamu.</p>
+    <p style="margin:16px 0 0;">
+      <span style="display:inline-block;background-color:#e6f6ec;border-radius:999px;padding:8px 20px;color:#1a7a3c;font-size:14px;font-weight:bold;">${iconImg(appUrl, 'circle-check', 16, 'berhasil', '&#10004;')} Pembayaran Berhasil</span>
+    </p>
+    ${pinBoxHtml(pin, loginUrl, appUrl)}
+    <div style="margin-top:16px;background-color:#faf6ef;border-radius:12px;padding:20px;text-align:left;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td width="52" style="vertical-align:top;">${iconImg(appUrl, 'file-text', 36, 'invoice', '&#128196;')}</td>
+          <td style="vertical-align:top;">
+            <p style="margin:0;font-size:15px;font-weight:bold;color:#5a2318;">Invoice Resmi Terlampir</p>
+            <p style="margin:4px 0 0;font-size:13px;line-height:1.6;color:#8C8075;">
+              Kami telah melampirkan berkas PDF bukti pembayaran resmi pada email ini untuk arsip Anda.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </div>
+    ${helpCardHtml(appUrl)}
+    ${emailFooterHtml(appUrl)}`;
 
-            <!-- Body -->
-            <tr>
-              <td style="padding:32px;">
-                <p style="margin:0 0 12px;color:#712E1E;font-size:15px;line-height:1.6;">
-                  Terima kasih telah menggunakan jasa kami.
-                </p>
-                <p style="margin:0 0 20px;color:#57493D;font-size:14px;line-height:1.6;">
-                  Pembayaran untuk undangan digital pernikahan
-                  <strong style="color:#712E1E;">${couple}</strong> telah kami terima dengan sukses.
-                  Undangan Anda kini aktif dan siap disebar ke para tamu.
-                </p>
-
-                <!-- Status -->
-                <div style="text-align:center;margin:0 0 24px;">
-                  <span style="display:inline-block;background-color:#E7F7EC;color:#1B7A3D;font-weight:bold;font-size:14px;padding:10px 22px;border-radius:999px;border:1px solid #BFE8CC;">
-                    &#10004; Pembayaran Berhasil
-                  </span>
-                </div>
-
-                <!-- PIN -->
-                <div style="background-color:#FAF6EE;border:1px dashed #E59A59;border-radius:16px;padding:24px;text-align:center;margin:0 0 24px;">
-                  <p style="margin:0 0 6px;color:#8C8075;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;">
-                    Kode PIN Dashboard Anda
-                  </p>
-                  <p style="margin:0;color:#712E1E;font-size:38px;font-weight:bold;letter-spacing:10px;font-family:'Courier New',monospace;">
-                    ${pin}
-                  </p>
-                </div>
-
-                <p style="margin:0 0 16px;color:#57493D;font-size:13px;line-height:1.6;">
-                  Gunakan kombinasi <strong>No. WhatsApp</strong> dan <strong>PIN</strong> di atas untuk masuk melalui ${loginSection}.
-                </p>
-
-                <!-- Info Invoice Attachment -->
-                <div style="background-color:#F7EEE3;border:1px solid #EBDFCE;border-radius:12px;padding:12px 16px;margin:0 0 6px;">
-                  <p style="margin:0;color:#712E1E;font-size:12px;line-height:1.5;">
-                    &#128196; <strong>Invoice Resmi Terlampir:</strong> Kami telah melampirkan berkas PDF bukti pembayaran resmi pada email ini untuk arsip Anda.
-                  </p>
-                </div>
-              </td>
-            </tr>
-
-            <!-- Footer -->
-            <tr>
-              <td style="background-color:#FAF6EE;padding:18px 32px;text-align:center;">
-                <p style="margin:0;color:#8C8075;font-size:11px;line-height:1.6;">
-                  Simpan email ini sebagai catatan PIN Anda.<br/>
-                  Butuh bantuan? Hubungi admin melalui WhatsApp.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+  return emailShellHtml(emailHeaderHtml(logoUrl), body);
 }
 
 /**

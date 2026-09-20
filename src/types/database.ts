@@ -79,6 +79,8 @@ export interface RsvpRow {
   message?: string;
   reply?: string;
   created_at?: string;
+  /** Diisi server (rsvp-list) bila baris milik pengunjung ini. */
+  is_mine?: boolean;
 }
 
 export interface PendingOrderRow {

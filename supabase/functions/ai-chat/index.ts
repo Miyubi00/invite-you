@@ -37,7 +37,7 @@ function json(body: unknown, status: number): Response {
 // statis dipakai hanya jika DB gagal/berisi kosong.
 // ------------------------------------------------------------
 
-const SYSTEM_RULES = `Anda adalah "LoVerse AI", asisten layanan pelanggan platform undangan digital LoVerse (loverse.my.id).
+const SYSTEM_RULES = `Anda adalah "LoVerse AI", asisten layanan pelanggan platform undangan digital LoVerse (loverse.id).
 
 ATURAN:
 - Jawab singkat, ramah, dan jelas (maksimal ±120 kata) dalam Bahasa Indonesia atau bahasa yang dipakai user.
@@ -128,18 +128,18 @@ const KB_GUIDE = `[Panduan Rekomendasi Tema]
   * romantis/hangat → Lantern Night, Ocean Vows, Sakura Breeze, Cloud Sky, Art Gallery.
 - Jika user menyebut karakter/anime (Hello Kitty, Cinnamoroll, Chiikawa, Spider-Verse, Roblox, 8-bit), arahkan ke tema dengan karakter terkait: hello-kitty, cinamon, chiikawa, spiderman, roblox, bit.
 - FORMAT JAWABAN REKOMENDASI: berikan 2-3 tema. Untuk tiap tema tulis SINGKAT: nama tema (+kategori & harga dari katalog) → alasan 1 kalimat dari deskripsi → ajakan coba demo. Tutup dengan reminder RSVP (jika butuh fitur RSVP/buku tamu pilih kategori RSVP) dan tawarkan pencarian tema lain. Contoh:
-  - Rustic Floral (Basic, Rp10.000): floral hangat & klasik, paling populer. Langsung coba: https://loverse.my.id/demo/rustic-floral.
-  - Playful Pop (RSVP, Rp15.000): ceria dengan warna pop, cocok pasangan muda. Langsung coba: https://loverse.my.id/demo/playful-pop.
-  WAJIB pakai URL LENGKAP (https://loverse.my.id/demo/<slug>), jangan hanya /demo/<slug>. Jika ingin gaya "klik di sini", tulis [klik di sini](https://loverse.my.id/demo/<slug>) LALU WAJIB TUTUP dengan kurung ) — dan JANGAN menaruh tanda baca apa pun antara url dan kurung tutup. Contoh BENAR: [klik di sini](https://loverse.my.id/demo/cinamon). Contoh SALAH (jangan ditiru): [klik di sini](https://loverse.my.id/demo/cinamon. — kurung tutup hilang sehingga tautan rusak. SEBELUM MENGIRIM, periksa ulang setiap tautan: pastikan diawali [label]( dan diakhiri ).
+  - Rustic Floral (Basic, Rp10.000): floral hangat & klasik, paling populer. Langsung coba: https://loverse.id/demo/rustic-floral.
+  - Playful Pop (RSVP, Rp15.000): ceria dengan warna pop, cocok pasangan muda. Langsung coba: https://loverse.id/demo/playful-pop.
+  WAJIB pakai URL LENGKAP (https://loverse.id/demo/<slug>), jangan hanya /demo/<slug>. Jika ingin gaya "klik di sini", tulis [klik di sini](https://loverse.id/demo/<slug>) LALU WAJIB TUTUP dengan kurung ) — dan JANGAN menaruh tanda baca apa pun antara url dan kurung tutup. Contoh BENAR: [klik di sini](https://loverse.id/demo/cinamon). Contoh SALAH (jangan ditiru): [klik di sini](https://loverse.id/demo/cinamon. — kurung tutup hilang sehingga tautan rusak. SEBELUM MENGIRIM, periksa ulang setiap tautan: pastikan diawali [label]( dan diakhiri ).
   Boleh beri 1 rekomendasi utama jika user sudah sebut preferensi spesifik.
 - Jika user eksplisit butuh fitur RSVP/buku tamu (mis. "mau ada absen tamu/buku tamu"), utamakan tema kategori RSVP saja.
-- Ingatkan: butuh fitur RSVP/buku tamu → harus pilih kategori RSVP. Sarankan mencoba demo gratis tiap tema di https://loverse.my.id/demo/<slug> sebelum membeli.
+- Ingatkan: butuh fitur RSVP/buku tamu → harus pilih kategori RSVP. Sarankan mencoba demo gratis tiap tema di https://loverse.id/demo/<slug> sebelum membeli.
 
 [Pemesanan]
 1) Pilih tema di halaman Order (bisa diganti nanti lewat dashboard).
 2) Isi nama mempelai pria/wanita, tanggal pernikahan, email, dan nomor WhatsApp (lengkapi verifikasi captcha).
 3) Pilih metode pembayaran lalu bayar.
-4) Setelah lunas, undangan otomatis aktif: PIN 6 digit dikirim ke email, dashboard edit bisa dibuka, dan undangan live di link https://loverse.my.id/wedding/nama-anda. Invoice PDF tersedia untuk diunduh.
+4) Setelah lunas, undangan otomatis aktif: PIN 6 digit dikirim ke email, dashboard edit bisa dibuka, dan undangan live di link https://loverse.id/wedding/nama-anda.
 - Template bisa dicoba gratis lewat halaman Demo sebelum membeli.
 
 [Pembayaran via Midtrans]
@@ -152,7 +152,7 @@ const KB_GUIDE = `[Panduan Rekomendasi Tema]
 - Jam operasional admin: Senin-Minggu, 09.00-21.00 WIB. Asisten AI online 24/7.
 - WhatsApp Admin: 0851-7988-0092 (satu nomor untuk semua kebutuhan).
 - Instagram: @loverse.id.
-- Website: https://loverse.my.id.`;
+- Website: https://loverse.id.`;
 
 // ------------------------------------------------------------
 // KB dinamis: baca katalog & harga dari tabel `templates`
@@ -353,14 +353,40 @@ async function getSystemPrompt(): Promise<string> {
 }
 
 // ------------------------------------------------------------
-// Rate limit sederhana per IP: maks 10 permintaan / 5 menit.
+// Rate limit per IP: maks 10 permintaan / 5 menit.
+// PRIMER via DB (ai_chat_hits) agar bertahan antar cold-start/isolate;
+// fallback in-memory bila DB tak tersedia. Jendela lama dibersihkan
+// sekalian tiap cek (ber-index, murah).
 // ------------------------------------------------------------
 
 const RATE_LIMIT_MAX = 10;
 const RATE_WINDOW_MS = 5 * 60 * 1000;
 const hits = new Map<string, number[]>();
 
-function isRateLimited(ip: string): boolean {
+type SupabaseAdmin = ReturnType<typeof getSupabaseAdmin>;
+
+async function isRateLimitedDb(admin: NonNullable<SupabaseAdmin>, ip: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
+  await admin.from('ai_chat_hits').delete().lt('created_at', windowStart);
+  const { count } = await admin
+    .from('ai_chat_hits')
+    .select('id', { count: 'exact', head: true })
+    .eq('ip', ip)
+    .gte('created_at', windowStart);
+  if ((count ?? 0) >= RATE_LIMIT_MAX) return true;
+  await admin.from('ai_chat_hits').insert({ ip });
+  return false;
+}
+
+async function isRateLimited(ip: string): Promise<boolean> {
+  const admin = getSupabaseAdmin();
+  if (admin) {
+    try {
+      return await isRateLimitedDb(admin, ip);
+    } catch (err) {
+      console.error('[ai-chat] Rate-limit DB gagal, pakai memori:', err instanceof Error ? err.message : err);
+    }
+  }
   const now = Date.now();
   const recent = (hits.get(ip) ?? []).filter((ts) => now - ts < RATE_WINDOW_MS);
   if (recent.length >= RATE_LIMIT_MAX) {
@@ -716,7 +742,7 @@ serve(async (req) => {
     return json({ busy: true }, 200);
   }
 
-  if (isRateLimited(ip)) return json({ busy: true }, 200);
+  if (await isRateLimited(ip)) return json({ busy: true }, 200);
 
   try {
 

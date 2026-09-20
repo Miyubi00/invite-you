@@ -1,0 +1,8 @@
+{
+  "name": "loverse-inbound-email-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "postal-mime": "^2.3.0"
+  }
+}

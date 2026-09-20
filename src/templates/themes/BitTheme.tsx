@@ -37,7 +37,7 @@ export default function EightBitTheme({ groom, bride, date, guestName, data, onR
     const banks = resolveBanks(data);
     const quote = data?.quote || "It's dangerous to go alone! Take this love.";
     const quoteSrc = data?.quote_src || "Unknown Hero";
-    const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/cdd49a279c.mp3";
+    const audioUrl = data?.audio_url || "https://r2.loverse.id/defaults/audio/cdd49a279c.mp3";
 
     const formattedDate = formatDate(date, 'id-ID', {
         weekday: 'long', day: 'numeric', month: 'short', year: 'numeric'
@@ -463,7 +463,7 @@ export default function EightBitTheme({ groom, bride, date, guestName, data, onR
 
             {/* AUDIO & SFX */}
             <audio ref={audioRef} src={audioUrl} loop />
-            <audio ref={sfxRef} src="https://r2.loverse.my.id/defaults/audio/cdd49a279c.mp3" />
+            <audio ref={sfxRef} src="https://r2.loverse.id/defaults/audio/cdd49a279c.mp3" />
         </div>
     );
 }

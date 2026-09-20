@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useEffectEvent } from 'react';
 import {
     MapPin, Calendar, Clock, Music, Heart,
     Gift, Play, Pause, Navigation, Copy, Image as ImageIcon, Cloud,
@@ -57,7 +57,7 @@ export default function SkyWorldMapTheme({ groom, bride, date, data, onRsvpSubmi
 
     const quote = data?.quote || "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu isteri-isteri dari jenismu sendiri...";
     const quoteSrc = data?.quote_src || "QS. Ar-Rum: 21";
-    const audioUrl = data?.audio_url || "https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3";
+    const audioUrl = data?.audio_url || "https://r2.loverse.id/defaults/audio/ee2e74c72c.mp3";
 
     // --- OPENING LOGIC ---
     // Pola bersama (dedup 3.2): amplop + autoplay audio dalam satu hook.
@@ -164,20 +164,21 @@ export default function SkyWorldMapTheme({ groom, bride, date, data, onRsvpSubmi
     // --- WHEEL ZOOM (scroll mouse / trackpad) ---
     // React memasang listener 'wheel' sebagai passive, sehingga
     // e.preventDefault() tidak bisa dipanggil dari prop onWheel —
-    // karena itu listener native non-passive dipasang manual via ref.
-    const wheelZoomRef = useRef<(e: WheelEvent) => void>(() => {});
-    wheelZoomRef.current = (e: WheelEvent) => {
+    // karena itu listener native non-passive dipasang manual sekali di bawah.
+    // useEffectEvent dipakai agar listener tetap membaca isOpen & transform
+    // terbaru TANPA menulis ref saat render (dilarang aturan react-hooks/refs).
+    const handleWheelZoom = useEffectEvent((e: WheelEvent) => {
         if (!isOpen) return;
         e.preventDefault();
         // deltaY negatif (scroll atas) = zoom in, positif (scroll bawah) = zoom out.
         const factor = Math.exp(-e.deltaY * 0.0015);
         zoomToPoint(transform.scale * factor, e.clientX, e.clientY);
-    };
+    });
 
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
-        const handler = (e: WheelEvent) => wheelZoomRef.current(e);
+        const handler = (e: WheelEvent) => handleWheelZoom(e);
         el.addEventListener('wheel', handler, { passive: false });
         return () => el.removeEventListener('wheel', handler);
     }, []);

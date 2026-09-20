@@ -1,25 +1,21 @@
 // ============================================================
 // src/components/order/OrderSummary.tsx
 // ------------------------------------------------------------
-// Sidebar ringkasan pesanan /order: banner template, ringkasan live
-// kontak & metode, rincian harga, Turnstile captcha, dan tombol bayar.
+// Kartu ringkasan pesanan /order: banner template, ringkasan live
+// kontak & metode, rincian harga, dan slot "actions" opsional di bagian
+// bawah kartu. Di langkah 3 slot ini diisi verifikasi captcha + tombol
+// bayar + tombol kembali (components/order/OrderPaymentActions) supaya
+// seluruh elemen langkah 3 menyatu dalam satu kartu, urut atas-bawah.
 // Dipakai di  : pages/OrderPage
-// Keterikatan : lucide-react, react-icons, ui/TurnstileWidget,
-//               components/order/constants, SectionCard
+// Keterikatan : react, components/order/constants, SectionCard
 // ============================================================
 
-import { Building2, QrCode, Smartphone } from "lucide-react";
-import { FaWhatsapp } from "react-icons/fa";
-import type { RefObject } from "react";
-import TurnstileWidget, {
-  type TurnstileWidgetRef,
-} from "../ui/TurnstileWidget";
+import type { ReactNode } from "react";
 import { useTranslation } from "../../i18n";
 import type { MasterTemplate } from "../../lib/constants";
 import {
   formatIDR,
   getPaymentMethodFee,
-  PAYMENT_BUTTON_LABEL_KEYS,
   PAYMENT_SUMMARY_LABEL_KEYS,
   type OrderFormData,
   type PaymentMethodType,
@@ -31,13 +27,12 @@ interface OrderSummaryProps {
   selectedTemplate: MasterTemplate;
   selectedImage?: string;
   paymentMethod: PaymentMethodType | null;
-  captchaToken: string | null;
-  setCaptchaToken: (token: string | null) => void;
-  turnstileRef: RefObject<TurnstileWidgetRef | null>;
-  loadingWA: boolean;
-  loadingMidtrans: boolean;
-  onMidtransCheckout: () => void;
-  onWhatsappCheckout: () => void;
+  /**
+   * Slot aksi di bagian bawah kartu (langkah 3: captcha + tombol bayar &
+   * kembali). Dibiarkan kosong di pemakaian lain supaya kartu tetap murni
+   * ringkasan.
+   */
+  actions?: ReactNode;
 }
 
 export function OrderSummary({
@@ -45,13 +40,7 @@ export function OrderSummary({
   selectedTemplate,
   selectedImage,
   paymentMethod,
-  captchaToken,
-  setCaptchaToken,
-  turnstileRef,
-  loadingWA,
-  loadingMidtrans,
-  onMidtransCheckout,
-  onWhatsappCheckout,
+  actions,
 }: OrderSummaryProps) {
   const { t } = useTranslation();
 
@@ -90,6 +79,21 @@ export function OrderSummary({
 
         {/* Ringkasan live */}
         <div className="space-y-2.5 pt-4 border-t border-[#F3EBDF]">
+          <SummaryRow
+            label={t("paymentStatus.sumCouple")}
+            value={
+              formData.groom_name || formData.bride_name
+                ? `${formData.groom_name} & ${formData.bride_name}`
+                : t("order.notFilled")
+            }
+            muted={!formData.groom_name && !formData.bride_name}
+          />
+          <SummaryRow
+            label={t("order.weddingDate")}
+            value={formData.wedding_date || t("order.notFilled")}
+            muted={!formData.wedding_date}
+            mono
+          />
           <SummaryRow
             label={t("order.email")}
             value={formData.email || t("order.notFilled")}
@@ -148,78 +152,14 @@ export function OrderSummary({
             </span>
           </div>
         </div>
-
-        {/* Cloudflare Turnstile Captcha Widget */}
-        <div className="pt-2">
-          <TurnstileWidget
-            ref={turnstileRef}
-            onSuccess={(token) => setCaptchaToken(token)}
-            onExpire={() => setCaptchaToken(null)}
-            onError={() => setCaptchaToken(null)}
-          />
-        </div>
-
-        {/* Tombol Aksi Sesuai Metode Terpilih (disable bila belum memilih) */}
-        <div className="space-y-2.5 pt-1">
-          {paymentMethod === null ? (
-            <button
-              type="button"
-              disabled
-              className="w-full py-3.5 rounded-xl font-bold text-base border-2 border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <Smartphone className="w-5 h-5" />
-              {t("order.selectPaymentMethod")}
-            </button>
-          ) : paymentMethod === "whatsapp" ? (
-            <button
-              type="button"
-              onClick={onWhatsappCheckout}
-              disabled={loadingWA || !captchaToken}
-              className={`w-full py-3.5 rounded-xl font-bold text-base border-2 transition flex items-center justify-center gap-2 ${
-                loadingWA || !captchaToken
-                  ? "bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed"
-                  : "bg-[#25D366] border-[#25D366] text-white hover:bg-[#20bd5a] active:scale-[0.99] shadow-md shadow-green-600/20"
-              }`}
-            >
-              {loadingWA ? (
-                t("order.payWhatsappLoading")
-              ) : (
-                <>
-                  <FaWhatsapp className="w-5 h-5" />{" "}
-                  {t("order.btnPayWa")}
-                </>
-              )}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onMidtransCheckout}
-              disabled={loadingMidtrans || !captchaToken}
-              className={`w-full py-3.5 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-md transition ${
-                loadingMidtrans || !captchaToken
-                  ? "bg-stone-300 text-stone-500 cursor-not-allowed"
-                  : "bg-[#712E1E] text-white hover:bg-[#8E3B27] active:scale-[0.99]"
-              }`}
-            >
-              {loadingMidtrans ? (
-                t("order.payMidtransLoading")
-              ) : (
-                <>
-                  {paymentMethod.endsWith("_va") ||
-                  paymentMethod === "echannel" ? (
-                    <Building2 className="w-5 h-5" />
-                  ) : paymentMethod === "qris" ? (
-                    <QrCode className="w-5 h-5" />
-                  ) : (
-                    <Smartphone className="w-5 h-5" />
-                  )}
-                  <span>{t(PAYMENT_BUTTON_LABEL_KEYS[paymentMethod])}</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
       </div>
+
+      {/* Slot aksi di dalam kartu: captcha -> tombol bayar -> tombol kembali. */}
+      {actions ? (
+        <div className="border-t border-[#F3EBDF] p-4 sm:p-5 md:p-6 pt-3 sm:pt-4 space-y-2.5">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

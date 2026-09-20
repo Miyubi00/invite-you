@@ -238,7 +238,7 @@ export default function ChiikawaTheme({
     data?.quote ||
     'Dan di antara tanda-tanda kebesaran-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya.';
   const quoteSrc = data?.quote_src || 'QS. Ar-Rum: 21';
-  const audioUrl = data?.audio_url || 'https://r2.loverse.my.id/defaults/audio/ee2e74c72c.mp3';
+  const audioUrl = data?.audio_url || 'https://r2.loverse.id/defaults/audio/ee2e74c72c.mp3';
   const groomParents = data?.groom_parents || 'Putra Bpk. & Ibu.';
   const brideParents = data?.bride_parents || 'Putri Bpk. & Ibu.';
 
