@@ -24,12 +24,18 @@ const BULAN = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
 ]
 
-// Slug tema yang punya screenshot statis di public/ (thumbnail demo).
+// Slug tema yang punya screenshot di R2 (og/demo/). Thumbs di-host di R2
+// agar konsisten dengan aset lain; art-block BELUM ada filenya sehingga
+// sengaja tidak masuk daftar (fallback ke gambar default).
 const DEMO_THUMBS = new Set([
   'board-game', 'chiikawa', 'cinamon', 'claymorphism', 'emerald-royale',
   'hello-kitty', 'lantern-night', 'motion-flow', 'neumorph', 'ocean-vows',
-  'pop-card', 'roblox', 'sage-terracotta', 'sakura-breeze', 'spiderman', 'zine-raw',
+  'pop-card', 'roblox', 'sage-terracotta', 'spiderman', 'zine-raw',
 ])
+
+// Basis thumbnail demo + gambar default di R2.
+const OG_DEMO_BASE = 'https://r2.loverse.id/og/demo'
+const OG_DEFAULT = 'https://r2.loverse.id/og/OG-Image.png'
 
 // Cache index.html produksi agar tiap share WA tidak fetch ulang.
 let htmlCache = { html: null, at: 0 }
@@ -137,7 +143,7 @@ export default async function handler(req, res) {
   // Gambar default di-host di R2 (konsisten dengan aset lain), BUKAN public/.
   let title = 'LoVerse — Undangan Pernikahan Digital Elegan &amp; Modern'
   let description = 'Buat & bagikan undangan pernikahan digital yang elegan dan interaktif. Coba demo gratis sekarang.'
-  let image = 'https://r2.loverse.id/og/OG-Image.png'
+  let image = OG_DEFAULT
   let canonical = origin
 
   try {
@@ -171,7 +177,7 @@ export default async function handler(req, res) {
       const themeName = esc((await fetchTemplateName(slug)) || slug)
       title = `Demo Tema ${themeName} — LoVerse`
       description = `Coba demo gratis undangan digital bertema ${themeName}. Interaktif, lengkap, dan siap pakai.`
-      image = DEMO_THUMBS.has(slug) ? `${origin}/${encodeURIComponent(slug)}.png` : 'https://r2.loverse.id/og/OG-Image.png'
+      image = DEMO_THUMBS.has(slug) ? `${OG_DEMO_BASE}/${encodeURIComponent(slug)}.png` : OG_DEFAULT
       canonical = `${origin}/demo/${encodeURIComponent(slug)}`
     }
   } catch (err) {
