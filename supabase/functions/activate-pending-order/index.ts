@@ -16,15 +16,7 @@ import { sendPinEmail } from '../_shared/resendEmail.ts'
 import { requireAdminMfa } from '../_shared/auth.ts'
 import { reportError } from '../_shared/monitoring.ts'
 
-// Kunci origin via secret ALLOWED_ORIGIN (mis. https://domainanda.com).
-// Belum diset -> '*' agar development/sandbox tetap berfungsi.
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders, handleCorsPreflight } from '../_shared/cors.ts'
 
 function generateSlug(groom: string, bride: string): string {
   const clean = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -36,15 +28,14 @@ function generateSlug(groom: string, bride: string): string {
  * Lihat supabase/functions/_shared/auth.ts */
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
 
   try {
     const auth = await requireAdminMfa(req)
     if (!auth.ok) {
       return new Response(JSON.stringify({ error: auth.error }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: auth.error === 'Forbidden' ? 403 : 401,
       })
     }
@@ -150,7 +141,7 @@ serve(async (req) => {
           email_sent: emailSent,
           ...(emailSent ? {} : { pin }), // tanpa email: PIN diberikan ke admin untuk disampaikan manual
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 200 },
       )
     } catch (stepError) {
       // Self-healing: bila aktivasi gagal SETELAH klaim (mis. slug bentrok),
@@ -166,7 +157,7 @@ serve(async (req) => {
     void reportError(error, { fn: 'activate-pending-order' })
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 400 },
     )
   }
 })

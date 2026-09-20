@@ -29,6 +29,7 @@ export default function InvitationRender() {
   const [loading, setLoading] = useState(true);
   const [pageStatus, setPageStatus] = useState('loading');
   const [myRsvp, setMyRsvp] = useState<RsvpRow | null>(null);
+  const [submittingRsvp, setSubmittingRsvp] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,6 +93,9 @@ export default function InvitationRender() {
       toast.warning(t('toast.alreadyFilledRsvp'));
       return;
     }
+    // Cegah klik ganda: submit pertama yang menang, sisanya diabaikan.
+    if (submittingRsvp) return;
+    setSubmittingRsvp(true);
 
     try {
       let sessionId = localStorage.getItem('rsvp_session_id');
@@ -123,8 +127,33 @@ export default function InvitationRender() {
         if (found) setMyRsvp(found);
       }
     } catch (err) {
-      console.error('RSVP Error:', err);
-      toast.error(t('toast.rsvpSendFailed'));
+      // 409/23505 = baris sesi ini SUDAH ada (klik ganda lolos / submit
+      // lama yang UI-nya ketinggalan). Sinkronkan lalu anggap sudah mengisi,
+      // bukan error menakutkan.
+      const code = (err as { code?: string })?.code;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (code === '23505' || msg.includes('23505') || msg.includes('duplicate')) {
+        try {
+          const sessionId = localStorage.getItem('rsvp_session_id') ?? '';
+          const { data: refreshed } = await supabase.functions.invoke('rsvp-list', {
+            body: { slug, session_id: sessionId },
+          });
+          const rows = (refreshed as { rsvps?: RsvpRow[] } | null)?.rsvps;
+          if (Array.isArray(rows)) {
+            setRsvps(rows);
+            const found = rows.find((r) => r.is_mine);
+            if (found) setMyRsvp(found);
+          }
+        } catch {
+          /* abaikan — cukup beri tahu sudah tercatat */
+        }
+        toast.warning(t('toast.alreadyFilledRsvp'));
+      } else {
+        console.error('RSVP Error:', err);
+        toast.error(t('toast.rsvpSendFailed'));
+      }
+    } finally {
+      setSubmittingRsvp(false);
     }
   };
 

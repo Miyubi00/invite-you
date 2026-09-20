@@ -681,7 +681,7 @@ export default function BoardGameTheme({
                   <div className="min-w-0">
                     <p className="font-game text-base font-bold">{ev.title}</p>
                     <p className="font-body text-xs font-bold text-bg-ink/60">{ev.date}</p>
-                    <p className="font-game text-sm font-bold" style={{ color: ev.color }}>{ev.time} WITA</p>
+                    <p className="font-game text-sm font-bold" style={{ color: ev.color }}>{ev.time}</p>
                     <p className="font-body text-[11px] font-bold text-bg-ink/50">{resolveVenue(data).name}</p>
                   </div>
                 </motion.div>

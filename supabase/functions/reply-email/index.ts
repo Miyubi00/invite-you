@@ -9,22 +9,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { requireAdminMfa } from '../_shared/auth.ts'
+import { getCorsHeaders, handleCorsPreflight, jsonCors } from '../_shared/cors.ts'
 
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
 const RESEND_API_URL = 'https://api.resend.com/emails';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
 
 /** Escape HTML untuk kutipan pesan asli di badan balasan. */
 function escapeHtml(value: string): string {
@@ -90,25 +77,26 @@ export function validateReplyAttachments(list: unknown): { files: ReplyAttachmen
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method === 'GET') return new Response('ok', { status: 200, headers: corsHeaders });
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
+  if (req.method === 'GET') return new Response('ok', { status: 200, headers: getCorsHeaders(req) });
+  if (req.method !== 'POST') return jsonCors(req, { error: 'Method not allowed' }, 405);
 
   const caller = await requireAdminMfa(req);
-  if (!caller.ok) return json({ error: caller.error ?? 'Forbidden' }, 403);
+  if (!caller.ok) return jsonCors(req, { error: caller.error ?? 'Forbidden' }, 403);
 
   let payload: Record<string, unknown>;
   try {
     payload = await req.json();
   } catch {
-    return json({ error: 'Bad request' }, 400);
+    return jsonCors(req, { error: 'Bad request' }, 400);
   }
   const id = String(payload.id ?? '');
   const bodyText = String(payload.body ?? '').trim();
-  if (!id || !bodyText) return json({ error: 'id dan body wajib diisi.' }, 400);
-  if (bodyText.length > 10000) return json({ error: 'Balasan maksimal 10.000 karakter.' }, 400);
+  if (!id || !bodyText) return jsonCors(req, { error: 'id dan body wajib diisi.' }, 400);
+  if (bodyText.length > 10000) return jsonCors(req, { error: 'Balasan maksimal 10.000 karakter.' }, 400);
   const attachCheck = validateReplyAttachments(payload.attachments);
-  if (attachCheck.error) return json({ error: attachCheck.error }, 400);
+  if (attachCheck.error) return jsonCors(req, { error: attachCheck.error }, 400);
 
   const service = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -119,16 +107,16 @@ serve(async (req) => {
     .select('id, from_addr, subject, replied_at')
     .eq('id', id)
     .maybeSingle();
-  if (fetchError || !msg) return json({ error: 'Pesan tidak ditemukan.' }, 404);
+  if (fetchError || !msg) return jsonCors(req, { error: 'Pesan tidak ditemukan.' }, 404);
 
   // Anti dobel-kirim: tolak bila baru saja dibalas (<30 detik).
   if (msg.replied_at && Date.now() - new Date(msg.replied_at).getTime() < 30_000) {
-    return json({ error: 'Balasan baru saja dikirim. Tunggu sebentar.' }, 429);
+    return jsonCors(req, { error: 'Balasan baru saja dikirim. Tunggu sebentar.' }, 429);
   }
 
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('EMAIL_FROM') || 'LoVerse <mail@loverse.id>';
-  if (!apiKey) return json({ error: 'RESEND_API_KEY belum dikonfigurasi.' }, 500);
+  if (!apiKey) return jsonCors(req, { error: 'RESEND_API_KEY belum dikonfigurasi.' }, 500);
 
   const subject = /^re:\s/i.test(msg.subject) ? msg.subject : `Re: ${msg.subject}`;
   const html =
@@ -146,7 +134,7 @@ serve(async (req) => {
   });
   if (!res.ok) {
     console.error('[reply-email] Resend error:', await res.text());
-    return json({ error: 'Gagal mengirim balasan.' }, 502);
+    return jsonCors(req, { error: 'Gagal mengirim balasan.' }, 502);
   }
 
   await service
@@ -154,5 +142,5 @@ serve(async (req) => {
     .update({ is_read: true, replied_at: new Date().toISOString() })
     .eq('id', id);
 
-  return json({ ok: true });
+  return jsonCors(req, { ok: true });
 });

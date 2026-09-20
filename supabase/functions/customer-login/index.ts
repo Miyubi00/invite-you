@@ -25,15 +25,7 @@ import { normalizeWhatsapp } from '../_shared/whatsapp.ts'
 import { verifyCustomerJwt } from '../_shared/auth.ts'
 import { reportError } from '../_shared/monitoring.ts'
 
-// Kunci origin via secret ALLOWED_ORIGIN (mis. https://domainanda.com).
-// Belum diset -> '*' agar development/sandbox tetap berfungsi.
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { handleCorsPreflight, jsonCors } from '../_shared/cors.ts'
 
 const TOKEN_TTL_SECONDS = 60 * 60 * 2 // 2 jam — diperpanjang via mode refresh
 const MAX_SESSION_SECONDS = 60 * 60 * 24 // batas total sesi 24 jam sejak login pertama
@@ -99,12 +91,6 @@ async function clearFailures(admin: SupabaseAdmin, whatsapp: string): Promise<vo
   }
 }
 
-function json(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status,
-  })
-}
 
 /** Error dengan status HTTP — dipakai utk memisahkan client vs server error. */
 class HttpError extends Error {
@@ -212,8 +198,9 @@ async function signCustomerJwt(
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
+  if (req.method !== 'POST') return jsonCors(req, { error: 'Method not allowed' }, 405)
 
   try {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>
@@ -261,7 +248,7 @@ serve(async (req) => {
       }
 
       const access_token = await signCustomerJwt(signing.jwk, orderId, siat)
-      return json(
+      return jsonCors(req, 
         { access_token, expires_at: nowSec + TOKEN_TTL_SECONDS, order: orderRow },
         200,
       )
@@ -298,14 +285,14 @@ serve(async (req) => {
       byIp = fails.byIp
     } catch (e) {
       console.error('[customer-login] Rate limit tidak tersedia (fail-closed):', e)
-      return json(
+      return jsonCors(req, 
         { error: 'Sistem keamanan tidak tersedia. Pastikan migrasi login_attempts sudah dijalankan.' },
         503,
       )
     }
     if (byWhatsapp >= MAX_FAILS_PER_WHATSAPP || byIp >= MAX_FAILS_PER_IP) {
       console.warn(`[customer-login] Rate limit dipicu (wa=${byWhatsapp}, ip=${byIp}) utk ${normalized}`)
-      return json({ error: RATE_LIMIT_MSG }, 429)
+      return jsonCors(req, { error: RATE_LIMIT_MSG }, 429)
     }
 
     // --- Verifikasi PIN via RPC (bcrypt hash — bukan plaintext) ---
@@ -336,7 +323,7 @@ serve(async (req) => {
         await recordFailure(admin, normalized, ip)
       } catch (e) {
         console.error('[customer-login] Gagal mencatat kegagalan (fail-closed):', e)
-        return json({ error: 'Sistem keamanan sedang tidak tersedia. Silakan coba lagi nanti.' }, 503)
+        return jsonCors(req, { error: 'Sistem keamanan sedang tidak tersedia. Silakan coba lagi nanti.' }, 503)
       }
       throw new HttpError(401, 'Kombinasi No. WhatsApp atau PIN salah.')
     }
@@ -354,12 +341,12 @@ serve(async (req) => {
     const signing = loadSigningConfig()
     if (!signing) {
       console.error('[customer-login] Konfigurasi signing customer JWT tidak lengkap/salah')
-      return json({ error: 'Server not configured.' }, 500)
+      return jsonCors(req, { error: 'Server not configured.' }, 500)
     }
 
     const access_token = await signCustomerJwt(signing.jwk, order.id)
 
-    return json(
+    return jsonCors(req, 
       {
         access_token,
         expires_at: Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS,
@@ -377,9 +364,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('[customer-login] Error:', error)
     if (error instanceof HttpError) {
-      return json({ error: error.message }, error.status)
+      return jsonCors(req, { error: error.message }, error.status)
     }
     void reportError(error, { fn: 'customer-login' })
-    return json({ error: 'Terjadi kesalahan sistem. Silakan coba lagi.' }, 500)
+    return jsonCors(req, { error: 'Terjadi kesalahan sistem. Silakan coba lagi.' }, 500)
   }
 })

@@ -12,27 +12,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { decryptOrderId, resolveOrderId } from '../_shared/orderToken.ts'
-
-// Kunci origin via secret ALLOWED_ORIGIN (mis. https://domainanda.com).
-// Belum diset -> '*' agar development/sandbox tetap berfungsi.
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-function json(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status,
-  })
-}
+import { handleCorsPreflight, jsonCors } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
+  if (req.method !== 'POST') return jsonCors(req, { error: 'Method not allowed' }, 405)
 
   try {
     const { midtrans_order_id, order_token } = await req.json()
@@ -58,7 +43,7 @@ serve(async (req) => {
     }
 
     if (!resolvedId) {
-      return json({ error: 'order_id wajib dikirim.' }, 400)
+      return jsonCors(req, { error: 'order_id wajib dikirim.' }, 400)
     }
 
     const admin = createClient(
@@ -78,7 +63,7 @@ serve(async (req) => {
 
     if (!order) {
       // Belum ketemu — klien boleh polling lagi (order bisa baru dibuat).
-      return json({ found: false }, 404)
+      return jsonCors(req, { found: false }, 404)
     }
 
     const isPending = order.payment_status === 'pending'
@@ -121,7 +106,7 @@ serve(async (req) => {
 
     const paymentMethodDisplay = rawMethod ? (methodMap[rawMethod] || rawMethod.toUpperCase()) : 'QRIS'
 
-    return json(
+    return jsonCors(req, 
       {
         found: true,
         payment_status: order.payment_status,
@@ -154,7 +139,7 @@ serve(async (req) => {
     )
   } catch (err) {
     console.error('[payment-status] Error:', err)
-    return json(
+    return jsonCors(req, 
       { error: err instanceof Error ? err.message : String(err) },
       500,
     )

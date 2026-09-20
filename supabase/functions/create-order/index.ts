@@ -9,15 +9,7 @@ import { encryptOrderId, generateOrderId } from '../_shared/orderToken.ts'
 import { normalizeWhatsapp } from '../_shared/whatsapp.ts'
 import { reportError } from '../_shared/monitoring.ts'
 
-// Kunci origin via secret ALLOWED_ORIGIN (mis. https://domainanda.com).
-// Belum diset -> '*' agar development/sandbox tetap berfungsi.
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders, handleCorsPreflight } from '../_shared/cors.ts'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -69,9 +61,8 @@ function generateSlug(groom: string, bride: string): string {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders } as ResponseInit)
-  }
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
 
   const ip = getClientIp(req)
   const admin = createClient(
@@ -153,14 +144,14 @@ serve(async (req) => {
       console.error('[create-order] Rate limit tidak tersedia (fail-closed):', e)
       return new Response(
         JSON.stringify({ error: 'Sistem keamanan sedang tidak tersedia. Pastikan migrasi order_attempts sudah dijalankan, lalu hubungi admin.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 },
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 503 },
       )
     }
     if (recent >= MAX_ORDERS_PER_IP) {
       console.warn(`[create-order] Rate limit dipicu (ip=${ip}, hit=${recent} dalam 1 jam)`)
       return new Response(
         JSON.stringify({ error: RATE_LIMIT_MSG }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 },
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 429 },
       )
     }
 
@@ -198,7 +189,7 @@ serve(async (req) => {
       await recordAttempt(admin, ip, true)
       return new Response(
         JSON.stringify({ success: true, pending_id: (pending as { id: string }).id }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 200 },
       )
     }
 
@@ -431,7 +422,7 @@ serve(async (req) => {
         order_token: orderToken,
         redirect_url: snapData.redirect_url,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 200 },
     )
   } catch (error) {
     console.error('[create-order] Function error:', error)
@@ -444,7 +435,7 @@ serve(async (req) => {
     }
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 400 },
     )
   }
 })

@@ -17,15 +17,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20'
 import { verifyMediaAccess } from '../_shared/auth.ts'
 
-// Kunci origin via secret ALLOWED_ORIGIN (mis. https://domainanda.com).
-// Belum diset -> '*' agar development/sandbox tetap berfungsi.
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { getCorsHeaders, handleCorsPreflight } from '../_shared/cors.ts'
 
 const ALLOWED_PREFIXES = ['IMG_', 'ADMIN_IMG_', 'GALLERY_', 'AUDIO_'];
 // SVG disengaja DITOLAK: scriptable di domain publik => vektor stored XSS.
@@ -40,9 +32,8 @@ function getSafeExtension(fileName: string): string | null {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
 
   try {
     // --- Parse multipart ---
@@ -70,7 +61,7 @@ serve(async (req) => {
     if (!caller) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized untuk pesanan ini.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 },
+        { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 403 },
       )
     }
 
@@ -124,13 +115,13 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ publicUrl, key, contentType }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 200 },
     )
   } catch (error) {
     console.error('[r2-upload] Error:', error)
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
+      { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 400 },
     )
   }
 })

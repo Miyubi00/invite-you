@@ -13,23 +13,10 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { handleCorsPreflight, jsonCors } from '../_shared/cors.ts';
 
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
 const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-flash-lite-latest';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function json(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status,
-  });
-}
 
 // ------------------------------------------------------------
 // Knowledge base LoVeRse — harga, kategori & katalog tema dibaca
@@ -697,8 +684,9 @@ async function askGemini(history: IncomingMessage[], systemPrompt: string): Prom
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
+  if (req.method !== 'POST') return jsonCors(req, { error: 'Method not allowed' }, 405);
 
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
@@ -709,14 +697,14 @@ serve(async (req) => {
   try {
     body = await req.json();
   } catch {
-    return json({ error: 'Payload tidak valid.' }, 400);
+    return jsonCors(req, { error: 'Payload tidak valid.' }, 400);
   }
 
   // --- Polling & close handover: bypass rate-limit & GEMINI check (polling tiap 3 detik) ---
   if ((body as { poll?: unknown }).poll && typeof (body as { anonId?: unknown }).anonId === 'string') {
     const anonId = (body as { anonId: string }).anonId.slice(0, 64);
     const admin = getSupabaseAdmin();
-    if (!admin) return json({ transcript: [] }, 200);
+    if (!admin) return jsonCors(req, { transcript: [] }, 200);
     const { data } = await admin
       .from('telegram_handover_sessions')
       .select('transcript,status,updated_at')
@@ -724,37 +712,37 @@ serve(async (req) => {
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!data) return json({ transcript: [] }, 200);
+    if (!data) return jsonCors(req, { transcript: [] }, 200);
     if (Date.now() - new Date((data as { updated_at: string }).updated_at).getTime() > HANDOVER_TIMEOUT_MS) {
-      return json({ transcript: [] }, 200);
+      return jsonCors(req, { transcript: [] }, 200);
     }
-    return json({ transcript: (data as { transcript: unknown }).transcript, status: (data as { status: string }).status }, 200);
+    return jsonCors(req, { transcript: (data as { transcript: unknown }).transcript, status: (data as { status: string }).status }, 200);
   }
   if ((body as { closeHandover?: unknown }).closeHandover && typeof (body as { anonId?: unknown }).anonId === 'string') {
     const anonId = (body as { anonId: string }).anonId.slice(0, 64);
     const admin = getSupabaseAdmin();
     if (admin) await admin.from('telegram_handover_sessions').update({ status: 'closed' }).eq('anon_id', anonId).eq('status', 'active');
-    return json({ reply: REPLY_HANDOVER_CLOSED }, 200);
+    return jsonCors(req, { reply: REPLY_HANDOVER_CLOSED }, 200);
   }
 
   if (!GEMINI_API_KEY) {
     console.error('GEMINI_API_KEY belum diset di secrets.');
-    return json({ busy: true }, 200);
+    return jsonCors(req, { busy: true }, 200);
   }
 
-  if (await isRateLimited(ip)) return json({ busy: true }, 200);
+  if (await isRateLimited(ip)) return jsonCors(req, { busy: true }, 200);
 
   try {
 
     const parsed = parseMessages(body.messages);
-    if (!parsed) return json({ error: 'Payload tidak valid.' }, 400);
+    if (!parsed) return jsonCors(req, { error: 'Payload tidak valid.' }, 400);
 
     const anonIdRaw = typeof body.anonId === 'string' ? body.anonId : ip;
     const anonId = String(anonIdRaw).slice(0, 64);
 
     const latest = parsed[parsed.length - 1];
     if (latest?.role === 'user' && isInjectionAttempt(latest.content)) {
-      return json({ reply: REFUSAL_REPLY }, 200);
+      return jsonCors(req, { reply: REFUSAL_REPLY }, 200);
     }
 
     // --- Jika sudah dalam sesi handover aktif, forward langsung ke Telegram (silent) ---
@@ -773,11 +761,11 @@ serve(async (req) => {
             body: JSON.stringify({ chat_id: chatId, text: `✅ Klien ${anonId.slice(0, 8)} mengakhiri sesi.` }),
           }).catch(() => {});
         }
-        return json({ reply: REPLY_HANDOVER_CLOSED, handoverClosed: true }, 200);
+        return jsonCors(req, { reply: REPLY_HANDOVER_CLOSED, handoverClosed: true }, 200);
       }
       if (latest?.role === 'user') {
         await forwardToTelegram(anonId, latest.content);
-        return json({ handover: true, silent: true }, 200);
+        return jsonCors(req, { handover: true, silent: true }, 200);
       }
     }
 
@@ -785,21 +773,21 @@ serve(async (req) => {
     if (latest?.role === 'user' && isHandoverIntent(latest.content)) {
       const busy = await findAnyActiveSession(anonId);
       if (busy) {
-        return json({ handoverBusy: true, reply: REPLY_HANDOVER_BUSY }, 200);
+        return jsonCors(req, { handoverBusy: true, reply: REPLY_HANDOVER_BUSY }, 200);
       }
       const preview = parsed.slice(-6).map((m) => `${m.role}: ${m.content.slice(0, 80)}`).join('\n');
       const created = await createHandoverSession(anonId, latest.content);
-      if (!created) return json({ reply: REPLY_HANDOVER_BUSY, handoverBusy: true }, 200);
+      if (!created) return jsonCors(req, { reply: REPLY_HANDOVER_BUSY, handoverBusy: true }, 200);
       await notifyAdminNewHandover(anonId, latest.content, preview);
       // Kirim connecting + connected sekaligus (dua step digabung agar UX cepat)
-      return json({ handover: true, reply: `${REPLY_HANDOVER_CONNECTING}\n\n${REPLY_HANDOVER_CONNECTED}` }, 200);
+      return jsonCors(req, { handover: true, reply: `${REPLY_HANDOVER_CONNECTING}\n\n${REPLY_HANDOVER_CONNECTED}` }, 200);
     }
 
     const systemPrompt = await getSystemPrompt();
     const reply = await askGemini(parsed, systemPrompt);
-    return json({ reply }, 200);
+    return jsonCors(req, { reply }, 200);
   } catch (err) {
     console.error('ai-chat:', err instanceof Error ? err.message : err);
-    return json({ busy: true }, 200);
+    return jsonCors(req, { busy: true }, 200);
   }
 });

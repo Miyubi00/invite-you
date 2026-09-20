@@ -34,6 +34,8 @@ build/
 .supabase/
 supabase/.temp/
 supabase/.branches/
+# Migrasi DB privat — hanya lokal, tidak ikut ke GitHub
+supabase/migrations/
 # Private signing keys & secret env dump
 supabase/signing_keys.json
 signing_keys.json

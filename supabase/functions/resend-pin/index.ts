@@ -31,16 +31,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { generateUniquePin } from '../_shared/pin.ts'
 import { sendResendPinEmail, sendResendConfirmEmail } from '../_shared/resendPinEmail.ts'
 import { reportError } from '../_shared/monitoring.ts'
-
-// Kunci origin via secret ALLOWED_ORIGIN (mis. https://domainanda.com).
-// Belum diset -> '*' agar development/sandbox tetap berfungsi.
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { handleCorsPreflight, jsonCors } from '../_shared/cors.ts'
 
 /* --- RATE LIMITING tahap 1 (anti-spam & anti-enumerasi) ---
  * Basis data: tabel public.pin_resend_attempts — lihat migrasi
@@ -68,13 +59,6 @@ function getClientIp(req: Request): string {
   const fwd = req.headers.get('x-forwarded-for')
   if (fwd) return fwd.split(',')[0]!.trim()
   return req.headers.get('x-real-ip') ?? req.headers.get('cf-connecting-ip') ?? 'unknown'
-}
-
-function json(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status,
-  })
 }
 
 class HttpError extends Error {
@@ -195,15 +179,14 @@ async function refreshAndEmailAll(orders: ResendOrder[]): Promise<number> {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const preflight = handleCorsPreflight(req)
+  if (preflight) return preflight
 
   const ip = getClientIp(req)
 
   try {
     if (req.method !== 'POST') {
-      return json({ error: 'Metode tidak diizinkan.' }, 405)
+      return jsonCors(req, { error: 'Metode tidak diizinkan.' }, 405)
     }
 
     const body = (await req.json().catch(() => ({}))) as {
@@ -223,11 +206,11 @@ serve(async (req) => {
     return await handleRequest(body, ip)
   } catch (error) {
     if (error instanceof HttpError) {
-      return json({ error: error.message }, error.status)
+      return jsonCors(req, { error: error.message }, error.status)
     }
     console.error('[resend-pin] Error:', error)
     void reportError(error, { fn: 'resend-pin' })
-    return json({ error: 'Terjadi kesalahan sistem. Silakan coba lagi.' }, 500)
+    return jsonCors(req, { error: 'Terjadi kesalahan sistem. Silakan coba lagi.' }, 500)
   }
 })
 
@@ -320,7 +303,7 @@ async function handleRequest(
 
   if (!ownerEmail) {
     // Tidak ada yang cocok -> TIDAK mengirim apa pun; balasan tetap generik.
-    return json({ ok: true, message: GENERIC_OK }, 200)
+    return jsonCors(req, { ok: true, message: GENERIC_OK }, 200)
   }
 
   // --- BUAT TOKEN & KIRIM EMAIL KONFIRMASI (PIN belum diubah!) ---
@@ -354,7 +337,7 @@ async function handleRequest(
   }
 
   // Balasan SELALU generik — jangan bocorkan pesanan ada/tidak.
-  return json({ ok: true, message: GENERIC_OK }, 200)
+  return jsonCors(req, { ok: true, message: GENERIC_OK }, 200)
 }
 
 async function recordRequestAttempt(email: string, ip: string, success: boolean): Promise<void> {
@@ -390,7 +373,7 @@ async function handleTokenAction(
   )
   const tokenStr = typeof token === 'string' ? token.trim() : ''
   if (!TOKEN_RE.test(tokenStr)) {
-    return json({ ok: true, status: 'invalid' }, 200)
+    return jsonCors(req, { ok: true, status: 'invalid' }, 200)
   }
 
   const actionStr = action === 'cancel' ? 'cancel' : 'confirm'
@@ -410,18 +393,18 @@ async function handleTokenAction(
   if (claimError) {
     console.error('[resend-pin] Gagal mengklaim token:', claimError.message)
     void reportError(new Error(`Gagal mengklaim token: ${claimError.message}`), { fn: 'resend-pin' })
-    return json({ ok: true, status: 'invalid' }, 200)
+    return jsonCors(req, { ok: true, status: 'invalid' }, 200)
   }
   if (!claimed) {
     // Sudah terpakai / kedaluwarsa / tidak ada.
-    return json({ ok: true, status: 'invalid' }, 200)
+    return jsonCors(req, { ok: true, status: 'invalid' }, 200)
   }
 
   const row = claimed as { email: string; wedding_date: string }
 
   if (actionStr === 'cancel') {
     // Revoke selesai — PIN tidak diubah.
-    return json({ ok: true, status: 'canceled' }, 200)
+    return jsonCors(req, { ok: true, status: 'canceled' }, 200)
   }
 
   // --- CONFIRM: cari ulang pesanan lalu regenerate + kirim PIN ---
@@ -437,9 +420,9 @@ async function handleTokenAction(
   if (orderError) {
     console.error('[resend-pin] Gagal membaca order (confirm):', orderError.message)
     void reportError(new Error(`Gagal membaca order: ${orderError.message}`), { fn: 'resend-pin' })
-    return json({ ok: true, status: 'invalid' }, 200)
+    return jsonCors(req, { ok: true, status: 'invalid' }, 200)
   }
 
   await refreshAndEmailAll((orders ?? []) as ResendOrder[])
-  return json({ ok: true, status: 'confirmed' }, 200)
+  return jsonCors(req, { ok: true, status: 'confirmed' }, 200)
 }
