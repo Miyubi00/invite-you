@@ -36,6 +36,8 @@ supabase/.temp/
 supabase/.branches/
 # Migrasi DB privat — hanya lokal, tidak ikut ke GitHub
 supabase/migrations/
+# Template cron berisi placeholder secret — hanya lokal
+supabase/scheduled-jobs.example.sql
 # Private signing keys & secret env dump
 supabase/signing_keys.json
 signing_keys.json
