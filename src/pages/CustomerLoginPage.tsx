@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/GlobalToast';
 import { Lock, LogIn, HeartHandshake, Eye, EyeOff, Phone } from 'lucide-react';
 import { useTranslation } from '../i18n';
+import { usePageMeta } from '../hooks/usePageMeta';
 import TurnstileWidget, { type TurnstileWidgetRef } from '../components/ui/TurnstileWidget';
 
 interface CustomerLoginResponse {
@@ -34,6 +35,10 @@ async function extractInvokeError(err: unknown): Promise<string> {
 
 export default function DashboardLogin() {
   const { t } = useTranslation();
+  usePageMeta(
+    'Login Dashboard — LoVerse',
+    'Masuk dashboard undangan digital LoVerse dengan No. WhatsApp dan PIN 6 digit untuk mengatur undanganmu.',
+  );
   const navigate = useNavigate();
   const toast = useToast(); 
   const [loading, setLoading] = useState(false);

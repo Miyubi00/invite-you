@@ -37,6 +37,8 @@ const AdminPanelPage = lazy(() => import('./pages/AdminPanelPage'));
 const PaymentStatusPage = lazy(() => import('./pages/PaymentStatusPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
+const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
+const TutorialPage = lazy(() => import('./pages/TutorialPage'));
 
 /* Fallback saat chunk halaman sedang di-download */
 function PageLoader() {
@@ -62,6 +64,8 @@ function App() {
 
                 <Route path="/payment-status" element={<PaymentStatusPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                <Route path="/portfolio" element={<PortfolioPage />} />
+                <Route path="/tutorial" element={<TutorialPage />} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />

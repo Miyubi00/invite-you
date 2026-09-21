@@ -16,14 +16,15 @@ import {
   type ChangeEvent,
 } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useToast } from "../components/GlobalToast";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { useTranslation } from "../i18n";
+import { usePageMeta } from "../hooks/usePageMeta";
 import type { TurnstileWidgetRef } from "../components/ui/TurnstileWidget";
 import { MASTER_TEMPLATES, type MasterTemplate } from "../lib/constants";
 import { goBackOrHome } from "../lib/navigation";
-import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, GraduationCap, RotateCcw } from "lucide-react";
 import { OrderBackButton } from "../components/order/OrderBackButton";
 import { OrderDetailsForm } from "../components/order/OrderDetailsForm";
 import { OrderSteps } from "../components/order/OrderSteps";
@@ -98,6 +99,10 @@ function clearDraft() {
 
 export default function OrderForm() {
   const { t } = useTranslation();
+  usePageMeta(
+    'Buat Undangan Pernikahan Digital — LoVerse',
+    'Pilih 40+ tema undangan digital, isi data, bayar via QRIS, VA, e-wallet atau WhatsApp. Undangan aktif otomatis dengan PIN dashboard.',
+  );
   const toast = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -346,7 +351,13 @@ export default function OrderForm() {
               {t("order.title")}
             </h1>
             <p className="mt-1 text-xs sm:text-sm md:text-base text-stone-500">
-              {t("order.desc")}
+              {t("order.desc")}{" "}
+              <Link
+                to="/tutorial"
+                className="inline-flex items-center gap-1 font-bold text-[#B4693F] hover:text-[#712E1E] hover:underline transition"
+              >
+                <GraduationCap size={13} /> {t("order.tutorialLink")}
+              </Link>
             </p>
           </div>
 

@@ -12,11 +12,18 @@ import { TEMPLATE_COMPONENTS } from '../templates/Registry';
 import type { TemplateData } from '../types/template';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from '../i18n';
+import { usePageMeta } from '../hooks/usePageMeta';
+import { MASTER_TEMPLATES } from '../lib/constants';
 import LanguageSwitcher from '../components/shared/LanguageSwitcher';
 
 export default function TemplateDemo() {
   const { t } = useTranslation();
   const { slug } = useParams();
+  const themeName = MASTER_TEMPLATES.find((tm) => tm.slug === slug)?.name ?? slug ?? 'Undangan';
+  usePageMeta(
+    `Demo Tema ${themeName} — LoVerse`,
+    `Lihat demo live tema undangan pernikahan digital ${themeName}: interaktif, lengkap RSVP, musik, dan galeri. Coba gratis.`,
+  );
   const TemplateRenderer = (slug ? TEMPLATE_COMPONENTS[slug] : undefined) || TEMPLATE_COMPONENTS['rustic-floral'];
 
   if (!TemplateRenderer) {

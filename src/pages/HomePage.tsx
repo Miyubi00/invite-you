@@ -17,11 +17,12 @@ import { TemplateCardSkeleton } from '../components/ui/SkeletonLoaders';
 import { SkeletonImage } from '../components/ui/SkeletonImage';
 import type { TemplateRow } from '../types/database';
 import { useTranslation } from '../i18n';
+import { usePageMeta } from '../hooks/usePageMeta';
 import {
   Search, Eye, Edit3, Sparkles, MessageSquare,
-  Star, ShoppingBag, LayoutTemplate, ArrowRight,
+  Star, ShoppingBag, LayoutTemplate, ArrowRight, Images,
   CheckCircle2, Music, Share2, ShieldCheck, HelpCircle, ChevronDown,
-  Calendar, Users
+  Calendar, Users, GraduationCap
 } from 'lucide-react';
 
 type CategoryFilter = 'All' | 'Basic' | 'RSVP';
@@ -105,6 +106,10 @@ const BASE_DUMMY_SOLD = 60;
 
 export default function Landing() {
   const { t } = useTranslation();
+  usePageMeta(
+    'LoVerse — Undangan Pernikahan Digital Elegan & Modern',
+    'LoVerse — undangan pernikahan digital elegan & modern. Pilih 40+ tema, RSVP online, musik, galeri foto, dan buku tamu. Buat dalam hitungan menit mulai Rp 10.000.',
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('All');
   const [templates, setTemplates] = useState<Array<TemplateRow & { image: string }>>([]);
@@ -277,7 +282,9 @@ export default function Landing() {
               {/* Main Headline */}
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-extrabold text-[#712E1E] leading-[1.18] tracking-tight">
                 {t('home.heroTitlePrefix')}{' '}
-                <span className="text-[#E59A59] inline-block relative">
+                <span
+                  className="text-[#E59A59] inline-block relative font-brand italic font-bold text-[1.06em] [text-shadow:0_2px_14px_rgba(229,154,89,0.45)]"
+                >
                   {t('home.heroTitleHighlight')}
                   <span className="absolute -bottom-1.5 left-0 right-0 h-1.5 bg-[#E59A59]/25 rounded-full" />
                 </span>{' '}
@@ -304,6 +311,13 @@ export default function Landing() {
                 >
                   <span>{t('home.heroCtaOrder')}</span>
                   <ArrowRight size={16} className="text-[#E59A59]" />
+                </Link>
+                <Link
+                  to="/portfolio"
+                  className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-[#712E1E] text-[#FFD5AF] font-bold text-sm md:text-base shadow-lg shadow-[#712E1E]/25 transition duration-200 hover:bg-[#5a2318] active:scale-95"
+                >
+                  <Images size={16} />
+                  <span>{t('home.heroPortfolioBtn')}</span>
                 </Link>
               </div>
 
@@ -514,7 +528,7 @@ export default function Landing() {
           <span className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#E59A59] bg-white px-3.5 py-1 rounded-full border border-[#EBDFCE]">
             Keunggulan Layanan
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#712E1E] mt-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-brand font-semibold text-[#712E1E] mt-3">
             {t('home.aboutTitle')}
           </h2>
           <p className="mt-2 text-sm md:text-base text-stone-600 max-w-xl mx-auto">
@@ -551,7 +565,7 @@ export default function Landing() {
             <span className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#E59A59] bg-white px-3.5 py-1 rounded-full border border-[#EBDFCE]">
               Alur Praktis
             </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#712E1E] mt-3">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-brand font-semibold text-[#712E1E] mt-3">
               {t('home.stepsTitle')}
             </h2>
             <p className="mt-2 text-sm md:text-base text-stone-600 max-w-xl mx-auto">
@@ -626,7 +640,7 @@ export default function Landing() {
           <span className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#E59A59] bg-white px-3.5 py-1 rounded-full border border-[#EBDFCE]">
             Katalog Desain
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#712E1E] mt-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-brand font-semibold text-[#712E1E] mt-3">
             {t('home.catalogTitle')}
           </h2>
           <p className="mt-2 text-sm md:text-base text-stone-600 max-w-xl mx-auto">
@@ -765,7 +779,7 @@ export default function Landing() {
             <span className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#E59A59] bg-white px-3.5 py-1 rounded-full border border-[#EBDFCE]">
               Testimoni
             </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#712E1E] mt-3">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-brand font-semibold text-[#712E1E] mt-3">
               {t('home.testimonialsTitle')}
             </h2>
             <p className="mt-2 text-sm md:text-base text-stone-600 max-w-xl mx-auto">
@@ -812,7 +826,7 @@ export default function Landing() {
           <span className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#E59A59] bg-white px-3.5 py-1 rounded-full border border-[#EBDFCE]">
             Bantuan & Jawaban
           </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#712E1E] mt-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-brand font-semibold text-[#712E1E] mt-3">
             {t('home.faqTitle')}
           </h2>
           <p className="mt-2 text-sm md:text-base text-stone-600 max-w-xl mx-auto">
@@ -852,6 +866,16 @@ export default function Landing() {
               </div>
             );
           })}
+        </div>
+
+        <div className="mx-auto mt-6 max-w-3xl text-center">
+          <Link
+            to="/tutorial"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#EBDFCE] bg-white px-5 py-2.5 text-xs font-bold text-[#712E1E] shadow-sm transition hover:border-[#E59A59]/60 hover:bg-[#FAF6EE] active:scale-95 sm:text-sm"
+          >
+            <GraduationCap size={16} className="text-[#E59A59]" />
+            {t('home.faqTutorialBtn')}
+          </Link>
         </div>
       </section>
 

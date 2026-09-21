@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useTranslation } from '../i18n';
+import { usePageMeta } from '../hooks/usePageMeta';
 import AiAssistant from '../components/contact/AiAssistant';
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
 import { ADMIN_WHATSAPP } from '../lib/constants';
@@ -110,6 +111,10 @@ function SectionHeader({
 
 export default function Contact() {
   const { t } = useTranslation();
+  usePageMeta(
+    'Hubungi Kami — LoVerse',
+    'Konsultasi undangan pernikahan digital via WhatsApp dan email. Tim LoVerse siap membantu memilih tema dan pemesanan.',
+  );
   const copyToClipboard = useCopyToClipboard();
 
   // Status salin per nomor / username
@@ -172,7 +177,7 @@ export default function Contact() {
             {t('contact.badge')}
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#712E1E] tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-brand font-semibold text-[#712E1E] tracking-tight leading-tight">
             {t('contact.title')}
           </h1>
 
