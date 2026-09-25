@@ -11,12 +11,14 @@
 // ============================================================
 
 import type { ReactNode } from "react";
-import { Building2, ChevronDown, QrCode } from "lucide-react";
+import { Building2, ChevronDown, QrCode, Smartphone } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useTranslation } from "../../i18n";
 import {
+  EWALLET_OPTIONS,
   formatIDR,
   getPaymentMethodFee,
+  isEwalletMethod,
   isVaMethod,
   MIDTRANS_LOGOS,
   VA_BANKS,
@@ -165,10 +167,15 @@ export function PaymentMethodPicker({
   const { t } = useTranslation();
 
   const qrisTotal = formatIDR(basePrice + getPaymentMethodFee(basePrice, "qris"));
+  const ewalletTotal = formatIDR(
+    basePrice + getPaymentMethodFee(basePrice, "gopay"),
+  );
   const vaTotal = formatIDR(basePrice + getPaymentMethodFee(basePrice, "bni_va"));
   const waTotal = formatIDR(basePrice);
 
+  const isEwalletActive = isEwalletMethod(paymentMethod);
   const isVaActive = isVaMethod(paymentMethod);
+  const ewalletOpen = isEwalletActive || expandedCategory === "ewallet";
   const vaOpen = isVaActive || expandedCategory === "va";
 
   return (
@@ -201,7 +208,79 @@ export function PaymentMethodPicker({
           radio={<RadioDot selected={paymentMethod === "qris"} />}
         />
 
-        {/* 2. ATM / Bank Transfer (Virtual Account) */}
+        {/* 2. E-Wallet GoPay (deep-link aplikasi) */}
+        <div
+          className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
+            ewalletOpen
+              ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
+              : "border-stone-200 bg-white"
+          }`}
+        >
+          <CategoryCard
+            onClick={() => {
+              // Hanya membuka/tutup accordion — tidak meng-auto-pilih metode.
+              onExpand(expandedCategory === "ewallet" ? null : "ewallet");
+            }}
+            className="p-3 sm:p-4 cursor-pointer"
+            iconBoxClass={isEwalletActive ? ICON_ACTIVE : ICON_INACTIVE}
+            icon={<Smartphone size={20} className="sm:w-[22px] sm:h-[22px]" />}
+            title={t("order.methodEwalletTitle")}
+            logos={
+              <>
+                <LogoPill src={MIDTRANS_LOGOS.gopay} alt="GoPay" className="h-3" />
+              </>
+            }
+            description={t("order.methodEwalletSubtitle")}
+            price={ewalletTotal}
+            trailing={
+              <ChevronDown
+                size={18}
+                className={`text-stone-400 transition-transform ${ewalletOpen ? "rotate-180" : ""}`}
+              />
+            }
+          />
+
+          {/* Sub-Pilihan E-Wallet */}
+          {ewalletOpen && (
+            <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 space-y-2 border-t border-stone-200/80 bg-white">
+              {EWALLET_OPTIONS.map((option) => {
+                const active = paymentMethod === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => {
+                      onSelect(option.id);
+                      onExpand("ewallet");
+                    }}
+                    className={`flex w-full items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl border-2 transition ${
+                      active ? SUB_ACTIVE : SUB_INACTIVE
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className={option.logoBoxClass}>
+                        {option.logos.map((logo) => (
+                          <img
+                            key={logo.alt}
+                            src={logo.src}
+                            alt={logo.alt}
+                            className={logo.className}
+                          />
+                        ))}
+                      </span>
+                      <span className="text-xs font-bold text-stone-800">
+                        {formatIDR(basePrice + getPaymentMethodFee(basePrice, option.id))}
+                      </span>
+                    </span>
+                    <RadioDot selected={active} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 3. ATM / Bank Transfer (Virtual Account) */}
         <div
           className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
             vaOpen

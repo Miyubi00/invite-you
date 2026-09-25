@@ -150,13 +150,17 @@ export function getPaymentMethodFee(
   method: PaymentMethodType,
 ): number {
   // WAJIB SINKRON dengan create-order: fee kanal + PPN 11%, dibebankan ke
-  // pelanggan (split Midtrans MATI). QRIS 0,7%; VA flat Rp 4.000.
+  // pelanggan (split Midtrans MATI). QRIS 0,7%; GoPay 1,5%; VA flat Rp 4.000.
   // Manual WA = Rp 0. Parameter dipertahankan agar signature stabil.
   if (method === "whatsapp") {
     return 0;
   }
   const channelFee =
-    method === "qris" ? Math.ceil(basePrice * 0.007) : 4000;
+    method === "qris"
+      ? Math.ceil(basePrice * 0.007)
+      : method === "gopay"
+        ? Math.ceil(basePrice * 0.015)
+        : 4000;
   return channelFee + Math.ceil(channelFee * 0.11);
 }
 

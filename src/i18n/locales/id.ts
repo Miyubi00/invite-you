@@ -287,7 +287,7 @@ export const id = {
     methodQrisSubtitle: "BCA, Mandiri, BRI, BNI, GoPay, Dana, OVO, ShopeePay, dsb.",
     methodQrisBadge: "Instan Semua Bank & E-Wallet",
     methodEwalletTitle: "E-Wallet / Dompet Digital",
-    methodEwalletSubtitle: "GoPay, ShopeePay, Dana",
+    methodEwalletSubtitle: "GoPay",
     methodVaTitle: "Virtual Accounts / Bank Transfer",
     methodVaSubtitle: "Mandiri, BNI, BRI, Permata",
     methodVaBadge: "Verifikasi Otomatis",

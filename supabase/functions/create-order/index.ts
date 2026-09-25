@@ -237,11 +237,13 @@ serve(async (req) => {
 
     // --- Biaya layanan DIBEBANKAN ke pelanggan (split Midtrans MATI).
     // WAJIB SINKRON dengan getPaymentMethodFee() di frontend:
-    // fee kanal + PPN 11% di atas fee. QRIS 0,7%; VA flat Rp 4.000.
-    // Manual WA = Rp 0 (jalurnya return lebih awal di atas).
+    // fee kanal + PPN 11% di atas fee. QRIS 0,7%; GoPay 1,5%;
+    // VA flat Rp 4.000. Manual WA = Rp 0 (jalurnya return lebih awal).
     const channelFee = payment_method === 'qris'
       ? Math.ceil(template.price * 0.007)
-      : 4000
+      : payment_method === 'gopay'
+        ? Math.ceil(template.price * 0.015)
+        : 4000
     const ppnFee = Math.ceil(channelFee * 0.11)
     const adminFee = channelFee + ppnFee
     const feeName = 'Biaya Layanan (termasuk PPN 11%)'
@@ -294,15 +296,18 @@ serve(async (req) => {
     // ?order_id=&status_code=&transaction_status= ke URL finish).
     const appUrl = Deno.env.get('APP_URL') || ''
 
-    // Kanal aktif di akun (hasil tes Snap): qris, echannel (Mandiri),
-    // bni_va, bri_va, permata_va, other_va. GoPay & CIMB DIMATIKAN dari
-    // penawaran (GoPay duplikat QRIS; CIMB tak ada tipenya di Snap).
+    // Kanal aktif di akun (lihat dashboard): Other QRIS, GoPay,
+    // Mandiri VA (echannel), BNI/BRI/Permata VA. GoPay & CIMB DIMATIKAN
+    // dari penawaran. CATATAN: QRIS wajib 'other_qris' (terbukti jalan di
+    // akun ini; 'qris' bikin token tapi popup menolak render).
     // SATU kanal per transaksi -> Snap langsung ke alurnya (tanpa halaman
     // pilih lagi). Fallback (legacy/tak dikenal): semua kanal aktif.
-    let enabledPayments: string[] = ['qris', 'echannel', 'bni_va', 'bri_va', 'permata_va', 'other_va']
+    let enabledPayments: string[] = ['other_qris', 'gopay', 'echannel', 'bni_va', 'bri_va', 'permata_va', 'other_va']
 
     if (payment_method === 'qris') {
-      enabledPayments = ['qris']
+      enabledPayments = ['other_qris']
+    } else if (payment_method === 'gopay') {
+      enabledPayments = ['gopay']
     } else if (payment_method === 'echannel') {
       enabledPayments = ['echannel']
     } else if (payment_method === 'bni_va') {

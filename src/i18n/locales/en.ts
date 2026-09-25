@@ -289,7 +289,7 @@ export const en: TranslationDictionary = {
     methodQrisSubtitle: "BCA, Mandiri, BRI, BNI, GoPay, Dana, OVO, ShopeePay, etc.",
     methodQrisBadge: "Instant All Banks & E-Wallets",
     methodEwalletTitle: "E-Wallet / Digital Wallet",
-    methodEwalletSubtitle: "GoPay, ShopeePay, Dana",
+    methodEwalletSubtitle: "GoPay",
     methodVaTitle: "Virtual Accounts / Bank Transfer",
     methodVaSubtitle: "Mandiri, BNI, BRI, Permata",
     methodVaBadge: "Auto-Verified",
