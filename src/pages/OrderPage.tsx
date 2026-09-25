@@ -29,10 +29,7 @@ import { OrderBackButton } from "../components/order/OrderBackButton";
 import { OrderDetailsForm } from "../components/order/OrderDetailsForm";
 import { OrderSteps } from "../components/order/OrderSteps";
 import { OrderSummary } from "../components/order/OrderSummary";
-import {
-  OrderPayButton,
-  OrderPaymentCaptcha,
-} from "../components/order/OrderPaymentActions";
+import { OrderPaymentCaptcha } from "../components/order/OrderPaymentActions";
 import {
   EMAIL_RE,
   type PaymentMethodType,
@@ -109,9 +106,9 @@ export default function OrderForm() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   // Draft tersimpan (sekali baca saat mount).
   const [draft] = useState<OrderDraft | null>(loadDraft);
-  // Tanpa pilih metode: pembayaran otomatis (Snap, fee Midtrans dibebankan
-  // ke pelanggan via Split fee 100%) + manual WA. Tanpa markup admin.
-  const paymentMethod: PaymentMethodType = "automatic";
+  // Metode bayar dipilih di kartu konfirmasi (default otomatis).
+  const [paymentMethod, setPaymentMethod] =
+    useState<"automatic" | "whatsapp">("automatic");
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const [templateList, setTemplateList] =
@@ -291,6 +288,16 @@ export default function OrderForm() {
     scrollTop();
   };
 
+  // Tombol "Lanjut Pembayaran" di kartu konfirmasi: teruskan ke
+  // checkout yang sesuai metode terpilih.
+  const handleContinuePay = () => {
+    if (paymentMethod === "whatsapp") {
+      void handleWhatsappCheckout();
+    } else {
+      void handleMidtransCheckout();
+    }
+  };
+
   // --- NAVIGASI WIZARD (tombol kembali & lanjut seragam di footer step) ---
   const wizardStepLabels = [
     t("order.wizStep1"),
@@ -371,28 +378,16 @@ export default function OrderForm() {
             selectedTemplate={selectedTemplate}
             selectedImage={selectedImage}
             paymentMethod={paymentMethod}
-            // Semua elemen langkah 2 menyatu di dalam kartu, urut atas-bawah:
-            // verifikasi captcha -> tombol bayar -> tombol kembali.
-            actions={
-              <>
-                <OrderPaymentCaptcha
-                  setCaptchaToken={setCaptchaToken}
-                  turnstileRef={turnstileRef}
-                />
-                <OrderPayButton
-                  captchaToken={captchaToken}
-                  loadingWA={loadingWA}
-                  loadingMidtrans={loadingMidtrans}
-                  onMidtransCheckout={handleMidtransCheckout}
-                  onWhatsappCheckout={handleWhatsappCheckout}
-                />
-                <OrderBackButton
-                  onClick={handleBack}
-                  label={t("order.btnBack")}
-                  ariaLabel={contextualBackLabel}
-                  variant="block"
-                />
-              </>
+            onSelectMethod={setPaymentMethod}
+            onEdit={goBackStep}
+            onContinue={handleContinuePay}
+            continueLoading={loadingMidtrans || loadingWA}
+            // Slot bawah tombol Lanjut: hanya captcha.
+            captcha={
+              <OrderPaymentCaptcha
+                setCaptchaToken={setCaptchaToken}
+                turnstileRef={turnstileRef}
+              />
             }
           />
         ) : null}
