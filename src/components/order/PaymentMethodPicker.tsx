@@ -11,14 +11,12 @@
 // ============================================================
 
 import type { ReactNode } from "react";
-import { Building2, ChevronDown, QrCode, Smartphone } from "lucide-react";
+import { Building2, ChevronDown, QrCode } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useTranslation } from "../../i18n";
 import {
-  EWALLET_OPTIONS,
   formatIDR,
   getPaymentMethodFee,
-  isEwalletMethod,
   isVaMethod,
   MIDTRANS_LOGOS,
   VA_BANKS,
@@ -147,57 +145,6 @@ function CategoryCard({
   );
 }
 
-interface SubOptionButtonProps {
-  className: string;
-  onClick: () => void;
-  title: string;
-  logoNode: ReactNode;
-  description?: ReactNode;
-  price: ReactNode;
-  feeNote?: ReactNode;
-  radio: ReactNode;
-}
-
-function SubOptionButton({
-  className,
-  onClick,
-  title,
-  logoNode,
-  description,
-  price,
-  feeNote,
-  radio,
-}: SubOptionButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`${className} w-full flex items-start justify-between gap-2.5 text-left transition`}
-    >
-      <div className="min-w-0 space-y-1.5">
-        <h5 className="text-xs font-bold text-[#712E1E]">{title}</h5>
-        <div>{logoNode}</div>
-        {description ? (
-          <p className="text-[10px] sm:text-[11px] text-stone-500 font-normal">
-            {description}
-          </p>
-        ) : null}
-      </div>
-      <div className="shrink-0 flex flex-col items-end gap-0.5 pt-0.5">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-[#712E1E] whitespace-nowrap">
-            {price}
-          </span>
-          {radio}
-        </div>
-        {feeNote ? (
-          <span className="text-[10px] text-stone-400 whitespace-nowrap">{feeNote}</span>
-        ) : null}
-      </div>
-    </button>
-  );
-}
-
 const CARD_ACTIVE = "border-[#712E1E] bg-[#FAF6EE] shadow-sm";
 const CARD_INACTIVE =
   "border-stone-200 bg-white hover:border-[#E59A59]/60 hover:bg-[#FAF6EE]/30";
@@ -218,15 +165,10 @@ export function PaymentMethodPicker({
   const { t } = useTranslation();
 
   const qrisTotal = formatIDR(basePrice + getPaymentMethodFee(basePrice, "qris"));
-  const ewalletTotal = formatIDR(
-    basePrice + getPaymentMethodFee(basePrice, "gopay"),
-  );
-  const vaTotal = formatIDR(basePrice + getPaymentMethodFee(basePrice, "bca_va"));
+  const vaTotal = formatIDR(basePrice + getPaymentMethodFee(basePrice, "bni_va"));
   const waTotal = formatIDR(basePrice);
 
-  const isEwalletActive = isEwalletMethod(paymentMethod);
   const isVaActive = isVaMethod(paymentMethod);
-  const ewalletOpen = isEwalletActive || expandedCategory === "ewallet";
   const vaOpen = isVaActive || expandedCategory === "va";
 
   return (
@@ -259,76 +201,7 @@ export function PaymentMethodPicker({
           radio={<RadioDot selected={paymentMethod === "qris"} />}
         />
 
-        {/* 2. E-Wallet / Dompet Digital (Dropdown) */}
-        <div
-          className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
-            ewalletOpen
-              ? "border-[#712E1E] bg-[#FAF6EE]/50 shadow-sm"
-              : "border-stone-200 bg-white"
-          }`}
-        >
-          <CategoryCard
-            onClick={() => {
-              // Hanya membuka/tutup accordion ΓÇö tidak meng-auto-pilih metode.
-              onExpand(expandedCategory === "ewallet" ? null : "ewallet");
-            }}
-            className="p-3 sm:p-4 cursor-pointer"
-            iconBoxClass={isEwalletActive ? ICON_ACTIVE : ICON_INACTIVE}
-            icon={<Smartphone size={20} className="sm:w-[22px] sm:h-[22px]" />}
-            title={t("order.methodEwalletTitle")}
-            logos={
-              <>
-                <LogoPill src={MIDTRANS_LOGOS.gopay} alt="GoPay" className="h-3" />
-              </>
-            }
-            description={t("order.methodEwalletSubtitle")}
-            price={ewalletTotal}
-            trailing={
-              <ChevronDown
-                size={18}
-                className={`text-stone-400 transition-transform ${ewalletOpen ? "rotate-180" : ""}`}
-              />
-            }
-          />
-
-          {/* Sub-Pilihan E-Wallet */}
-          {ewalletOpen && (
-            <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 space-y-2 border-t border-stone-200/80 bg-white">
-              {EWALLET_OPTIONS.map((option) => (
-                <SubOptionButton
-                  key={option.id}
-                  onClick={() => {
-                    onSelect(option.id);
-                    onExpand("ewallet");
-                  }}
-                  className={`p-2.5 sm:p-3.5 rounded-xl border-2 ${
-                    paymentMethod === option.id ? SUB_ACTIVE : SUB_INACTIVE
-                  }`}
-                  title={option.name}
-                  logoNode={
-                    <div className={option.logoBoxClass}>
-                      {option.logos.map((logo) => (
-                        <img
-                          key={logo.alt}
-                          src={logo.src}
-                          alt={logo.alt}
-                          className={logo.className}
-                        />
-                      ))}
-                    </div>
-                  }
-                  description={t(option.descKey)}
-                  price={formatIDR(
-                    basePrice + getPaymentMethodFee(basePrice, option.id),
-                  )}
-                  radio={<RadioDot selected={paymentMethod === option.id} />}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 3. ATM / Bank Transfer (Virtual Account) */}
+        {/* 2. ATM / Bank Transfer (Virtual Account) */}
         <div
           className={`rounded-xl sm:rounded-2xl border-2 transition-all overflow-hidden ${
             vaOpen
@@ -354,7 +227,6 @@ export function PaymentMethodPicker({
                 />
                 <LogoPill src={MIDTRANS_LOGOS.bni} alt="BNI" className="h-2.5" />
                 <LogoPill src={MIDTRANS_LOGOS.bri} alt="BRI" className="h-3" />
-                <LogoPill src={MIDTRANS_LOGOS.cimb} alt="CIMB" className="h-2.5" />
               </>
             }
             description={t("order.methodVaSubtitle")}
@@ -370,40 +242,44 @@ export function PaymentMethodPicker({
           {/* Sub-Pilihan Bank */}
           {vaOpen && (
             <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 border-t border-stone-200/80 bg-white">
-              {VA_BANKS.map((bank) => (
-                <SubOptionButton
-                  key={bank.id}
-                  onClick={() => {
-                    onSelect(bank.id);
-                    onExpand("va");
-                  }}
-                  className={`p-2.5 sm:p-3 rounded-xl border-2 ${
-                    paymentMethod === bank.id ? SUB_ACTIVE : SUB_INACTIVE
-                  }`}
-                  title={bank.name}
-                  logoNode={
-                    bank.logo ? (
-                      <div className="bg-white border border-stone-200/80 rounded-md px-1.5 py-0.5 flex items-center justify-center shrink-0 shadow-xs min-w-[45px] w-fit">
-                        <img
-                          src={bank.logo}
-                          alt={bank.name}
-                          className={`${bank.h} max-w-[40px] object-contain`}
-                        />
-                      </div>
-                    ) : (
-                      <div className="bg-[#712E1E] text-white text-[10px] font-black rounded-md px-2 py-1 shrink-0 shadow-xs">
-                        {bank.name.split(" ")[0]}
-                      </div>
-                    )
-                  }
-                  price={formatIDR(
-                    basePrice + getPaymentMethodFee(basePrice, bank.id),
-                  )}
-                  radio={
-                    <RadioDot selected={paymentMethod === bank.id} size="sm" />
-                  }
-                />
-              ))}
+              {VA_BANKS.map((bank) => {
+                const active = paymentMethod === bank.id;
+                return (
+                  <button
+                    key={bank.id}
+                    type="button"
+                    onClick={() => {
+                      onSelect(bank.id);
+                      onExpand("va");
+                    }}
+                    className={`flex items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl border-2 transition ${
+                      active ? SUB_ACTIVE : SUB_INACTIVE
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      {bank.logo ? (
+                        <span className="bg-white border border-stone-200/80 rounded-md px-1.5 py-0.5 flex items-center justify-center shrink-0 shadow-xs min-w-[45px] w-fit">
+                          <img
+                            src={bank.logo}
+                            alt={bank.name}
+                            className={`${bank.h} max-w-[40px] object-contain`}
+                          />
+                        </span>
+                      ) : (
+                        <span className="bg-[#712E1E] text-white text-[10px] font-black rounded-md px-2 py-1 shrink-0 shadow-xs">
+                          {bank.name.split(" ")[0]}
+                        </span>
+                      )}
+                      <span className="text-xs font-bold text-stone-800">
+                        {formatIDR(
+                          basePrice + getPaymentMethodFee(basePrice, bank.id),
+                        )}
+                      </span>
+                    </span>
+                    <RadioDot selected={active} size="sm" />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

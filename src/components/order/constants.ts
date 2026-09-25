@@ -36,20 +36,24 @@ export interface OrderFormData {
   template_slug: string;
 }
 
+// Logo kanal bayar di-host di R2 (anti-beban situs, cache CDN).
+const PAY_LOGO_BASE = "https://r2.loverse.id/logos/payment";
+
 export const MIDTRANS_LOGOS = {
-  qris: "/logos/payment/qris.svg",
-  dana: "/logos/payment/dana.svg",
-  shopeepay: "/logos/payment/shopeepay.svg",
-  spaylater: "/logos/payment/spaylater.svg",
-  gopay: "/logos/payment/gopay.svg",
-  gopaylater: "/logos/payment/gopaylater.svg",
-  bca: "/logos/payment/bca.svg",
-  mandiri: "/logos/payment/mandiri.svg",
-  bni: "/logos/payment/bni.svg",
-  bri: "/logos/payment/bri.svg",
-  cimb: "/logos/payment/cimb.svg",
-  seabank: "/logos/payment/seabank.svg",
-  bsi: "/logos/payment/bsi.svg",
+  qris: `${PAY_LOGO_BASE}/qris.svg`,
+  dana: `${PAY_LOGO_BASE}/dana.svg`,
+  shopeepay: `${PAY_LOGO_BASE}/shopeepay.svg`,
+  spaylater: `${PAY_LOGO_BASE}/spaylater.svg`,
+  gopay: `${PAY_LOGO_BASE}/gopay.svg`,
+  gopaylater: `${PAY_LOGO_BASE}/gopaylater.svg`,
+  bca: `${PAY_LOGO_BASE}/bca.svg`,
+  mandiri: `${PAY_LOGO_BASE}/mandiri.svg`,
+  bni: `${PAY_LOGO_BASE}/bni.svg`,
+  bri: `${PAY_LOGO_BASE}/bri.svg`,
+  cimb: `${PAY_LOGO_BASE}/cimb.svg`,
+  permata: `${PAY_LOGO_BASE}/permata.svg`,
+  seabank: `${PAY_LOGO_BASE}/seabank.svg`,
+  bsi: `${PAY_LOGO_BASE}/bsi.svg`,
 };
 
 const EWALLET_METHODS = [
@@ -61,7 +65,6 @@ const VA_METHODS = [
   "bni_va",
   "bri_va",
   "permata_va",
-  "cimb_va",
 ] as const satisfies readonly MidtransMethod[];
 
 export type EwalletMethod = (typeof EWALLET_METHODS)[number];
@@ -137,13 +140,8 @@ export const VA_BANKS: readonly VaBank[] = [
   {
     id: "permata_va",
     name: "Permata Virtual Account",
+    logo: MIDTRANS_LOGOS.permata,
     h: "h-3",
-  },
-  {
-    id: "cimb_va",
-    name: "CIMB Niaga VA",
-    logo: MIDTRANS_LOGOS.cimb,
-    h: "h-2.5",
   },
 ];
 
@@ -151,12 +149,15 @@ export function getPaymentMethodFee(
   basePrice: number,
   method: PaymentMethodType,
 ): number {
-  // Rp 0 untuk semua: fee Midtrans dibebankan ke pelanggan via fitur
-  // "Split fee" 100% di dashboard Midtrans (bukan markup kita).
-  // Parameter dipertahankan agar signature & pemanggil stabil.
-  void basePrice;
-  void method;
-  return 0;
+  // WAJIB SINKRON dengan create-order: fee kanal + PPN 11%, dibebankan ke
+  // pelanggan (split Midtrans MATI). QRIS 0,7%; VA flat Rp 4.000.
+  // Manual WA = Rp 0. Parameter dipertahankan agar signature stabil.
+  if (method === "whatsapp") {
+    return 0;
+  }
+  const channelFee =
+    method === "qris" ? Math.ceil(basePrice * 0.007) : 4000;
+  return channelFee + Math.ceil(channelFee * 0.11);
 }
 
 export const formatIDR = (value: number) =>

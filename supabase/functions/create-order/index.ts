@@ -235,11 +235,16 @@ serve(async (req) => {
     }
     if (!orderId) throw new Error('Failed to generate order id')
 
-    // --- Biaya layanan: Rp 0. Fee Midtrans DIBEBANKAN ke pelanggan via
-    // fitur "Split fee" 100% di dashboard Midtrans, jadi tidak ada markup
-    // di sisi kita. gross_amount = harga template murni.
-    const adminFee = 0
-    const feeName = ''
+    // --- Biaya layanan DIBEBANKAN ke pelanggan (split Midtrans MATI).
+    // WAJIB SINKRON dengan getPaymentMethodFee() di frontend:
+    // fee kanal + PPN 11% di atas fee. QRIS 0,7%; VA flat Rp 4.000.
+    // Manual WA = Rp 0 (jalurnya return lebih awal di atas).
+    const channelFee = payment_method === 'qris'
+      ? Math.ceil(template.price * 0.007)
+      : 4000
+    const ppnFee = Math.ceil(channelFee * 0.11)
+    const adminFee = channelFee + ppnFee
+    const feeName = 'Biaya Layanan (termasuk PPN 11%)'
 
     const grossAmount = template.price + adminFee
 
@@ -289,16 +294,15 @@ serve(async (req) => {
     // ?order_id=&status_code=&transaction_status= ke URL finish).
     const appUrl = Deno.env.get('APP_URL') || ''
 
-    // Kanal aktif di akun Midtrans (lihat dashboard): Other QRIS, GoPay,
-    // Mandiri VA (echannel), BNI/BRI/Permata/CIMB VA. User memilih SATU
-    // kanal di awal; Snap langsung ke alurnya (tanpa halaman pilih lagi).
-    // Fallback (legacy 'automatic'/tak dikenal): semua kanal aktif.
-    let enabledPayments: string[] = ['gopay', 'bni_va', 'bri_va', 'echannel', 'permata_va', 'other_va']
+    // Kanal aktif di akun (hasil tes Snap): qris, echannel (Mandiri),
+    // bni_va, bri_va, permata_va, other_va. GoPay & CIMB DIMATIKAN dari
+    // penawaran (GoPay duplikat QRIS; CIMB tak ada tipenya di Snap).
+    // SATU kanal per transaksi -> Snap langsung ke alurnya (tanpa halaman
+    // pilih lagi). Fallback (legacy/tak dikenal): semua kanal aktif.
+    let enabledPayments: string[] = ['qris', 'echannel', 'bni_va', 'bri_va', 'permata_va', 'other_va']
 
     if (payment_method === 'qris') {
-      enabledPayments = ['other_qris']
-    } else if (payment_method === 'gopay') {
-      enabledPayments = ['gopay']
+      enabledPayments = ['qris']
     } else if (payment_method === 'echannel') {
       enabledPayments = ['echannel']
     } else if (payment_method === 'bni_va') {
@@ -307,8 +311,9 @@ serve(async (req) => {
       enabledPayments = ['bri_va']
     } else if (payment_method === 'permata_va') {
       enabledPayments = ['permata_va']
-    } else if (payment_method === 'cimb_va') {
-      enabledPayments = ['cimb_va']
+    } else if (payment_method === 'cimb_va' || payment_method === 'gopay') {
+      // Legacy: arahkan ke kanal terdekat yang tersedia.
+      enabledPayments = ['other_va']
     }
 
     const itemDetails: Array<{ id: string; price: number; quantity: number; name: string }> = [

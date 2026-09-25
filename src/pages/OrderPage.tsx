@@ -404,9 +404,12 @@ export default function OrderForm() {
             selectedTemplate={selectedTemplate}
             selectedImage={selectedImage}
             paymentMethod={paymentMethod}
-            onEdit={goBackStep}
+            onEdit={() => {
+              setStep(1);
+              scrollTop();
+            }}
             // Semua elemen langkah 3 menyatu di dalam kartu, urut atas-bawah:
-            // verifikasi captcha -> tombol bayar -> tombol kembali.
+            // verifikasi captcha -> tombol bayar (tanpa tombol kembali).
             actions={
               <>
                 <OrderPaymentCaptcha
@@ -420,12 +423,6 @@ export default function OrderForm() {
                   loadingMidtrans={loadingMidtrans}
                   onMidtransCheckout={handleMidtransCheckout}
                   onWhatsappCheckout={handleWhatsappCheckout}
-                />
-                <OrderBackButton
-                  onClick={handleBack}
-                  label={t("order.btnBack")}
-                  ariaLabel={contextualBackLabel}
-                  variant="block"
                 />
               </>
             }

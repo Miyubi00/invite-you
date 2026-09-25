@@ -22,6 +22,7 @@ import { useTranslation } from "../../i18n";
 import type { MasterTemplate } from "../../lib/constants";
 import {
   formatIDR,
+  getPaymentMethodFee,
   PAYMENT_SUMMARY_LABEL_KEYS,
   type PaymentMethodType,
 } from "./constants";
@@ -65,7 +66,10 @@ export function OrderSummary({
   actions,
 }: OrderSummaryProps) {
   const { t } = useTranslation();
-  const total = selectedTemplate.price;
+  const fee = paymentMethod
+    ? getPaymentMethodFee(selectedTemplate.price, paymentMethod)
+    : 0;
+  const total = selectedTemplate.price + fee;
   const methodLabel = paymentMethod
     ? t(PAYMENT_SUMMARY_LABEL_KEYS[paymentMethod])
     : t("order.selectPaymentMethod");
@@ -149,6 +153,15 @@ export function OrderSummary({
               {formatIDR(selectedTemplate.price)}
             </span>
           </div>
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="text-sm text-stone-500">{t("order.adminFee")}</span>
+            <span className="text-sm font-black text-stone-800 sm:text-base">
+              {fee > 0 ? `+ ${formatIDR(fee)}` : formatIDR(0)}
+            </span>
+          </div>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-stone-400">
+            {t("order.feeNotePpn")}
+          </p>
           <div className="my-3 border-t border-dashed border-[#E5D3B8]" />
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-black uppercase tracking-wide text-stone-500 sm:text-base">
