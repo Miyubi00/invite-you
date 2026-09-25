@@ -8,6 +8,7 @@
 // ============================================================
 
 export type PaymentMethodType =
+  | "automatic"
   | "qris"
   | "gopay"
   | "shopeepay"
@@ -23,7 +24,7 @@ export type PaymentMethodType =
 
 export type ExpandedCategory = "qris" | "ewallet" | "va" | "whatsapp";
 
-export type MidtransMethod = Exclude<PaymentMethodType, "whatsapp">;
+export type MidtransMethod = Exclude<PaymentMethodType, "whatsapp" | "automatic">;
 
 export interface OrderFormData {
   groom_name: string;
@@ -198,16 +199,12 @@ export function getPaymentMethodFee(
   basePrice: number,
   method: PaymentMethodType,
 ): number {
-  if (method === "qris") {
-    return Math.ceil(basePrice * 0.007);
-  }
-  if (isEwalletMethod(method)) {
-    return Math.ceil(basePrice * 0.015);
-  }
-  if (method === "whatsapp") {
-    return 0;
-  }
-  return 4000; // Virtual Account Bank flat Rp 4.000
+  // Rp 0 untuk semua: fee Midtrans dibebankan ke pelanggan via fitur
+  // "Split fee" 100% di dashboard Midtrans (bukan markup kita).
+  // Parameter dipertahankan agar signature & pemanggil stabil.
+  void basePrice;
+  void method;
+  return 0;
 }
 
 export const formatIDR = (value: number) =>
@@ -223,6 +220,7 @@ export const INPUT_CLASS =
   "w-full min-w-0 py-2.5 sm:py-3 pr-3.5 pl-11 rounded-xl border border-stone-200 bg-white focus:border-[#E59A59] focus:ring-2 focus:ring-[#E59A59]/20 outline-none transition text-sm sm:text-base";
 
 export const PAYMENT_SUMMARY_LABEL_KEYS: Record<PaymentMethodType, string> = {
+  automatic: "order.orderSummaryAutomatic",
   qris: "order.orderSummaryQris",
   gopay: "order.orderSummaryGopay",
   shopeepay: "order.orderSummaryShopeepay",

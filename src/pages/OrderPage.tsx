@@ -28,7 +28,6 @@ import { ArrowLeft, ArrowRight, GraduationCap, RotateCcw } from "lucide-react";
 import { OrderBackButton } from "../components/order/OrderBackButton";
 import { OrderDetailsForm } from "../components/order/OrderDetailsForm";
 import { OrderSteps } from "../components/order/OrderSteps";
-import { PaymentMethodPicker } from "../components/order/PaymentMethodPicker";
 import { OrderSummary } from "../components/order/OrderSummary";
 import {
   OrderPayButton,
@@ -36,7 +35,6 @@ import {
 } from "../components/order/OrderPaymentActions";
 import {
   EMAIL_RE,
-  type ExpandedCategory,
   type PaymentMethodType,
 } from "../components/order/constants";
 import { useOrderCheckout } from "../hooks/useOrderCheckout";
@@ -111,17 +109,9 @@ export default function OrderForm() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   // Draft tersimpan (sekali baca saat mount).
   const [draft] = useState<OrderDraft | null>(loadDraft);
-  // Tidak ada metode pembayaran bawaan — user harus memilih sendiri (Step 03),
-  // kecuali ada draft tersimpan yang valid.
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType | null>(() => {
-    const m = draft?.paymentMethod;
-    return typeof m === "string" &&
-      ["qris", "gopay", "shopeepay", "dana", "bca_va", "echannel", "bni_va", "bri_va", "cimb_va", "seabank_va", "bsi_va", "whatsapp"].includes(m)
-      ? m
-      : null;
-  });
-  const [expandedCategory, setExpandedCategory] =
-    useState<ExpandedCategory | null>(null);
+  // Tanpa pilih metode: pembayaran otomatis (Snap, fee Midtrans dibebankan
+  // ke pelanggan via Split fee 100%) + manual WA. Tanpa markup admin.
+  const paymentMethod: PaymentMethodType = "automatic";
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const [templateList, setTemplateList] =
@@ -243,14 +233,13 @@ export default function OrderForm() {
   } = useOrderCheckout({
     formData,
     selectedTemplate,
-    paymentMethod,
     captchaToken,
     invalidateCaptcha,
     clearDraft,
   });
 
-  // Wizard 3 langkah: 1 Data -> 2 Metode -> 3 Konfirmasi & Bayar.
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Wizard 2 langkah: 1 Data -> 2 Konfirmasi & Bayar.
+  const [step, setStep] = useState<1 | 2>(1);
 
   const scrollTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -277,17 +266,8 @@ export default function OrderForm() {
     scrollTop();
   };
 
-  const goNextFromMethod = () => {
-    if (!paymentMethod) {
-      toast.warning(t("validation.paymentMethodRequired"));
-      return;
-    }
-    setStep(3);
-    scrollTop();
-  };
-
   const goBackStep = () => {
-    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
+    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2) : s));
     scrollTop();
   };
 
@@ -303,8 +283,6 @@ export default function OrderForm() {
       email: "",
       template_slug: defaultTemplate.slug,
     });
-    setPaymentMethod(null);
-    setExpandedCategory(null);
     setStep(1);
     invalidateCaptcha();
     setShowConfirm(false);
@@ -316,20 +294,19 @@ export default function OrderForm() {
   // --- NAVIGASI WIZARD (tombol kembali & lanjut seragam di footer step) ---
   const wizardStepLabels = [
     t("order.wizStep1"),
-    t("order.wizStep2"),
     t("order.wizStep3"),
   ];
   // Langkah 1 -> kembali ke katalog/halaman sebelumnya.
-  // Langkah 2 & 3 -> kembali ke langkah sebelumnya di wizard.
+  // Langkah 2 -> kembali ke langkah sebelumnya di wizard.
   const handleBack = () => (step > 1 ? goBackStep() : goBackOrHome(navigate));
   const contextualBackLabel =
     step > 1
       ? t("order.backToStep", { step: wizardStepLabels[step - 2] })
       : t("order.back");
   const nextAction =
-    step === 1 ? goNextFromData : step === 2 ? goNextFromMethod : null;
-  // Langkah 1 & 2 memakai baris navigasi bawah: [Kembali] [Lanjut] sebaris.
-  // Langkah 3 tidak punya baris sendiri - verifikasi captcha, tombol bayar,
+    step === 1 ? goNextFromData : null;
+  // Langkah 1 memakai baris navigasi bawah: [Kembali] [Lanjut] sebaris.
+  // Langkah 2 tidak punya baris sendiri - verifikasi captcha, tombol bayar,
   // dan tombol kembali menyatu di dalam kartu ringkasan (slot actions
   // OrderSummary), tersusun atas-bawah agar label panjang tetap utuh.
 
@@ -387,25 +364,14 @@ export default function OrderForm() {
           />
         ) : null}
 
-        {/* --- STEP 2: METODE --- */}
+        {/* --- STEP 2: KONFIRMASI & BAYAR --- */}
         {step === 2 ? (
-          <PaymentMethodPicker
-            basePrice={selectedTemplate.price}
-            paymentMethod={paymentMethod}
-            onSelect={setPaymentMethod}
-            expandedCategory={expandedCategory}
-            onExpand={setExpandedCategory}
-          />
-        ) : null}
-
-        {/* --- STEP 3: KONFIRMASI & BAYAR --- */}
-        {step === 3 ? (
           <OrderSummary
             formData={formData}
             selectedTemplate={selectedTemplate}
             selectedImage={selectedImage}
             paymentMethod={paymentMethod}
-            // Semua elemen langkah 3 menyatu di dalam kartu, urut atas-bawah:
+            // Semua elemen langkah 2 menyatu di dalam kartu, urut atas-bawah:
             // verifikasi captcha -> tombol bayar -> tombol kembali.
             actions={
               <>
@@ -414,7 +380,6 @@ export default function OrderForm() {
                   turnstileRef={turnstileRef}
                 />
                 <OrderPayButton
-                  paymentMethod={paymentMethod}
                   captchaToken={captchaToken}
                   loadingWA={loadingWA}
                   loadingMidtrans={loadingMidtrans}

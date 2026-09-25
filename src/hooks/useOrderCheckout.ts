@@ -19,13 +19,11 @@ import { PRODUCTION_READY } from "../lib/constants";
 import {
   EMAIL_RE,
   type OrderFormData,
-  type PaymentMethodType,
 } from "../components/order/constants";
 
 interface UseOrderCheckoutArgs {
   formData: OrderFormData;
   selectedTemplate: MasterTemplate;
-  paymentMethod: PaymentMethodType | null;
   captchaToken: string | null;
   invalidateCaptcha: () => void;
   /** Hapus draft form tersimpan (dipanggil saat order berhasil dibuat). */
@@ -35,7 +33,6 @@ interface UseOrderCheckoutArgs {
 export function useOrderCheckout({
   formData,
   selectedTemplate,
-  paymentMethod,
   captchaToken,
   invalidateCaptcha,
   clearDraft,
@@ -74,10 +71,6 @@ export function useOrderCheckout({
       return;
     }
     if (!validateInputs()) return;
-    if (!paymentMethod) {
-      toast.warning(t("validation.paymentMethodRequired"));
-      return;
-    }
     if (!captchaToken) {
       toast.warning(t("common.captchaRequired"));
       return;
@@ -87,6 +80,7 @@ export function useOrderCheckout({
     const finalWhatsapp = `+62${formData.whatsapp}`;
 
     try {
+      // Tanpa pilih metode: backend memutuskan kanal (kurasi akun Midtrans).
       const { data, error } = await supabase.functions.invoke("create-order", {
         body: {
           groom_name: formData.groom_name.trim(),
@@ -95,7 +89,7 @@ export function useOrderCheckout({
           whatsapp: finalWhatsapp,
           email: formData.email.trim().toLowerCase(),
           template_slug: formData.template_slug,
-          payment_method: paymentMethod,
+          payment_method: "automatic",
           captcha_token: captchaToken,
         },
       });

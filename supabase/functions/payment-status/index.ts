@@ -124,9 +124,7 @@ serve(async (req) => {
         template_name: templateName || 'Undangan Digital',
         price: finalPrice || 10070,
         payment_method: paymentMethodDisplay,
-        // Waktu pembuatan order (ISO) — frontend menghitung sendiri batas
-        // 15 menit (samakan dengan expiry/page_expiry Snap) agar UI bisa
-        // menampilkan status kedaluwarsa tepat waktu tanpa menunggu cron.
+        // Waktu pembuatan order (ISO) untuk info tampilan.
         created_at: (order as { created_at?: string }).created_at ?? null,
         // Token bayar-ulang hanya relevan (dan hanya diberikan) saat pending.
         // Tetap diberikan untuk id mentah agar redirect Midtrans bisa lanjut bayar;

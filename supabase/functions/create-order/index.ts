@@ -232,24 +232,11 @@ serve(async (req) => {
     }
     if (!orderId) throw new Error('Failed to generate order id')
 
-    // --- Hitung biaya layanan / admin fee sesuai metode pembayaran ---
-    let adminFee = 0
-    let feeName = ''
-
-    if (payment_method === 'qris' || payment_method === 'other_qris') {
-      adminFee = Math.ceil(template.price * 0.007) // 0.7% QRIS
-      feeName = 'QRIS (0.7%)'
-    } else if (payment_method === 'gopay' || payment_method === 'shopeepay' || payment_method === 'dana') {
-      adminFee = Math.ceil(template.price * 0.015) // 1.5% E-Wallet
-      feeName = 'E-Wallet (1.5%)'
-    } else if (payment_method === 'whatsapp') {
-      adminFee = 0
-      feeName = 'Gratis (Transfer Manual)'
-    } else {
-      // Virtual Account Bank
-      adminFee = 4000 // Flat Rp 4.000
-      feeName = 'Virtual Account (Flat Rp 4.000)'
-    }
+    // --- Biaya layanan: Rp 0. Fee Midtrans DIBEBANKAN ke pelanggan via
+    // fitur "Split fee" 100% di dashboard Midtrans, jadi tidak ada markup
+    // di sisi kita. gross_amount = harga template murni.
+    const adminFee = 0
+    const feeName = ''
 
     const grossAmount = template.price + adminFee
 
@@ -299,31 +286,10 @@ serve(async (req) => {
     // ?order_id=&status_code=&transaction_status= ke URL finish).
     const appUrl = Deno.env.get('APP_URL') || ''
 
-    let enabledPayments: string[] = ['other_qris']
-
-    if (payment_method === 'qris' || payment_method === 'dana') {
-      enabledPayments = ['other_qris']
-    } else if (payment_method === 'gopay') {
-      enabledPayments = ['gopay']
-    } else if (payment_method === 'shopeepay') {
-      enabledPayments = ['shopeepay']
-    } else if (payment_method === 'bca_va') {
-      enabledPayments = ['bca_va']
-    } else if (payment_method === 'echannel' || payment_method === 'mandiri_va') {
-      enabledPayments = ['echannel']
-    } else if (payment_method === 'bni_va') {
-      enabledPayments = ['bni_va']
-    } else if (payment_method === 'bri_va') {
-      enabledPayments = ['bri_va']
-    } else if (payment_method === 'cimb_va') {
-      enabledPayments = ['cimb_va']
-    } else if (payment_method === 'permata_va') {
-      enabledPayments = ['permata_va']
-    } else if (payment_method === 'seabank_va' || payment_method === 'bsi_va' || payment_method === 'other_va') {
-      enabledPayments = ['other_va']
-    } else if (payment_method === 'bank_transfer') {
-      enabledPayments = ['bca_va', 'echannel', 'bni_va', 'bri_va', 'cimb_va', 'other_va']
-    }
+    // Kanal aktif di akun Midtrans (lihat dashboard): GoPay, BNI VA,
+    // BRI VA, Mandiri (echannel), Permata VA, CIMB Niaga (other_va).
+    // User memilih kanal DI DALAM popup Snap — frontend tak perlu tahu.
+    const enabledPayments: string[] = ['gopay', 'bni_va', 'bri_va', 'echannel', 'permata_va', 'other_va']
 
     const itemDetails: Array<{ id: string; price: number; quantity: number; name: string }> = [
       {
@@ -356,20 +322,9 @@ serve(async (req) => {
       },
       item_details: itemDetails,
       enabled_payments: enabledPayments,
-      // Snap API memakai `expiry` + `page_expiry`, BUKAN `custom_expiry`
-      // (custom_expiry hanya untuk Core API dan di-ignore oleh Snap).
-      // - `expiry`: masa berlaku pembayaran setelah user pilih channel (QRIS dll).
-      // - `page_expiry`: masa berlaku halaman Snap itu sendiri (default 24 jam).
-      // Tanpa keduanya, order yang popup-nya langsung ditutup akan tetap
-      // Pending berjam-jam dan tidak ada notifikasi expire.
-      expiry: {
-        unit: 'minute',
-        duration: 15,
-      },
-      page_expiry: {
-        unit: 'minute',
-        duration: 15,
-      },
+      // SENGAJA tanpa expiry/page_expiry: masa berlaku mengikuti default
+      // tiap kanal Midtrans; saat kedaluwarsa Midtrans mengirim webhook
+      // transaction_status=expire yang langsung menandai failed di DB.
     }
 
     if (appUrl) {

@@ -32,29 +32,8 @@ interface PaymentStatusResponse {
   created_at: string | null;
 }
 
-// Batas waktu bayar (menit) — samakan dengan expiry/page_expiry Snap di
-// supabase/functions/create-order. Dipakai agar UI tidak menggantung
-// "menunggu pembayaran" setelah QR kedaluwarsa sementara DB/cron menyusul.
-const PAYMENT_EXPIRY_MINUTES = 15;
-
 const formatIDR = (value: number) =>
     `Rp ${value.toLocaleString('id-ID')}`;
-
-/** Hitung mundur mm:ss menuju expiry. Berdetak tiap detik. */
-function ExpiryCountdown({ createdAt }: { createdAt: string }) {
-    const [nowMs, setNowMs] = useState(() => Date.now());
-    useEffect(() => {
-        const id = setInterval(() => setNowMs(Date.now()), 1000);
-        return () => clearInterval(id);
-    }, []);
-    const remain = Math.max(
-        0,
-        new Date(createdAt).getTime() + PAYMENT_EXPIRY_MINUTES * 60_000 - nowMs,
-    );
-    const m = Math.floor(remain / 60000);
-    const s = Math.floor((remain % 60000) / 1000);
-    return <>{`${m}:${String(s).padStart(2, '0')}`}</>;
-}
 
 /** Kartu ringkasan order yang dipakai semua status. */
 function OrderSummary({ order }: { order: PaymentStatusResponse }) {
@@ -96,8 +75,6 @@ export default function PaymentStatus() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [order, setOrder] = useState<PaymentStatusResponse | null>(null);
-    // Jam lokal untuk menghitung kedaluwarsa 15 menit di sisi klien.
-    const [now, setNow] = useState(() => Date.now());
 
     const orderId = searchParams.get('order_id');
     const isManualWhatsApp = !orderId;
@@ -129,14 +106,8 @@ export default function PaymentStatus() {
     const paymentStatus = order?.payment_status;
     const isTerminal = !!paymentStatus && paymentStatus !== 'pending';
 
-    // Detak tiap 15 detik agar tampilan kedaluwarsa flip tepat waktu
-    // meski polling sedang backoff. Polling tetap jalan (isTerminal false)
-    // sehingga webhook sukses yang telat masih bisa menyelamatkan tampilan.
-    useEffect(() => {
-        if (isTerminal) return;
-        const id = setInterval(() => setNow(Date.now()), 15000);
-        return () => clearInterval(id);
-    }, [isTerminal]);
+    // Polling status dengan backoff; berhenti saat terminal.
+    // Status gagal datang dari webhook expire Midtrans (tanpa batas lokal).
 
     useEffect(() => {
         if (isManualWhatsApp || !orderId || isTerminal) return;
@@ -265,16 +236,10 @@ export default function PaymentStatus() {
     const isSuccess = order.payment_status === 'success';
     const isPending = order.payment_status === 'pending';
     const isFailed = ['failed', 'expired', 'deny', 'cancel'].includes(order.payment_status);
-    // QR/Snap kedaluwarsa 15 menit sejak order dibuat. Kalau DB masih pending
-    // (webhook expire hilang / cron belum jalan), UI langsung tampilkan
-    // status gagal agar tidak menggantung "menunggu pembayaran".
-    // Webhook sukses yang telat tetap menang karena polling terus jalan.
-    const expiredByTime =
-        isPending &&
-        !!order.created_at &&
-        now > new Date(order.created_at).getTime() + PAYMENT_EXPIRY_MINUTES * 60_000;
-    const showPending = isPending && !expiredByTime;
-    const showFailed = isFailed || expiredByTime;
+    // Tanpa batas lokal: pending tampil sampai DB berubah (webhook sukses /
+    // expire Midtrans). Polling di atas yang memutakhirkan tampilan.
+    const showPending = isPending;
+    const showFailed = isFailed;
 
     // Konfigurasi visual per status: pita gradien dan lingkaran ikon.
     const statusTheme = isSuccess
@@ -347,13 +312,6 @@ export default function PaymentStatus() {
                             <p className="text-stone-400 mb-4 text-xs sm:text-sm">
                                 {t('paymentStatus.pendingDesc')}
                             </p>
-
-                            {order.created_at ? (
-                                <div className="inline-flex items-center gap-2 bg-stone-900 text-white rounded-full pl-3 pr-4 py-1.5 mb-4 text-xs sm:text-sm font-bold tabular-nums shadow-md">
-                                    <Clock className="w-4 h-4 text-amber-300" />
-                                    <ExpiryCountdown createdAt={order.created_at} />
-                                </div>
-                            ) : null}
 
                             <div className="mb-5">
                                 <OrderSummary order={order} />

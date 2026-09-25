@@ -25,11 +25,10 @@ export interface TemplateOption {
 }
 
 // --- SAKLAR MODE PRODUKSI ---
-// false = pra-launch: HANYA transfer manual WhatsApp yang tampil/aktif.
-// true  = semua metode pembayaran online aktif.
-// Cara menyalakan: ubah jadi true + pastikan secret ENABLE_ONLINE_PAYMENTS
-// tidak 'false' (lihat .env.example), lalu deploy ulang.
-export const PRODUCTION_READY = false;
+// true = semua pembayaran online aktif (Midtrans disetujui).
+// false (pra-launch) = HANYA transfer manual WhatsApp.
+// Pasangannya secret ENABLE_ONLINE_PAYMENTS (lihat .env.example).
+export const PRODUCTION_READY = true;
 
 // --- BASE URL GAMBAR TEMA (Cloudflare R2, WebP) ---
 // Gambar preview tema di-host di R2 lewat custom domain; konversi PNG->WebP sudah dilakukan.

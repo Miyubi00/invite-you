@@ -11,17 +11,13 @@
 //               components/order/constants, i18n
 // ============================================================
 
-import { Building2, QrCode, Smartphone } from "lucide-react";
+import { Zap } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import type { RefObject } from "react";
 import TurnstileWidget, {
   type TurnstileWidgetRef,
 } from "../ui/TurnstileWidget";
 import { useTranslation } from "../../i18n";
-import {
-  PAYMENT_BUTTON_LABEL_KEYS,
-  type PaymentMethodType,
-} from "./constants";
 
 /** Kelas dasar tombol bayar: tinggi, radius, & font sama dengan tombol footer wizard. */
 const PAY_BUTTON_BASE =
@@ -51,7 +47,6 @@ export function OrderPaymentCaptcha({
 }
 
 interface OrderPayButtonProps {
-  paymentMethod: PaymentMethodType | null;
   captchaToken: string | null;
   loadingWA: boolean;
   loadingMidtrans: boolean;
@@ -59,8 +54,13 @@ interface OrderPayButtonProps {
   onWhatsappCheckout: () => void;
 }
 
+/**
+ * Dua tombol bayar berdampingan (tanpa pilih metode dulu):
+ * 1) Otomatis — popup Midtrans Snap, kanal dipilih di dalam Snap.
+ * 2) WhatsApp — transfer manual via admin.
+ * Keduanya terkunci sampai captcha lolos.
+ */
 export function OrderPayButton({
-  paymentMethod,
   captchaToken,
   loadingWA,
   loadingMidtrans,
@@ -69,31 +69,37 @@ export function OrderPayButton({
 }: OrderPayButtonProps) {
   const { t } = useTranslation();
 
-  // Belum memilih metode (seharusnya tidak terjadi di langkah 3, jaga-jaga).
-  if (paymentMethod === null) {
-    return (
+  const autoDisabled = loadingMidtrans || !captchaToken;
+  const waDisabled = loadingWA || !captchaToken;
+
+  return (
+    <div className="space-y-2.5">
       <button
         type="button"
-        disabled
-        className={`${PAY_BUTTON_BASE} border-2 border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed`}
+        onClick={onMidtransCheckout}
+        disabled={autoDisabled}
+        className={`${PAY_BUTTON_BASE} ${
+          autoDisabled
+            ? "bg-stone-300 text-stone-500 cursor-not-allowed"
+            : "bg-[#712E1E] text-white hover:bg-[#8E3B27] active:scale-[0.99] shadow-lg shadow-[#712E1E]/25"
+        }`}
       >
-        <Smartphone className="h-5 w-5 shrink-0" />
-        <span className="truncate">{t("order.selectPaymentMethod")}</span>
+        {loadingMidtrans ? (
+          t("order.payMidtransLoading")
+        ) : (
+          <>
+            <Zap className="h-5 w-5 shrink-0" />
+            <span className="truncate">{t("order.btnPayAuto")}</span>
+          </>
+        )}
       </button>
-    );
-  }
 
-  if (paymentMethod === "whatsapp") {
-    // Menunggu verifikasi captcha juga membuat tombol terkunci.
-    const disabled = loadingWA || !captchaToken;
-
-    return (
       <button
         type="button"
         onClick={onWhatsappCheckout}
-        disabled={disabled}
+        disabled={waDisabled}
         className={`${PAY_BUTTON_BASE} ${
-          disabled
+          waDisabled
             ? "border-2 border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed"
             : "bg-[#25D366] text-white hover:bg-[#20bd5a] active:scale-[0.99] shadow-lg shadow-green-600/20"
         }`}
@@ -107,38 +113,6 @@ export function OrderPayButton({
           </>
         )}
       </button>
-    );
-  }
-
-  const disabled = loadingMidtrans || !captchaToken;
-
-  return (
-    <button
-      type="button"
-      onClick={onMidtransCheckout}
-      disabled={disabled}
-      className={`${PAY_BUTTON_BASE} ${
-        disabled
-          ? "bg-stone-300 text-stone-500 cursor-not-allowed"
-          : "bg-[#712E1E] text-white hover:bg-[#8E3B27] active:scale-[0.99] shadow-lg shadow-[#712E1E]/25"
-      }`}
-    >
-      {loadingMidtrans ? (
-        t("order.payMidtransLoading")
-      ) : (
-        <>
-          {paymentMethod.endsWith("_va") || paymentMethod === "echannel" ? (
-            <Building2 className="h-5 w-5 shrink-0" />
-          ) : paymentMethod === "qris" ? (
-            <QrCode className="h-5 w-5 shrink-0" />
-          ) : (
-            <Smartphone className="h-5 w-5 shrink-0" />
-          )}
-          <span className="truncate">
-            {t(PAYMENT_BUTTON_LABEL_KEYS[paymentMethod])}
-          </span>
-        </>
-      )}
-    </button>
+    </div>
   );
 }
