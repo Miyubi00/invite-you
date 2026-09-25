@@ -1,22 +1,18 @@
 // ============================================================
 // src/components/order/OrderSummary.tsx
 // ------------------------------------------------------------
-// Kartu konfirmasi /order langkah 2 (desain baru): thumbnail + nama
-// tema + tombol Edit, baris kontak, kartu Rincian Pembayaran, pilih
-// metode (Otomatis / WhatsApp), dan slot "actions" (captcha + tombol
-// Lanjut + kembali) dari pages/OrderPage.
+// Kartu konfirmasi /order langkah 3 (desain baru): thumbnail + nama
+// tema + tombol Edit, baris kontak, kartu Rincian Pembayaran (metode
+// tampil sebagai label, dipilih di langkah 2), dan slot "actions"
+// (captcha + tombol bayar + kembali) dari pages/OrderPage.
 // Dipakai di  : pages/OrderPage
 // Keterikatan : react, lucide-react, react-icons, ./constants, i18n
 // ============================================================
 
 import type { ReactNode } from "react";
 import {
-  ArrowRight,
-  BadgeCheck,
   CalendarDays,
   CreditCard,
-  HelpCircle,
-  Info,
   Mail,
   Pencil,
   Users,
@@ -24,9 +20,11 @@ import {
 import { FaWhatsapp } from "react-icons/fa";
 import { useTranslation } from "../../i18n";
 import type { MasterTemplate } from "../../lib/constants";
-import { formatIDR } from "./constants";
-
-export type ConfirmPayMethod = "automatic" | "whatsapp";
+import {
+  formatIDR,
+  PAYMENT_SUMMARY_LABEL_KEYS,
+  type PaymentMethodType,
+} from "./constants";
 
 interface OrderSummaryProps {
   formData: {
@@ -38,27 +36,13 @@ interface OrderSummaryProps {
   };
   selectedTemplate: MasterTemplate;
   selectedImage?: string;
-  paymentMethod: ConfirmPayMethod;
-  onSelectMethod: (method: ConfirmPayMethod) => void;
+  paymentMethod: PaymentMethodType | null;
   onEdit: () => void;
-  onContinue: () => void;
-  continueLoading: boolean;
   /**
-   * Slot captcha tepat di atas tombol Lanjut Pembayaran.
+   * Slot aksi di bagian bawah kartu (langkah 3: captcha + tombol bayar
+   * sesuai metode + tombol kembali) dari pages/OrderPage.
    */
-  captcha?: ReactNode;
-}
-
-function RadioDot({ selected }: { selected: boolean }) {
-  return (
-    <span
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
-        selected ? "border-[#712E1E]" : "border-stone-300"
-      }`}
-    >
-      {selected ? <span className="h-3 w-3 rounded-full bg-[#712E1E]" /> : null}
-    </span>
-  );
+  actions?: ReactNode;
 }
 
 function formatTanggal(iso: string): string {
@@ -77,15 +61,14 @@ export function OrderSummary({
   selectedTemplate,
   selectedImage,
   paymentMethod,
-  onSelectMethod,
   onEdit,
-  onContinue,
-  continueLoading,
-  captcha,
+  actions,
 }: OrderSummaryProps) {
   const { t } = useTranslation();
   const total = selectedTemplate.price;
-  const isAuto = paymentMethod === "automatic";
+  const methodLabel = paymentMethod
+    ? t(PAYMENT_SUMMARY_LABEL_KEYS[paymentMethod])
+    : t("order.selectPaymentMethod");
 
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm sm:rounded-3xl">
@@ -153,6 +136,14 @@ export function OrderSummary({
             {t("order.paymentDetails")}
           </p>
           <div className="mt-2 flex items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-2 text-sm text-stone-500">
+              <CreditCard size={15} className="shrink-0" /> {methodLabel}
+            </span>
+            <span className="text-sm font-black text-stone-800 sm:text-base">
+              {formatIDR(selectedTemplate.price)}
+            </span>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3">
             <span className="text-sm text-stone-500">{t("order.templatePrice")}</span>
             <span className="text-sm font-black text-stone-800 sm:text-base">
               {formatIDR(selectedTemplate.price)}
@@ -169,88 +160,8 @@ export function OrderSummary({
           </div>
         </div>
 
-        {/* Pilih metode */}
-        <div>
-          <p className="text-base font-black text-[#712E1E] sm:text-lg">
-            {t("order.chooseMethod")}
-          </p>
-          <p className="mt-0.5 text-xs text-stone-500 sm:text-sm">
-            {t("order.chooseMethodDesc")}
-          </p>
-
-          <div className="mt-3 space-y-3">
-            <button
-              type="button"
-              onClick={() => onSelectMethod("automatic")}
-              className={`flex w-full items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition sm:p-4 ${
-                isAuto
-                  ? "border-[#712E1E] bg-[#fffdf8]"
-                  : "border-stone-200 bg-white hover:border-stone-300"
-              }`}
-            >
-              <span className="pt-0.5">
-                <RadioDot selected={isAuto} />
-              </span>
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F7EEE3]">
-                <CreditCard size={22} className="text-[#712E1E]" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-black text-stone-800 sm:text-base">
-                  {t("order.autoTitle")}
-                </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-stone-500 sm:text-[13px]">
-                  {t("order.autoDesc")}
-                </span>
-                <span className="mt-2 flex items-center gap-1.5 rounded-lg bg-[#FFF7E6] px-2.5 py-1.5 text-[11px] font-bold text-[#B4693F] sm:text-xs">
-                  <Info size={14} className="shrink-0" />
-                  <span className="flex-1">{t("order.autoFeeNote")}</span>
-                  <HelpCircle size={15} className="shrink-0 text-[#712E1E]" />
-                </span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onSelectMethod("whatsapp")}
-              className={`flex w-full items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition sm:p-4 ${
-                !isAuto
-                  ? "border-[#25D366] bg-green-50/50"
-                  : "border-stone-200 bg-white hover:border-stone-300"
-              }`}
-            >
-              <span className="pt-0.5">
-                <RadioDot selected={!isAuto} />
-              </span>
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-green-50">
-                <FaWhatsapp size={24} className="text-[#25D366]" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-black text-stone-800 sm:text-base">
-                  {t("order.waTitle")}
-                </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-stone-500 sm:text-[13px]">
-                  {t("order.waDesc")}
-                </span>
-                <span className="mt-2 flex items-center gap-1.5 rounded-lg bg-[#E6F6EC] px-2.5 py-1.5 text-[11px] font-bold text-green-700 sm:text-xs">
-                  <BadgeCheck size={14} className="shrink-0" />
-                  {t("order.waFreeNote")}
-                </span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Verifikasi + Lanjut pembayaran */}
-        {captcha ? <div>{captcha}</div> : null}
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={continueLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#712E1E] py-3.5 text-base font-black text-white shadow-lg transition hover:bg-[#8E3B27] active:scale-[0.99] disabled:opacity-60 sm:py-4 sm:text-lg"
-        >
-          {continueLoading ? t("order.payMidtransLoading") : t("order.btnContinuePay")}
-          {!continueLoading ? <ArrowRight size={20} /> : null}
-        </button>
+        {/* Slot aksi: captcha + tombol bayar + kembali */}
+        {actions ? <div className="space-y-2.5 border-t border-[#F3EBDF] pt-4">{actions}</div> : null}
       </div>
     </div>
   );

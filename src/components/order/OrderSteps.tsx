@@ -1,9 +1,9 @@
 // ============================================================
 // src/components/order/OrderSteps.tsx
 // ------------------------------------------------------------
-// Indikator progres 2 langkah di /order: 01 Data, 02 Konfirmasi & Bayar.
-// Murni informasi — navigasi kembali ditangani tombol/footer di
-// pages/OrderPage.
+// Indikator progres 3 langkah di /order: 01 Template (terkunci dari
+// katalog = selalu selesai), 02 Data, 03 Bayar. Murni informasi ΓÇö
+// navigasi kembali ditangani tombol/footer di pages/OrderPage.
 // Dipakai di  : pages/OrderPage
 // Keterikatan : lucide-react, i18n
 // ============================================================
@@ -12,7 +12,7 @@ import { Check } from "lucide-react";
 import { useTranslation } from "../../i18n";
 
 interface OrderStepsProps {
-  current: 1 | 2;
+  current: 1 | 2 | 3;
 }
 
 export function OrderSteps({ current }: OrderStepsProps) {
@@ -20,6 +20,7 @@ export function OrderSteps({ current }: OrderStepsProps) {
 
   const steps = [
     t("order.wizStep1"),
+    t("order.wizStep2"),
     t("order.wizStep3"),
   ];
 
@@ -29,7 +30,7 @@ export function OrderSteps({ current }: OrderStepsProps) {
       aria-label="Progres pemesanan"
     >
       {steps.map((label, i) => {
-        const stepNo = (i + 1) as 1 | 2;
+        const stepNo = (i + 1) as 1 | 2 | 3;
         const isDone = stepNo < current;
         const isCurrent = stepNo === current;
 

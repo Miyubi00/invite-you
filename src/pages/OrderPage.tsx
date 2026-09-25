@@ -28,10 +28,15 @@ import { ArrowLeft, ArrowRight, GraduationCap, RotateCcw } from "lucide-react";
 import { OrderBackButton } from "../components/order/OrderBackButton";
 import { OrderDetailsForm } from "../components/order/OrderDetailsForm";
 import { OrderSteps } from "../components/order/OrderSteps";
+import { PaymentMethodPicker } from "../components/order/PaymentMethodPicker";
 import { OrderSummary } from "../components/order/OrderSummary";
-import { OrderPaymentCaptcha } from "../components/order/OrderPaymentActions";
+import {
+  OrderPayButton,
+  OrderPaymentCaptcha,
+} from "../components/order/OrderPaymentActions";
 import {
   EMAIL_RE,
+  type ExpandedCategory,
   type PaymentMethodType,
 } from "../components/order/constants";
 import { useOrderCheckout } from "../hooks/useOrderCheckout";
@@ -106,9 +111,17 @@ export default function OrderForm() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   // Draft tersimpan (sekali baca saat mount).
   const [draft] = useState<OrderDraft | null>(loadDraft);
-  // Metode bayar dipilih di kartu konfirmasi (default otomatis).
-  const [paymentMethod, setPaymentMethod] =
-    useState<"automatic" | "whatsapp">("automatic");
+  // Metode bayar dipilih di langkah 2 (default otomatis).
+  // Draft lama yang menyimpan metode tak dikenal dinormalisasi.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>(() => {
+    const m = draft?.paymentMethod;
+    return typeof m === "string" &&
+      ["automatic", "qris", "gopay", "echannel", "bni_va", "bri_va", "permata_va", "cimb_va", "whatsapp"].includes(m)
+      ? (m as PaymentMethodType)
+      : "automatic";
+  });
+  const [expandedCategory, setExpandedCategory] =
+    useState<ExpandedCategory | null>(null);
   const turnstileRef = useRef<TurnstileWidgetRef>(null);
 
   const [templateList, setTemplateList] =
@@ -230,13 +243,14 @@ export default function OrderForm() {
   } = useOrderCheckout({
     formData,
     selectedTemplate,
+    paymentMethod,
     captchaToken,
     invalidateCaptcha,
     clearDraft,
   });
 
-  // Wizard 2 langkah: 1 Data -> 2 Konfirmasi & Bayar.
-  const [step, setStep] = useState<1 | 2>(1);
+  // Wizard 3 langkah: 1 Data -> 2 Metode -> 3 Konfirmasi & Bayar.
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const scrollTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -263,14 +277,22 @@ export default function OrderForm() {
     scrollTop();
   };
 
+  const goNextFromMethod = () => {
+    if (!paymentMethod) {
+      toast.warning(t("validation.paymentMethodRequired"));
+      return;
+    }
+    setStep(3);
+    scrollTop();
+  };
+
   const goBackStep = () => {
-    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2) : s));
+    setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
     scrollTop();
   };
 
   // Reset formulir = kosongkan data + langsung fallback ke langkah 1
-  // (halaman isi data), karena langkah 2 & 3 tidak punya isi lagi setelah
-  // data/metode dikosongkan. Captcha ikut dibatalkan & halaman di-scroll ke atas.
+  // (halaman isi data). Captcha ikut dibatalkan & halaman di-scroll ke atas.
   const handleReset = () => {
     setFormData({
       groom_name: "",
@@ -280,6 +302,8 @@ export default function OrderForm() {
       email: "",
       template_slug: defaultTemplate.slug,
     });
+    setPaymentMethod("automatic");
+    setExpandedCategory(null);
     setStep(1);
     invalidateCaptcha();
     setShowConfirm(false);
@@ -288,32 +312,23 @@ export default function OrderForm() {
     scrollTop();
   };
 
-  // Tombol "Lanjut Pembayaran" di kartu konfirmasi: teruskan ke
-  // checkout yang sesuai metode terpilih.
-  const handleContinuePay = () => {
-    if (paymentMethod === "whatsapp") {
-      void handleWhatsappCheckout();
-    } else {
-      void handleMidtransCheckout();
-    }
-  };
-
   // --- NAVIGASI WIZARD (tombol kembali & lanjut seragam di footer step) ---
   const wizardStepLabels = [
     t("order.wizStep1"),
+    t("order.wizStep2"),
     t("order.wizStep3"),
   ];
   // Langkah 1 -> kembali ke katalog/halaman sebelumnya.
-  // Langkah 2 -> kembali ke langkah sebelumnya di wizard.
+  // Langkah 2 & 3 -> kembali ke langkah sebelumnya di wizard.
   const handleBack = () => (step > 1 ? goBackStep() : goBackOrHome(navigate));
   const contextualBackLabel =
     step > 1
       ? t("order.backToStep", { step: wizardStepLabels[step - 2] })
       : t("order.back");
   const nextAction =
-    step === 1 ? goNextFromData : null;
-  // Langkah 1 memakai baris navigasi bawah: [Kembali] [Lanjut] sebaris.
-  // Langkah 2 tidak punya baris sendiri - verifikasi captcha, tombol bayar,
+    step === 1 ? goNextFromData : step === 2 ? goNextFromMethod : null;
+  // Langkah 1 & 2 memakai baris navigasi bawah: [Kembali] [Lanjut] sebaris.
+  // Langkah 3 tidak punya baris sendiri - verifikasi captcha, tombol bayar,
   // dan tombol kembali menyatu di dalam kartu ringkasan (slot actions
   // OrderSummary), tersusun atas-bawah agar label panjang tetap utuh.
 
@@ -371,23 +386,48 @@ export default function OrderForm() {
           />
         ) : null}
 
-        {/* --- STEP 2: KONFIRMASI & BAYAR --- */}
+        {/* --- STEP 2: METODE --- */}
         {step === 2 ? (
+          <PaymentMethodPicker
+            basePrice={selectedTemplate.price}
+            paymentMethod={paymentMethod}
+            onSelect={setPaymentMethod}
+            expandedCategory={expandedCategory}
+            onExpand={setExpandedCategory}
+          />
+        ) : null}
+
+        {/* --- STEP 3: KONFIRMASI & BAYAR --- */}
+        {step === 3 ? (
           <OrderSummary
             formData={formData}
             selectedTemplate={selectedTemplate}
             selectedImage={selectedImage}
             paymentMethod={paymentMethod}
-            onSelectMethod={setPaymentMethod}
             onEdit={goBackStep}
-            onContinue={handleContinuePay}
-            continueLoading={loadingMidtrans || loadingWA}
-            // Slot bawah tombol Lanjut: hanya captcha.
-            captcha={
-              <OrderPaymentCaptcha
-                setCaptchaToken={setCaptchaToken}
-                turnstileRef={turnstileRef}
-              />
+            // Semua elemen langkah 3 menyatu di dalam kartu, urut atas-bawah:
+            // verifikasi captcha -> tombol bayar -> tombol kembali.
+            actions={
+              <>
+                <OrderPaymentCaptcha
+                  setCaptchaToken={setCaptchaToken}
+                  turnstileRef={turnstileRef}
+                />
+                <OrderPayButton
+                  paymentMethod={paymentMethod}
+                  captchaToken={captchaToken}
+                  loadingWA={loadingWA}
+                  loadingMidtrans={loadingMidtrans}
+                  onMidtransCheckout={handleMidtransCheckout}
+                  onWhatsappCheckout={handleWhatsappCheckout}
+                />
+                <OrderBackButton
+                  onClick={handleBack}
+                  label={t("order.btnBack")}
+                  ariaLabel={contextualBackLabel}
+                  variant="block"
+                />
+              </>
             }
           />
         ) : null}

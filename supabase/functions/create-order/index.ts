@@ -175,6 +175,9 @@ serve(async (req) => {
     if (!onlineEnabled && payment_method !== 'manual_whatsapp') {
       throw new Error('Pembayaran online belum dibuka. Silakan pilih transfer manual via WhatsApp.')
     }
+    if (typeof payment_method !== 'string' || !payment_method) {
+      throw new Error('Metode pembayaran wajib dipilih.')
+    }
 
     // --- Jalur MANUAL WhatsApp: tanpa Midtrans, hanya catat pending_orders.
     // Tetap lewat validasi + Turnstile + rate limit di atas (anti-spam),
@@ -286,10 +289,27 @@ serve(async (req) => {
     // ?order_id=&status_code=&transaction_status= ke URL finish).
     const appUrl = Deno.env.get('APP_URL') || ''
 
-    // Kanal aktif di akun Midtrans (lihat dashboard): GoPay, BNI VA,
-    // BRI VA, Mandiri (echannel), Permata VA, CIMB Niaga (other_va).
-    // User memilih kanal DI DALAM popup Snap — frontend tak perlu tahu.
-    const enabledPayments: string[] = ['gopay', 'bni_va', 'bri_va', 'echannel', 'permata_va', 'other_va']
+    // Kanal aktif di akun Midtrans (lihat dashboard): Other QRIS, GoPay,
+    // Mandiri VA (echannel), BNI/BRI/Permata/CIMB VA. User memilih SATU
+    // kanal di awal; Snap langsung ke alurnya (tanpa halaman pilih lagi).
+    // Fallback (legacy 'automatic'/tak dikenal): semua kanal aktif.
+    let enabledPayments: string[] = ['gopay', 'bni_va', 'bri_va', 'echannel', 'permata_va', 'other_va']
+
+    if (payment_method === 'qris') {
+      enabledPayments = ['other_qris']
+    } else if (payment_method === 'gopay') {
+      enabledPayments = ['gopay']
+    } else if (payment_method === 'echannel') {
+      enabledPayments = ['echannel']
+    } else if (payment_method === 'bni_va') {
+      enabledPayments = ['bni_va']
+    } else if (payment_method === 'bri_va') {
+      enabledPayments = ['bri_va']
+    } else if (payment_method === 'permata_va') {
+      enabledPayments = ['permata_va']
+    } else if (payment_method === 'cimb_va') {
+      enabledPayments = ['cimb_va']
+    }
 
     const itemDetails: Array<{ id: string; price: number; quantity: number; name: string }> = [
       {

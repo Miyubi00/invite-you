@@ -17,6 +17,7 @@ export type PaymentMethodType =
   | "echannel"
   | "bni_va"
   | "bri_va"
+  | "permata_va"
   | "cimb_va"
   | "seabank_va"
   | "bsi_va"
@@ -53,18 +54,14 @@ export const MIDTRANS_LOGOS = {
 
 const EWALLET_METHODS = [
   "gopay",
-  "shopeepay",
-  "dana",
 ] as const satisfies readonly MidtransMethod[];
 
 const VA_METHODS = [
-  "bca_va",
   "echannel",
   "bni_va",
   "bri_va",
+  "permata_va",
   "cimb_va",
-  "seabank_va",
-  "bsi_va",
 ] as const satisfies readonly MidtransMethod[];
 
 export type EwalletMethod = (typeof EWALLET_METHODS)[number];
@@ -108,55 +105,17 @@ export const EWALLET_OPTIONS: readonly EwalletOption[] = [
       },
     ],
   },
-  {
-    id: "shopeepay",
-    name: "ShopeePay / SPayLater",
-    descKey: "order.shopeepayDesc",
-    logoBoxClass:
-      "bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center gap-1 shadow-xs shrink-0",
-    logos: [
-      {
-        src: MIDTRANS_LOGOS.shopeepay,
-        alt: "ShopeePay",
-        className: "h-3.5 sm:h-4.5 w-auto object-contain",
-      },
-      {
-        src: MIDTRANS_LOGOS.spaylater,
-        alt: "SPayLater",
-        className: "h-3.5 sm:h-4 w-auto object-contain",
-      },
-    ],
-  },
-  {
-    id: "dana",
-    name: "Dana",
-    descKey: "order.danaDesc",
-    logoBoxClass:
-      "bg-white border border-stone-200/90 rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 flex items-center shadow-xs shrink-0",
-    logos: [
-      {
-        src: MIDTRANS_LOGOS.dana,
-        alt: "Dana",
-        className: "h-3.5 sm:h-4.5 w-auto object-contain",
-      },
-    ],
-  },
 ];
 
 interface VaBank {
   id: VaMethod;
   name: string;
-  logo: string;
+  /** Logo bank; kosong = tampil sebagai teks (mis. Permata belum ada file logo). */
+  logo?: string;
   h: string;
 }
 
 export const VA_BANKS: readonly VaBank[] = [
-  {
-    id: "bca_va",
-    name: "BCA Virtual Account",
-    logo: MIDTRANS_LOGOS.bca,
-    h: "h-3",
-  },
   {
     id: "echannel",
     name: "Mandiri Virtual Account",
@@ -176,22 +135,15 @@ export const VA_BANKS: readonly VaBank[] = [
     h: "h-3",
   },
   {
+    id: "permata_va",
+    name: "Permata Virtual Account",
+    h: "h-3",
+  },
+  {
     id: "cimb_va",
     name: "CIMB Niaga VA",
     logo: MIDTRANS_LOGOS.cimb,
     h: "h-2.5",
-  },
-  {
-    id: "seabank_va",
-    name: "SeaBank Direct VA",
-    logo: MIDTRANS_LOGOS.seabank,
-    h: "h-3",
-  },
-  {
-    id: "bsi_va",
-    name: "BSI (Bank Syariah Indonesia)",
-    logo: MIDTRANS_LOGOS.bsi,
-    h: "h-3",
   },
 ];
 
@@ -229,13 +181,15 @@ export const PAYMENT_SUMMARY_LABEL_KEYS: Record<PaymentMethodType, string> = {
   echannel: "order.orderSummaryMandiriVa",
   bni_va: "order.orderSummaryBniVa",
   bri_va: "order.orderSummaryBriVa",
+  permata_va: "order.orderSummaryPermataVa",
   cimb_va: "order.orderSummaryCimbVa",
   seabank_va: "order.orderSummarySeabankVa",
   bsi_va: "order.orderSummaryBsiVa",
   whatsapp: "order.orderSummaryWa",
 };
 
-export const PAYMENT_BUTTON_LABEL_KEYS: Record<MidtransMethod, string> = {
+export const PAYMENT_BUTTON_LABEL_KEYS: Record<PaymentMethodType, string> = {
+  automatic: "order.btnPayAuto",
   qris: "order.btnPayQris",
   gopay: "order.btnPayGopay",
   shopeepay: "order.btnPayShopeepay",
@@ -244,7 +198,9 @@ export const PAYMENT_BUTTON_LABEL_KEYS: Record<MidtransMethod, string> = {
   echannel: "order.btnPayMandiri",
   bni_va: "order.btnPayBni",
   bri_va: "order.btnPayBri",
+  permata_va: "order.btnPayPermata",
   cimb_va: "order.btnPayCimb",
   seabank_va: "order.btnPaySeabank",
   bsi_va: "order.btnPayBsi",
+  whatsapp: "order.btnPayWa",
 };

@@ -330,6 +330,11 @@ export default function OrdersTab({
                     <td className="p-4"><span className="bg-[#F7EEE3] text-[#B4693F] px-2 py-1 rounded-lg text-xs border border-[#EBDFCE] font-medium">{order.template_slug}</span></td>
                     <td className="p-4">
                         {order.payment_status === 'success' ? <span className="flex items-center gap-1 text-green-700 bg-green-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-green-100"><CheckCircle className="w-3 h-3" /> {t('admin.paymentSuccess')}</span> : <span className="flex items-center gap-1 text-red-700 bg-red-50 px-3 py-1 rounded-full text-xs font-bold w-fit border border-red-100"><XCircle className="w-3 h-3" /> {order.payment_status}</span>}
+                        {typeof (order.event_details as { payment_method?: unknown } | null)?.payment_method === 'string' && (order.event_details as { payment_method: string }).payment_method ? (
+                          <span className="mt-1.5 inline-block bg-[#F7EEE3] text-[#B4693F] px-2 py-0.5 rounded-lg text-[10px] font-bold border border-[#EBDFCE]">
+                            {(order.event_details as { payment_method: string }).payment_method}
+                          </span>
+                        ) : null}
                     </td>
                     <td className="p-4 text-center">
                         <div className="flex justify-center gap-2">
