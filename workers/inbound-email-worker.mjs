@@ -44,6 +44,17 @@ function toBase64(bytes) {
   return btoa(bin);
 }
 
+/** HTML -> teks polos (fallback bila email tanpa part text/plain). */
+function htmlToText(html) {
+  return String(html || '')
+    .replace(/<style[\s\S]*?<\/style\s*>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&(nbsp|amp|lt|gt|quot|#39);/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export default {
   /**
    * @param {any} message - pesan masuk (from, to, raw, headers, ...)
@@ -61,7 +72,10 @@ export default {
         from: fromAddr.slice(0, 320),
         to: String(to || 'mail@loverse.id').slice(0, 320),
         subject: String(parsed.subject || '(tanpa subjek)').slice(0, 500),
-        text: String(parsed.text || '').slice(0, 50000),
+        // HTML-only (tanpa text/plain) -> teks diisi dari HTML agar tak kosong.
+        text: String(parsed.text || htmlToText(parsed.html)).slice(0, 50000),
+        // Badan HTML mentah untuk tampil embed tersandbox di inbox admin.
+        html: String(parsed.html || '').slice(0, 200000),
         attachments: [],
       };
       let skipped = 0;

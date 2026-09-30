@@ -297,12 +297,11 @@ serve(async (req) => {
     const appUrl = Deno.env.get('APP_URL') || ''
 
     // Kanal aktif di akun (lihat dashboard): Other QRIS, GoPay,
-    // Mandiri VA (echannel), BNI/BRI/Permata VA. GoPay & CIMB DIMATIKAN
-    // dari penawaran. CATATAN: QRIS wajib 'other_qris' (terbukti jalan di
-    // akun ini; 'qris' bikin token tapi popup menolak render).
-    // SATU kanal per transaksi -> Snap langsung ke alurnya (tanpa halaman
-    // pilih lagi). Fallback (legacy/tak dikenal): semua kanal aktif.
-    let enabledPayments: string[] = ['other_qris', 'gopay', 'echannel', 'bni_va', 'bri_va', 'permata_va', 'other_va']
+    // Mandiri/BNI/BRI/Permata/CIMB/BSI VA. SATU kanal per transaksi ->
+    // Snap langsung ke alurnya (tanpa halaman pilih lagi).
+    // CATATAN: QRIS wajib 'other_qris' (terbukti jalan di akun ini).
+    // Fallback (legacy/tak dikenal): semua kanal aktif.
+    let enabledPayments: string[] = ['other_qris', 'gopay', 'echannel', 'bni_va', 'bri_va', 'permata_va', 'cimb_va', 'bsi_va', 'other_va']
 
     if (payment_method === 'qris') {
       enabledPayments = ['other_qris']
@@ -316,9 +315,10 @@ serve(async (req) => {
       enabledPayments = ['bri_va']
     } else if (payment_method === 'permata_va') {
       enabledPayments = ['permata_va']
-    } else if (payment_method === 'cimb_va' || payment_method === 'gopay') {
-      // Legacy: arahkan ke kanal terdekat yang tersedia.
-      enabledPayments = ['other_va']
+    } else if (payment_method === 'cimb_va') {
+      enabledPayments = ['cimb_va']
+    } else if (payment_method === 'bsi_va') {
+      enabledPayments = ['bsi_va']
     }
 
     const itemDetails: Array<{ id: string; price: number; quantity: number; name: string }> = [

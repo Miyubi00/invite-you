@@ -31,6 +31,8 @@ export interface InboxMessage {
   to_addr: string;
   subject: string;
   text_body: string;
+  /** Badan HTML mentah (opsional); render WAJIB via iframe tersandbox. */
+  html_body?: string | null;
   received_at: string;
   is_read: boolean;
   replied_at: string | null;
@@ -125,6 +127,7 @@ export default function InboxTab({ toast, onCountChange }: InboxTabProps) {
   const [messages, setMessages] = useState<InboxMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<InboxMessage | null>(null);
+  const [viewHtml, setViewHtml] = useState(true);
   const [reply, setReply] = useState('');
   const [replyOpen, setReplyOpen] = useState(false);
   const [sending, setSending] = useState(false);
@@ -187,6 +190,7 @@ export default function InboxTab({ toast, onCountChange }: InboxTabProps) {
 
   const openMessage = async (msg: InboxMessage) => {
     setSelected(msg);
+    setViewHtml(true);
     setReply('');
     setReplyOpen(false);
     setAttaches([]);
@@ -373,14 +377,43 @@ export default function InboxTab({ toast, onCountChange }: InboxTabProps) {
                 </div>
 
                 <div className="px-5 py-4">
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[#b89a83]">
-                    {t('admin.inboxMessageLabel')}
-                  </p>
-                  <div className="rounded-xl border-l-4 border-[#712E1E] bg-[#faf8f4] p-4">
-                    <p className="max-h-72 overflow-y-auto whitespace-pre-wrap text-[13px] leading-relaxed text-stone-700">
-                      {selected.text_body ? renderLinkified(selected.text_body) : `(${t('admin.inboxNoBody')})`}
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#b89a83]">
+                      {t('admin.inboxMessageLabel')}
                     </p>
+                    {selected.html_body ? (
+                      <span className="inline-flex overflow-hidden rounded-lg border border-stone-200 text-[11px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setViewHtml(true)}
+                          className={`px-2.5 py-1 ${viewHtml ? 'bg-[#712E1E] text-white' : 'bg-white text-stone-500 hover:bg-stone-100'}`}
+                        >
+                          {t('admin.inboxViewHtml')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewHtml(false)}
+                          className={`px-2.5 py-1 ${!viewHtml ? 'bg-[#712E1E] text-white' : 'bg-white text-stone-500 hover:bg-stone-100'}`}
+                        >
+                          {t('admin.inboxViewText')}
+                        </button>
+                      </span>
+                    ) : null}
                   </div>
+                  {selected.html_body && viewHtml ? (
+                    <iframe
+                      title={selected.subject}
+                      srcDoc={selected.html_body}
+                      sandbox=""
+                      className="h-80 w-full rounded-xl border border-stone-200 bg-white"
+                    />
+                  ) : (
+                    <div className="rounded-xl border-l-4 border-[#712E1E] bg-[#faf8f4] p-4">
+                      <p className="max-h-72 overflow-y-auto whitespace-pre-wrap text-[13px] leading-relaxed text-stone-700">
+                        {selected.text_body ? renderLinkified(selected.text_body) : `(${t('admin.inboxNoBody')})`}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {(selected.attachments ?? []).length > 0 && (

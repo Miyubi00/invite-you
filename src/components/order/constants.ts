@@ -65,6 +65,8 @@ const VA_METHODS = [
   "bni_va",
   "bri_va",
   "permata_va",
+  "cimb_va",
+  "bsi_va",
 ] as const satisfies readonly MidtransMethod[];
 
 export type EwalletMethod = (typeof EWALLET_METHODS)[number];
@@ -141,6 +143,18 @@ export const VA_BANKS: readonly VaBank[] = [
     id: "permata_va",
     name: "Permata Virtual Account",
     logo: MIDTRANS_LOGOS.permata,
+    h: "h-3",
+  },
+  {
+    id: "cimb_va",
+    name: "CIMB Niaga Virtual Account",
+    logo: MIDTRANS_LOGOS.cimb,
+    h: "h-3",
+  },
+  {
+    id: "bsi_va",
+    name: "BSI Virtual Account",
+    logo: MIDTRANS_LOGOS.bsi,
     h: "h-3",
   },
 ];

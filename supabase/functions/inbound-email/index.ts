@@ -1,7 +1,7 @@
 // supabase/functions/inbound-email/index.ts
 // Penerima email masuk mail@loverse.id — DIPANGGIL OLEH Cloudflare Email
 // Worker (bukan oleh browser). Worker mem-parsing MIME lalu POST JSON:
-//   { from, to, subject, text, attachments?: [{name, mime, size, content(base64)}],
+//   { from, to, subject, text, html?, attachments?: [{name, mime, size, content(base64)}],
 //     skippedAttachments?: number }
 // Otorisasi: header `x-inbound-secret` HARUS sama dengan secret
 // INBOUND_EMAIL_SECRET. Tanpa secret yang cocok -> 403.
@@ -61,6 +61,18 @@ serve(async (req) => {
   const subject = String(payload.subject ?? '(tanpa subjek)').trim().slice(0, 500) || '(tanpa subjek)';
   let text = String(payload.text ?? '').slice(0, 50000);
   if (!from) return json({ error: 'Field from wajib' }, 400);
+
+  // --- Badan HTML (opsional, dari MIME part text/html via Worker) ---
+  // Disimpan mentah; render-nya WAJIB iframe tersandbox (tanpa script).
+  // Pertahanan berlapis: buang blok <script> saat simpan.
+  let html: string | null = null;
+  if (typeof payload.html === 'string' && payload.html.length > 0) {
+    html = payload.html
+      .replace(/<script[\s\S]*?<\/script\s*>/gi, '')
+      .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .slice(0, 200000);
+    if (!html.trim()) html = null;
+  }
 
   // --- Lampiran -> R2 ---
   const stored: Array<{ name: string; mime: string; size: number; url: string }> = [];
@@ -127,6 +139,7 @@ serve(async (req) => {
     to_addr: to,
     subject,
     text_body: text,
+    html_body: html,
     attachments: stored,
   });
   if (error) {

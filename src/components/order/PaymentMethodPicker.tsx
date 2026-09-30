@@ -327,35 +327,29 @@ export function PaymentMethodPicker({
                   <button
                     key={bank.id}
                     type="button"
+                    title={bank.name}
+                    aria-pressed={active}
                     onClick={() => {
                       onSelect(bank.id);
                       onExpand("va");
                     }}
-                    className={`flex items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl border-2 transition ${
-                      active ? SUB_ACTIVE : SUB_INACTIVE
+                    className={`flex min-h-[68px] sm:min-h-[76px] items-center justify-center p-3 sm:p-4 rounded-xl border-2 transition ${
+                      active
+                        ? "border-[#712E1E] bg-[#faf3ea] shadow-sm"
+                        : "border-stone-200 bg-white hover:border-[#712E1E]/50 hover:bg-[#faf3ea]/50"
                     }`}
                   >
-                    <span className="flex items-center gap-2 min-w-0">
-                      {bank.logo ? (
-                        <span className="bg-white border border-stone-200/80 rounded-md px-1.5 py-0.5 flex items-center justify-center shrink-0 shadow-xs min-w-[45px] w-fit">
-                          <img
-                            src={bank.logo}
-                            alt={bank.name}
-                            className={`${bank.h} max-w-[40px] object-contain`}
-                          />
-                        </span>
-                      ) : (
-                        <span className="bg-[#712E1E] text-white text-[10px] font-black rounded-md px-2 py-1 shrink-0 shadow-xs">
-                          {bank.name.split(" ")[0]}
-                        </span>
-                      )}
-                      <span className="text-xs font-bold text-stone-800">
-                        {formatIDR(
-                          basePrice + getPaymentMethodFee(basePrice, bank.id),
-                        )}
+                    {bank.logo ? (
+                      <img
+                        src={bank.logo}
+                        alt={bank.name}
+                        className="h-6 sm:h-7 w-auto max-w-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-sm font-black text-[#712E1E]">
+                        {bank.name}
                       </span>
-                    </span>
-                    <RadioDot selected={active} size="sm" />
+                    )}
                   </button>
                 );
               })}

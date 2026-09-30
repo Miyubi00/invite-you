@@ -408,6 +408,10 @@ export default function OrderForm() {
               setStep(1);
               scrollTop();
             }}
+            onChangeMethod={() => {
+              setStep(2);
+              scrollTop();
+            }}
             // Semua elemen langkah 3 menyatu di dalam kartu, urut atas-bawah:
             // verifikasi captcha -> tombol bayar (tanpa tombol kembali).
             actions={
