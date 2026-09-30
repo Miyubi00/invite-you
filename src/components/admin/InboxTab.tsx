@@ -291,7 +291,7 @@ export default function InboxTab({ toast, onCountChange }: InboxTabProps) {
           <p className="mt-3 text-sm font-bold text-stone-500">{t('admin.inboxEmpty')}</p>
         </div>
       ) : (
-        <div className="grid items-start gap-4 lg:grid-cols-[340px_1fr]">
+        <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
           {/* daftar pesan */}
           <div className="space-y-2">
             {messages.map((m) => (
@@ -405,7 +405,7 @@ export default function InboxTab({ toast, onCountChange }: InboxTabProps) {
                       title={selected.subject}
                       srcDoc={selected.html_body}
                       sandbox=""
-                      className="h-80 w-full rounded-xl border border-stone-200 bg-white"
+                      className="h-[30rem] w-full rounded-xl border border-stone-200 bg-white"
                     />
                   ) : (
                     <div className="rounded-xl border-l-4 border-[#712E1E] bg-[#faf8f4] p-4">
