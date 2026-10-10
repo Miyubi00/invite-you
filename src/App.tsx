@@ -39,7 +39,6 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const TutorialPage = lazy(() => import('./pages/TutorialPage'));
-const DummyPurchaseApp = lazy(() => import('./dummy-purchase/DummyPurchaseApp'));
 
 /* Fallback saat chunk halaman sedang di-download */
 function PageLoader() {
@@ -70,10 +69,6 @@ function App() {
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />
-
-              {/* GROUP DUMMY: mini website tutorial pembelian (terisolasi,
-                  tanpa Navbar production). Tidak menyentuh route produksi. */}
-              <Route path="/dummy-purchase/*" element={<DummyPurchaseApp />} />
 
               {/* GROUP 2: TEMPLATE DEMO */}
               <Route path="/demo/:slug" element={<TemplateDemoPage />} />
