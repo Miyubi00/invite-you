@@ -15,6 +15,8 @@ import { supabase } from '../lib/supabaseClient';
 import { MASTER_TEMPLATES, TESTIMONIALS } from '../lib/constants';
 import { TemplateCardSkeleton } from '../components/ui/SkeletonLoaders';
 import { SkeletonImage } from '../components/ui/SkeletonImage';
+import SiteNoticeView from '../components/shared/SiteNoticeView';
+import { useSiteNotices } from '../hooks/useSiteNotices';
 import type { TemplateRow } from '../types/database';
 import { useTranslation } from '../i18n';
 import { usePageMeta } from '../hooks/usePageMeta';
@@ -106,6 +108,7 @@ const BASE_DUMMY_SOLD = 60;
 
 export default function Landing() {
   const { t } = useTranslation();
+  const siteNotices = useSiteNotices();
   usePageMeta(
     'LoVerse — Undangan Pernikahan Digital Elegan & Modern',
     'LoVerse — undangan pernikahan digital elegan & modern. Pilih 40+ tema, RSVP online, musik, galeri foto, dan buku tamu. Buat dalam hitungan menit mulai Rp 10.000.',
@@ -256,6 +259,9 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#F1E8DC] font-sans text-stone-800 selection:bg-[#E59A59] selection:text-white">
+
+      {/* Notice situs (promo / maintenance) dari admin */}
+      <SiteNoticeView notices={siteNotices} />
 
       {/* --- HERO SECTION: SPLIT LAYOUT KIRI - KANAN --- */}
       <section className="relative pt-8 pb-16 md:pt-14 md:pb-24 overflow-hidden border-b border-[#EBDFCE]/60">

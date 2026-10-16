@@ -13,8 +13,9 @@ import OrdersTab from "../components/admin/OrdersTab";
 import TemplatesTab from "../components/admin/TemplatesTab";
 import InboxTab from "../components/admin/InboxTab";
 import AuditTab from "../components/admin/AuditTab";
+import NoticesTab from "../components/admin/NoticesTab";
 import EditOrderModal from "../components/admin/EditOrderModal";
-import { ClipboardList, Clock, Palette, Mail, ScrollText, LogOut, Loader2, Menu } from "lucide-react";
+import { ClipboardList, Clock, Palette, Mail, ScrollText, LogOut, Loader2, Menu, Megaphone } from "lucide-react";
 import { useTranslation } from "../i18n";
 
 interface DialogState {
@@ -69,7 +70,7 @@ export default function AdminPanel() {
     await Promise.all([fetchData(), refreshOrders()]);
   }, [fetchData, refreshOrders]);
 
-  const [activeTab, setActiveTab] = useUrlTab(["orders", "whatsapp", "templates", "inbox", "audit", "edit"], "orders");
+  const [activeTab, setActiveTab] = useUrlTab(["orders", "whatsapp", "templates", "notices", "inbox", "audit", "edit"], "orders");
   const [searchParams, setSearchParams] = useSearchParams();
   const urlOrderId = searchParams.get("order") ?? "";
   const [dialog, setDialog] = useState<DialogState>({ isOpen: false, title: "", message: "", isDanger: true, onConfirm: null });
@@ -175,6 +176,7 @@ export default function AdminPanel() {
     { id: "orders", label: t('admin.menuOrders'), icon: ClipboardList, badge: ordersFilter.total > 0 ? ordersFilter.total : null },
     { id: "whatsapp", label: t('admin.menuWhatsapp'), icon: Clock, badge: pendingOrders.length },
     { id: "templates", label: t('admin.menuTemplates'), icon: Palette, badge: null },
+    { id: "notices", label: t('admin.menuNotices'), icon: Megaphone, badge: null },
     { id: "inbox", label: t('admin.menuInbox'), icon: Mail, badge: inboxUnread > 0 ? inboxUnread : null },
     { id: "audit", label: t('admin.menuAudit'), icon: ScrollText, badge: null },
   ];
@@ -287,6 +289,10 @@ export default function AdminPanel() {
                     toast={toast}
                     loading={loading}
                   />
+                )}
+
+                {activeTab === "notices" && (
+                  <NoticesTab toast={toast} confirmAction={confirmAction} />
                 )}
 
                 {activeTab === "inbox" && (

@@ -2,24 +2,24 @@
 // src/pages/TutorialPage.tsx
 // ------------------------------------------------------------
 // Halaman tutorial: panduan memesan + mengatur undangan. Tiap kartu
-// berisi video YouTube (bila youtubeId diisi) + langkah tertulis.
-// Tambah tutorial baru cukup di src/lib/tutorialData.ts + i18n.
+// berisi thumbnail video (klik → popup player YouTube bila youtubeId
+// diisi) + langkah tertulis. Tambah tutorial baru cukup di
+// src/lib/tutorialData.ts + i18n.
 // Keterikatan : react-router-dom; lucide-react; ../lib/tutorialData;
 // ../i18n.
 // ============================================================
 
+import { useEffect, useState } from 'react';
 import {
   BookOpen,
   GraduationCap,
-  Image as ImageIcon,
-  KeyRound,
-  ListOrdered,
   Lock,
-  Music,
+  Pencil,
   Play,
+  ListOrdered,
   Share2,
   ShoppingCart,
-  User,
+  X,
   Youtube,
 } from 'lucide-react';
 import { TUTORIAL_ITEMS, type TutorialItem } from '../lib/tutorialData';
@@ -30,17 +30,76 @@ import { en as enDict } from '../i18n/locales/en';
 
 const ICONS = {
   cart: ShoppingCart,
-  key: KeyRound,
-  user: User,
-  image: ImageIcon,
-  music: Music,
-  book: BookOpen,
-  share: Share2,
   lock: Lock,
+  edit: Pencil,
+  share: Share2,
+  book: BookOpen,
 } as const;
+
+function VideoModal({
+  youtubeId,
+  title,
+  onClose,
+}: {
+  youtubeId: string;
+  title: string;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm sm:p-6"
+      onClick={onClose}
+    >
+        <div
+          className="w-full max-w-5xl lg:max-w-6xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="truncate font-brand text-lg font-semibold text-white sm:text-xl">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('tutorial.videoClose')}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="aspect-video w-full overflow-hidden rounded-xl bg-black shadow-2xl">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0`}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            className="h-full w-full"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function TutorialCard({ item }: { item: TutorialItem }) {
   const { t, language } = useTranslation();
+  const [playing, setPlaying] = useState(false);
   const base = `tutorial.items.${item.id}` as const;
   const title = t(`${base}.title`);
   const desc = t(`${base}.desc`);
@@ -50,17 +109,35 @@ function TutorialCard({ item }: { item: TutorialItem }) {
 
   return (
     <article className="overflow-hidden rounded-2xl border border-[#EBDFCE] bg-white shadow-sm transition duration-300 hover:shadow-lg">
-      {/* Video / placeholder */}
+      {/* Thumbnail / placeholder */}
       <div className="relative aspect-video bg-[#3a140c]">
         {item.youtubeId ? (
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${item.youtubeId}`}
-            title={title}
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute inset-0 h-full w-full"
-          />
+          <>
+            <button
+              type="button"
+              onClick={() => setPlaying(true)}
+              aria-label={`${t('tutorial.videoPlay')}: ${title}`}
+              className="group absolute inset-0 h-full w-full cursor-pointer"
+            >
+              <img
+                src={`https://i.ytimg.com/vi/${item.youtubeId}/hqdefault.jpg`}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03] group-hover:brightness-75"
+                onError={(e) => {
+                  e.currentTarget.src = `https://i.ytimg.com/vi/${item.youtubeId}/mqdefault.jpg`;
+                }}
+              />
+              <span className="absolute inset-0 flex items-center justify-center">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#712E1E]/90 text-white shadow-xl transition duration-300 group-hover:scale-110 group-hover:bg-[#712E1E]">
+                  <Play size={26} className="ml-0.5 fill-current" />
+                </span>
+              </span>
+            </button>
+            <span className="pointer-events-none absolute bottom-2.5 right-2.5 rounded-md bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">
+              {item.duration}
+            </span>
+          </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10">
@@ -71,9 +148,6 @@ function TutorialCard({ item }: { item: TutorialItem }) {
             </p>
           </div>
         )}
-        <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/70 px-2 py-0.5 text-[11px] font-bold text-white">
-          {item.duration}
-        </span>
       </div>
 
       <div className="p-4 sm:p-5">
@@ -101,6 +175,14 @@ function TutorialCard({ item }: { item: TutorialItem }) {
           ))}
         </ol>
       </div>
+
+      {playing && item.youtubeId && (
+        <VideoModal
+          youtubeId={item.youtubeId}
+          title={title}
+          onClose={() => setPlaying(false)}
+        />
+      )}
     </article>
   );
 }
@@ -109,7 +191,7 @@ export default function TutorialPage() {
   const { t } = useTranslation();
   usePageMeta(
     'Tutorial Undangan Digital — LoVerse',
-    'Panduan video dan langkah tertulis: cara memesan, login dashboard, edit data, galeri, musik, RSVP, dan bagikan undangan digital LoVerse.',
+    'Panduan video dan langkah tertulis: cara pesan undangan, edit undangan, lupa PIN, bagikan undangan, dan cek RSVP & buku tamu LoVerse.',
   );
   const orders = TUTORIAL_ITEMS.filter((i) => i.group === 'order');
   const setups = TUTORIAL_ITEMS.filter((i) => i.group === 'setup');

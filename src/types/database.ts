@@ -108,6 +108,33 @@ export interface TemplateRow {
   created_at?: string;
 }
 
+/** Jenis notice situs — menentukan gaya warna (banner/modal di beranda). */
+export type SiteNoticeType = 'info' | 'warning' | 'promo' | 'maintenance';
+
+/** Mode tampil notice: banner saja, modal popup saja, atau keduanya. */
+export type SiteNoticeMode = 'banner' | 'modal' | 'both';
+
+/**
+ * Baris `site_notices`: pengumuman (promo/maintenance/info) yang dikelola
+ * admin dan tampil otomatis di halaman beranda dalam rentang waktu aktif.
+ */
+export interface SiteNoticeRow {
+  id: string;
+  type: SiteNoticeType;
+  mode: SiteNoticeMode;
+  title: string;
+  body: string;
+  cta_label?: string | null;
+  cta_href?: string | null;
+  /** ISO datetime — notice mulai tampil. */
+  starts_at: string;
+  /** ISO datetime — notice berhenti tampil; null = tanpa batas waktu. */
+  ends_at?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 /**
  * Kolom aman yang terekspose lewat view `public_invitations` untuk
  * halaman undangan publik. Tanpa pin_code / snap_token /
@@ -164,6 +191,12 @@ export interface Database {
         Row: TemplateRow;
         Insert: Partial<TemplateRow>;
         Update: Partial<TemplateRow>;
+        Relationships: [];
+      };
+      site_notices: {
+        Row: SiteNoticeRow;
+        Insert: Partial<SiteNoticeRow> & { title: string };
+        Update: Partial<SiteNoticeRow>;
         Relationships: [];
       };
     };
