@@ -23,9 +23,9 @@ export interface TutorialItem {
 }
 
 export const TUTORIAL_ITEMS: TutorialItem[] = [
-  { id: 'cara-pesan',     group: 'order', duration: '3:12', youtubeId: '0N8RlC7Ir7E', icon: 'cart' },
-  { id: 'lupa-pin',       group: 'order', duration: '2:03', youtubeId: 'mnlgc0P0LS0', icon: 'lock' },
-  { id: 'cara-edit',      group: 'setup', duration: '4:00', youtubeId: 'VitNJdoPeUg', icon: 'edit' },
-  { id: 'bagikan-undangan', group: 'setup', duration: '1:58', youtubeId: '87UEuUwqYeg', icon: 'share' },
-  { id: 'rsvp-bukutamu',  group: 'setup', duration: '2:51', youtubeId: 'oqHIr__BqyM', icon: 'book' },
+  { id: 'cara-pesan',     group: 'order', duration: '1:18', youtubeId: '0N8RlC7Ir7E', icon: 'cart' },
+  { id: 'lupa-pin',       group: 'order', duration: '0:49', youtubeId: 'mnlgc0P0LS0', icon: 'lock' },
+  { id: 'cara-edit',      group: 'setup', duration: '1:10', youtubeId: 'VitNJdoPeUg', icon: 'edit' },
+  { id: 'bagikan-undangan', group: 'setup', duration: '0:56', youtubeId: '87UEuUwqYeg', icon: 'share' },
+  { id: 'rsvp-bukutamu',  group: 'setup', duration: '0:48', youtubeId: 'oqHIr__BqyM', icon: 'book' },
 ];
